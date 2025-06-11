@@ -4,6 +4,7 @@ import {
   query,
   orderBy,
   getDocs,
+  getDoc,
   doc,
   updateDoc,
   arrayUnion,
@@ -59,6 +60,22 @@ export async function getAllSessionMeta(): Promise<SessionMetaData[]> {
 
   console.log('Session meta:', slugs);
   return slugs;
+}
+
+export async function checkActiveSession(): Promise<{ active: boolean; session: string } | null> {
+  const docRef = doc(db, 'sessions', 'session-mangager');
+  const docSnap = await getDoc(docRef);
+
+  if (!docSnap.exists()) {
+    console.warn('No such document!');
+    return null;
+  }
+
+  const data = docSnap.data();
+  return {
+    active: data.active,
+    session: data.session,
+  };
 }
 
 function transformBlocksToSets(blocks: RecNum): Set[] {

@@ -1,28 +1,39 @@
 <script lang="ts">
   import '../app.css';
   import { goto } from '$app/navigation';
+  import { checkActiveSession } from '$lib/firebaseDataHandler';
+  import { onMount } from 'svelte';
 
-  function route(destination: string) {
-    switch (destination) {
-      case 'start': {
-        goto('/tracker');
-        break;
-      }
-      case 'new': {
-        break;
-      }
+  let existingSession = $state(false)
+  let existingID = $state("")
 
-      case 'cont': {
-        break;
+
+  onMount(async () => {
+    const prevSession = await checkActiveSession();
+    if (prevSession != null){
+      existingSession = prevSession.active
+      console.log("exists",existingSession)
+      if (existingSession){
+        existingID = prevSession.session
       }
+    
     }
-  }
+
+  });
+
 </script>
 
 <div class="btn-container">
-  <button class="base-btn sesh" on:click={() => route('start')}>Start new session</button>
-  <button class="base-btn sesh" on:click={() => route('new')}>Create new session</button>
-  <button class="base-btn alt" on:click={() => route('cont')}>Continue workout</button>
+  <button class="base-btn sesh" on:click={() => goto('/tracker')}>Start new session</button>
+  <button class="base-btn sesh" on:click={() => goto('/tracker')}>Create new session</button>
+
+  {#if existingSession}
+    <button class="base-btn alt" on:click={() => goto(`/tracker/${existingID}`)}>
+      <h2>Continue session:</h2>
+      <h3>{existingID}</h3>
+
+    </button>
+  {/if}
 </div>
 
 <style>
