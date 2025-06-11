@@ -2,6 +2,6 @@ import type { PageLoad } from './$types';
 
 export const load: PageLoad = ({ params }) => {
   return {
-    exID: params.slug
+    exID: params.slug,
   };
 };

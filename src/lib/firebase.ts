@@ -6,7 +6,7 @@ import {
   PUBLIC_FIREBASE_PROJECT_ID,
   PUBLIC_FIREBASE_STORAGE_BUCKET,
   PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  PUBLIC_FIREBASE_APP_ID
+  PUBLIC_FIREBASE_APP_ID,
 } from '$env/static/public';
 
 const firebaseConfig = {
@@ -15,7 +15,7 @@ const firebaseConfig = {
   projectId: PUBLIC_FIREBASE_PROJECT_ID,
   storageBucket: PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: PUBLIC_FIREBASE_APP_ID
+  appId: PUBLIC_FIREBASE_APP_ID,
 };
 
 const app = initializeApp(firebaseConfig);

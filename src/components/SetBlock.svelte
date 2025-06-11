@@ -32,34 +32,33 @@
 </div>
 
 <style>
-.counter-container { 
-  text-align: center; 
-  margin: 1rem 0; 
-}
+  .counter-container {
+    text-align: center;
+    margin: 1rem 0;
+  }
 
-.controls { 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  gap: 1rem; 
-}
+  .controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+  }
 
-button { 
-  padding: 0.5rem 1rem;
-}
+  button {
+    padding: 0.5rem 1rem;
+  }
 
-span { 
-  font-size: 2rem; 
-  width: 3rem; 
-  text-align: center; 
-}
+  span {
+    font-size: 2rem;
+    width: 3rem;
+    text-align: center;
+  }
 
-.but {
+  .but {
     background-color: var(--color-gray);
     color: var(--color-black);
     padding: 16px;
     width: 50px;
     border-radius: 50px;
-
-}
+  }
 </style>

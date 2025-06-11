@@ -1,15 +1,14 @@
 <script lang="ts">
-    import '../../app.css'
-    import Settings from './settings.svelte';
+  import '../../app.css';
+  import Settings from './settings.svelte';
 </script>
 
 <div class="settings-frame">
-    <Settings />
-
+  <Settings />
 </div>
 
 <style>
-.settings-frame{
+  .settings-frame {
     margin: 30px 60px;
-}
+  }
 </style>
