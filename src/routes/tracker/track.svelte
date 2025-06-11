@@ -3,7 +3,7 @@
   import { fade } from 'svelte/transition';
   import SetBlock from '../../components/SetBlock.svelte';
   import ConfirmSelection from '../../components/ConfirmSelection.svelte';
-  import { getOrderedExercises, saveRecordedLift } from '$lib/firebaseDataHandler';
+  import { getAllSessionMeta, getOrderedExercises, saveRecordedLift } from '$lib/firebaseDataHandler';
   import type { Exercise } from '$lib/firebaseDataHandler';
   import '../../app.css';
 
@@ -42,7 +42,7 @@
 
   onMount(async () => {
     try {
-      exercises = await getOrderedExercises();
+      exercises = await getOrderedExercises(exID);
       console.log("Fetched exercises:", exercises)
 
     } catch (e) {

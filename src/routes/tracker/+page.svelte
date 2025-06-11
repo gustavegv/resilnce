@@ -1,5 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { getAllSessionMeta } from "$lib/firebaseDataHandler";
+  import { onMount } from "svelte";
 
 type SessionMetaData = {
   id: string,
@@ -7,12 +9,13 @@ type SessionMetaData = {
 }
 
 // TODO: Put in db or smt
-const slugs: SessionMetaData[] = [
-  {id: "push", name: "Push-day"}, 
-  {id: "pull", name: "Pull-day"}, 
-  {id: "legs", name: "Leg-day"}, 
-]
+let slugs: SessionMetaData[];
 
+onMount(async () => {
+  slugs = await getAllSessionMeta();
+
+  });
+  
 </script>
 
 <div class="btn-container">

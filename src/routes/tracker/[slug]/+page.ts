@@ -1,6 +1,7 @@
-export function load(params){
-    return {
-        title:params.data
-    }
-}
+import type { PageLoad } from './$types';
 
+export const load: PageLoad = ({ params }) => {
+  return {
+    exID: params.slug
+  };
+};

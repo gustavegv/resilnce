@@ -1,8 +1,6 @@
 <script lang="ts">
-    import Track from "../track.svelte";
-
-    export let data;
+  import Track from "../track.svelte";
+  export let data: { exID: string };
 </script>
 
-
-<Track exID="push"/>
+<Track exID={data.exID} />

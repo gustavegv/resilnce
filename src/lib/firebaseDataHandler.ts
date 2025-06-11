@@ -28,12 +28,37 @@ export interface Exercise {
   tag: string;
 }
 
+type SessionMetaData = {
+  id: string;
+  name: string;
+};
+
 type RecNum = Record<number, number>;
 
-export async function getOrderedExercises(): Promise<Exercise[]> {
-  const q = query(collection(db, 'push-day'), orderBy('order', 'asc'));
+export async function getOrderedExercises(exID: string): Promise<Exercise[]> {
+  const q = query(collection(db, exID), orderBy('order', 'asc'));
   const snapshot = await getDocs(q);
+
+  if (snapshot.empty){
+    return []
+  }
+
   return snapshot.docs.map(doc => doc.data() as Exercise);
+}
+
+export async function getAllSessionMeta(): Promise<SessionMetaData[]> {
+  const snapshot = await getDocs(collection(db, 'sessions'));
+
+  const slugs: SessionMetaData[] = snapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      name: data.title || '(untitled)', // fallback om .title saknas
+    };
+  });
+
+  console.log("Session meta:", slugs);
+  return slugs;
 }
 
 function transformBlocksToSets(blocks: RecNum): Set[] {
