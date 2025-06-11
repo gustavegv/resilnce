@@ -7,18 +7,64 @@
   import type { Exercise } from '$lib/firebaseDataHandler';
   import '../../app.css';
 
-  let exercises: Exercise[] = [];
-  let exerciseData: { id: number; reps: number }[] = [];
-  let exName = '';
-  let exWeight = 0;
-  let exTag = '';
-  let currentExerciseIndex = 0;
-  let loading = true;
-  let error: string | null = null;
-  let blockStates: Record<number, number> = {};
-  let showOverlay = false;
+// Exercise ID som blir tilldelad när man callar komponenten:
+//   Exempel:  <Track exID="push" />
+  let { exID }: { exID: string } = $props();
 
-  function handleCountChange(event: CustomEvent<{ id: number; count: number }>) {
+  type RecNum = Record<number, number>
+  type ExData = { id: number; reps: number }
+
+  
+  
+  // State variabler
+  let exercises: Exercise[] = $state([]);
+  let currentExerciseIndex = $state(0);
+  let loading: boolean =    $state(true);
+  let blockStates: RecNum = $state({});
+  let showOverlay: boolean = $state(false);
+  
+  let error: string | null = $state(null);
+
+
+
+  // Derived variabler
+    const currentExercise = $derived(
+    !loading && exercises[currentExerciseIndex]
+      ? exercises[currentExerciseIndex]
+      : undefined
+  );
+
+    const exName: string    = $derived(currentExercise?.name   ?? '');
+    const exWeight: number  = $derived(currentExercise?.weight ?? 0);
+    const exTag: string     = $derived(currentExercise?.tag    ?? '');
+    const exerciseData: ExData[] = $derived(currentExercise?.sets ?? []);
+
+
+  onMount(async () => {
+    try {
+      exercises = await getOrderedExercises();
+      console.log("Fetched exercises:", exercises)
+
+    } catch (e) {
+      error = (e as Error).message;
+    } finally {
+      loading = false;
+    }
+  });
+
+  $effect(() => {
+    if (currentExercise) {
+      blockStates = {};
+      console.log('Index:', currentExerciseIndex, 'loaded');
+      $inspect(exerciseData)
+    }
+  });
+
+
+
+  //Functions
+
+function handleCountChange(event: CustomEvent<{ id: number; count: number }>) {
     const { id, count } = event.detail;
     blockStates = { ...blockStates, [id]: count };
   }
@@ -39,37 +85,7 @@
     setTimeout(loadNextExercise, 100);
   }
 
-  onMount(async () => {
-    try {
-      exercises = await getOrderedExercises();
-      if (exercises.length > 0) {
-        const cur = exercises[0];
-        exerciseData = cur.sets;
-        exName = cur.name;
-        exWeight = cur.weight;
-        exTag = cur.tag;
-      }
-    } catch (e) {
-      error = (e as Error).message;
-    } finally {
-      loading = false;
-    }
-  });
-
-  $: if (!loading && exercises[currentExerciseIndex]) {
-    blockStates = {};
-    console.log("Index: ", currentExerciseIndex, "loaded")
-    const cur = exercises[currentExerciseIndex];
-    exerciseData = cur.sets;
-    exName = cur.name;
-    exWeight = cur.weight;
-    exTag = cur.tag;
-
-
-    console.log(exerciseData)
-  }
-
-  function uniqueKey(set: number, excerID: string){
+  function uniqueKey(set: number, excerID: number){
     return `${excerID}-s${set}`
   }
 
@@ -87,12 +103,11 @@
     </header>
 
 
-
-    {#each exerciseData as block (uniqueKey(block.id,exName))}
+    {#each exerciseData as block (uniqueKey(block.id, currentExerciseIndex))}
       <SetBlock id={block.id} reps={block.reps} on:countChange={handleCountChange} />
     {/each}
 
-    <ConfirmSelection on:confirm={handleSubmit} />
+    <ConfirmSelection onConfirm={handleSubmit} />
 
     {#if showOverlay}
       <div class="overlay" transition:fade={{ duration: 100 }}></div>

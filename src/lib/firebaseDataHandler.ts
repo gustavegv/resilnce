@@ -63,6 +63,7 @@ export async function saveRecordedLift(
   // push historic data and update sets
   const exerciseRef = doc(db, 'push-day', exTag);
 
+  return // obs todo remove
   if (tryAutoIncrease(hisData)){
    await updateDoc(exerciseRef, {
       historic: arrayUnion(hisData),

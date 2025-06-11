@@ -4,16 +4,14 @@ import { goto } from '$app/navigation';
 
 function route(destination: string) {
     switch(destination){
-        case "push" : {
+        case "start" : {
             goto('/tracker')
             break;
         }
-        case "pull" : {
+        case "new" : {
             break;
         }
-        case "legs" : {
-            break;
-        }
+
         case "cont" : {
             break;
         }
@@ -23,9 +21,8 @@ function route(destination: string) {
 </script>
 
 <div class="btn-container">
-    <button class="base-btn sesh" on:click={() => route("push")}>Push</button>
-    <button class="base-btn sesh" on:click={() => route("pull")}>Pull</button>
-    <button class="base-btn sesh" on:click={() => route("legs")}>Legs</button>
+    <button class="base-btn sesh" on:click={() => route("start")}>Start new session</button>
+    <button class="base-btn sesh" on:click={() => route("new")}>Create new session</button>
     <button class="base-btn alt" on:click={() => route("cont")}>Continue workout</button>
     
 </div>

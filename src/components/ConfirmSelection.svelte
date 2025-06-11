@@ -3,14 +3,16 @@
   import '../app.css';
 
 
-  const dispatch = createEventDispatcher();
+  let { onConfirm }: { onConfirm?: () => void } = $props();
 
   function handleClick() {
-    dispatch('confirm');
+    if (onConfirm) onConfirm();
   }
+
+  
 </script>
 
-<button class="confirm-button" on:click={handleClick}>
+<button class="confirm-button" onclick={handleClick}>
   Confirm
 </button>
 
