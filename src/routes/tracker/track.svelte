@@ -17,15 +17,12 @@
   //   Exempel:  <Track sesID="push" />
   let { sesID }: { sesID: string } = $props();
 
-  type RecNum = Record<number, number>;
-  type ExData = { id: number; reps: number };
-
   // State variabler
   let exercises: ExerciseInfo[] = $state([]);
 
   let currentExerciseIndex = $state(0);
   let loading: boolean = $state(true);
-  let blockStates: RecNum = $state({});
+
   let showOverlay: boolean = $state(false);
 
   let error: string | null = $state(null);
@@ -55,7 +52,6 @@
 
   $effect(() => {
     if (currentExercise) {
-      blockStates = {};
       console.log('Index:', currentExerciseIndex, 'loaded');
       $inspect(repArray);
     }
@@ -64,7 +60,10 @@
   //Functions
 
   function handleCountChange({ id, count }: { id: number; count: number }) {
-    blockStates = { ...blockStates, [id]: count };
+    
+    if (currentExercise){
+      currentExercise.currentProgress.repsPerSet[id-1] = count
+    }
   }
 
   function flashLoadingScreen() {
@@ -77,13 +76,14 @@
   }
 
   async function handleSubmit() {
-    const updatedReps = await saveRecordedLift(blockStates, exWeight, exID);
+    if (currentExercise){
+      const finalReps = currentExercise.currentProgress.repsPerSet
+      const updatedReps = await saveRecordedLift(finalReps, exWeight, exID);
+
+    }
 
     exercises[currentExerciseIndex].finished = true
-    exercises[currentExerciseIndex].currentProgress.repsPerSet = updatedReps
 
-
-    console.log('Block state saved:', blockStates);
     flashLoadingScreen();
     setTimeout(loadNextExercise, 100);
   }
@@ -99,6 +99,7 @@
   }
 
   function skipExercise() {
+    return
     if (exercises.length > currentExerciseIndex + 1) {
       currentExerciseIndex++;
     }
@@ -124,7 +125,7 @@
     <button class="movement-b" onclick={() => prevExercise()}>Prev</button>
     <button class="movement-b" onclick={() => skipExercise()}>Skip</button>
 
-    
+
     {#if showOverlay}
       <div class="overlay" transition:fade={{ duration: 100 }}></div>
     {/if}

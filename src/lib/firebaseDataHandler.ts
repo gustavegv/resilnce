@@ -49,7 +49,6 @@ type SessionInfo = {
   exercises: ExInfo[];
 };
 
-type RecNum = Record<number, number>;
 
 export async function getOrderedExercises(uID: string, sesID: string): Promise<ExerciseInfo[]> {
   const colRef = collection(db, 'users', uID, 'sessions', sesID, 'exercises');
@@ -97,15 +96,11 @@ export async function checkActiveSession(): Promise<{ active: boolean; session: 
   };
 }
 
-function transformBlocksToRepArray(blocks: RecNum): number[] {
-  return Object.entries(blocks).map(([_, value]) => value);
-}
-
 // samla och gör om inkommande data till en historiskt sesh
-function createHistoricData(blocks: RecNum, weight: number) {
-  const entries = Object.entries(blocks);
-  const totalReps = entries.reduce((sum, [_, reps]) => sum + reps, 0);
-  const avgSet = totalReps / entries.length;
+function createHistoricData(blocks: number[], weight: number) {
+
+  const totalReps = blocks.reduce((total, num) => total + num, 0);
+  const avgSet = totalReps / blocks.length;
 
   const now = new Date();
   const formatted =
@@ -125,12 +120,11 @@ function createHistoricData(blocks: RecNum, weight: number) {
 }
 
 export async function saveRecordedLift(
-  blocks: RecNum,
+  repArray: number[],
   weight: number,
   exTag: string,
 ): Promise<number[]> {
-  const repArray = transformBlocksToRepArray(blocks);
-  const hisData = createHistoricData(blocks, weight);
+  const hisData = createHistoricData(repArray, weight);
 
   // push historic data and update sets
   const exerciseRef = doc(db, 'push-day', exTag);
@@ -166,13 +160,6 @@ function tryAutoIncrease(history: any): boolean {
   } else {
     return false;
   }
-}
-
-function resetSetCount(blocks: RecNum) {
-  return Object.entries(blocks).map(([id, reps]) => ({
-    id: Number(id),
-    reps: 6,
-  }));
 }
 
 export async function addNewSession(newSession: SessionInfo) {
