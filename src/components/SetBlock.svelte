@@ -49,7 +49,11 @@
 <style>
   .counter-container {
     text-align: center;
-    margin: 1rem 0;
+    margin: 0.5rem 0;
+    background-color: rgb(37, 37, 37);
+    width: 80%;
+    border-radius: 10px;
+    padding: 0.5rem 0;
   }
 
   .controls {
@@ -72,7 +76,7 @@
   .but {
     background-color: var(--color-gray);
     color: var(--color-black);
-    padding: 16px;
+    padding: 14px;
     width: 50px;
     border-radius: 50px;
   }

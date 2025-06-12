@@ -18,40 +18,84 @@
       }
     }
   });
-
-  function gas() {
-    console.log('Results from fetch:', getOrderedExercises('user1', 'upper'));
-  }
 </script>
 
-<div class="btn-container">
-  <button class="base-btn sesh" onclick={() => goto('/tracker')}>Start new session</button>
-  <button class="base-btn sesh" onclick={() => goto('/create')}>Create new session</button>
-  <button class="base-btn sesh" onclick={testDB}>Test DB!</button>
-  <button class="base-btn sesh" onclick={gas}>Test Data fetching!</button>
+<img src="books.png" alt="a" class="books" />
 
-  {#if existingSession}
-    <button class="base-btn alt" onclick={() => goto(`/tracker/${existingID}`)}>
-      <h2>Continue session:</h2>
-      <h3>{existingID}</h3>
-    </button>
-  {/if}
+<div class="body">
+  <h1 class="wid">The only tracker you need.</h1>
+  <hr />
+  <div class="btn-container">
+    <button class="base-btn sesh" onclick={() => goto('/tracker')}>Begin a workout</button>
+    <button class="base-btn sesh" onclick={() => goto('/create')}>Create new session</button>
+
+    {#if existingSession}
+      <button class="base-btn alt" onclick={() => goto(`/tracker/${existingID}`)}>
+        <h2>Continue session:</h2>
+        <h3>{existingID}</h3>
+      </button>
+    {/if}
+  </div>
 </div>
 
 <style>
+  .books {
+    position: fixed; /* Stay fixed to the viewport */
+    top: 32%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Adjust this to where you want it */
+    z-index: 0; /* Sit behind interactive content */
+    pointer-events: none; /* Let clicks pass through */
+    user-select: none;
+    width: 18rem; /* Adjust to taste */
+    height: auto;
+  }
+
+  hr {
+    height: 0.1px;
+    background-color: #ffffff;
+    margin: 20px 0;
+    width: 80%;
+  }
+
+  .wid {
+    width: 80%;
+    font-size: 2.5rem;
+    margin: 1rem 0;
+  }
+
+  .body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    box-sizing: border-box;
+    padding: 10rem 0;
+    height: 100vh;
+    background: var(--gradient-prim);
+  }
+
+  h1 {
+    font-weight: 600;
+    color: white;
+  }
+
   .btn-container {
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 90%;
   }
 
   .base-btn {
-    margin: 10px;
-    padding: 10px 40px;
+  }
+
+  button {
+    background-color: #151515;
   }
 
   .base-btn.sesh {
-    background-color: var(--color-secondary);
+    box-shadow: rgba(0, 0, 0, 0.2) 0px 2px 8px 0px;
   }
 
   .base-btn.alt {

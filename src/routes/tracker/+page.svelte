@@ -27,19 +27,6 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-  }
-
-  .base-btn {
-    margin: 10px;
-    padding: 10px 40px;
-  }
-
-  .base-btn.sesh {
-    background-color: var(--color-secondary);
-  }
-
-  .base-btn.alt {
-    background-color: var(--color-alt);
-    color: var(--color-secondary);
+    width: 100%;
   }
 </style>

@@ -114,9 +114,9 @@
 {:else}
   <main class="app-container">
     <div class="movement-cont">
-      <button class="movement-b" onclick={() => prevExercise()}>Prev</button>
+      <button class="movement-b mini" onclick={() => prevExercise()}>Prev</button>
       <p>{currentExerciseIndex + 1}/{exercises.length}</p>
-      <button class="movement-b" onclick={() => skipExercise()}>Skip</button>
+      <button class="movement-b mini" onclick={() => skipExercise()}>Skip</button>
     </div>
     <header>
       <h1>{exName}</h1>
@@ -137,14 +137,18 @@
 
 <style>
   .app-container {
+    display: flex;
+    flex-direction: column;
     padding: 2rem;
-    max-width: 600px;
+    max-width: 30rem;
     margin: 0 auto;
     text-align: center;
+    align-items: center;
   }
   header h1 {
     font-size: 2.5rem;
     margin-bottom: 0.5rem;
+    margin-top: 0;
   }
   header h2 {
     font-size: 1.5rem;
@@ -160,8 +164,6 @@
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-  }
-
-  .movement-b {
+    width: 100%;
   }
 </style>

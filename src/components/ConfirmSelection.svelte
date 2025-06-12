@@ -28,12 +28,10 @@
     padding: 1rem;
     margin-top: 2rem;
     background-color: var(--color-secondary);
-    color: rgb(0, 0, 0);
     font-size: 1.25rem;
     border: none;
     border-radius: 0.5rem;
     cursor: pointer;
-    box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
   }
 
   .confirm-button.diabled {

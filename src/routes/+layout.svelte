@@ -3,36 +3,43 @@
 </script>
 
 <div class="head">
-  <h1>resilnce</h1>
-  <nav>
-    <a href="/">Home</a>
-    <a href="/tracker">Tracker</a>
-    <a href="/settings">Settings</a>
-  </nav>
+  <a href="/"><h1>resilnce</h1></a>
+
+  <a class="nav">&#9776;</a>
 </div>
 
 {@render children()}
 
 <style>
   .head {
+    position: relative;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+    background-color: var(--color-background);
+    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+    z-index: 2;
+    overflow: visible;
   }
 
-  nav {
+  .invis {
+    height: 4rem;
+  }
+
+  .nav {
     margin: 0 10px;
-    color: black;
+    color: rgb(255, 255, 255);
+    font-size: 30px;
   }
 
   a {
     color: inherit;
+    text-decoration: none;
   }
 
   h1 {
-    color: var(--color-secondary);
+    color: var(--color-white);
     margin: 10px 10px;
   }
 </style>
