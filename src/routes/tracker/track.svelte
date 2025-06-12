@@ -71,10 +71,10 @@
   }
 
   function loadNextExercise() {
-    if (currentExerciseIndex+1 < exercises.length){
+    if (currentExerciseIndex + 1 < exercises.length) {
       currentExerciseIndex += 1;
     } else {
-      console.log("Workout finished?")
+      console.log('Workout finished?');
     }
   }
 
@@ -115,7 +115,7 @@
   <main class="app-container">
     <div class="movement-cont">
       <button class="movement-b" onclick={() => prevExercise()}>Prev</button>
-      <p>{currentExerciseIndex+1}/{exercises.length}</p>
+      <p>{currentExerciseIndex + 1}/{exercises.length}</p>
       <button class="movement-b" onclick={() => skipExercise()}>Skip</button>
     </div>
     <header>
@@ -156,7 +156,7 @@
     background: rgb(255, 255, 255);
     pointer-events: none;
   }
-  .movement-cont{
+  .movement-cont {
     display: flex;
     flex-direction: row;
     justify-content: space-between;

@@ -49,6 +49,12 @@ type SessionInfo = {
   exercises: ExInfo[];
 };
 
+export interface ExInfoPackage {
+  name: string;
+  weight: number;
+  sets: number;
+}
+
 export async function getOrderedExercises(uID: string, sesID: string): Promise<ExerciseInfo[]> {
   const colRef = collection(db, 'users', uID, 'sessions', sesID, 'exercises');
   const q = query(colRef, orderBy('order', 'asc'));

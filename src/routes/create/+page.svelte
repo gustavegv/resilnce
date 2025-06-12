@@ -2,24 +2,21 @@
   import '../../app.css';
   import { addNewSession } from '$lib/firebaseDataHandler';
 
-  type ExInfo = {
-    name: string;
-    weight: number;
-    sets: number;
-  };
+  import type { ExInfoPackage } from '$lib/firebaseDataHandler';
+  import { betterAdd } from '$lib/firebaseCreation';
 
   type SessionInfo = {
     name: string;
-    exercises: ExInfo[];
+    exercises: ExInfoPackage[];
   };
 
-  const dummy1: ExInfo = {
+  const dummy1: ExInfoPackage = {
     name: 'lopos',
     weight: 30,
     sets: 4,
   };
 
-  let currentlyAdded: ExInfo[] = $state([dummy1]);
+  let currentlyAdded: ExInfoPackage[] = $state([dummy1]);
 
   let seshName = $state('');
   let newName = $state('');
@@ -29,8 +26,7 @@
   function addExercise() {
     if (!newName || !newSets || !newWeight) return;
 
-    // 2) collect into ExInfo (parse strings to numbers)
-    const entry: ExInfo = {
+    const entry: ExInfoPackage = {
       name: newName,
       sets: Number(newSets),
       weight: Number(newWeight),
@@ -44,6 +40,7 @@
   }
 
   function saveSession() {
+    // adds inputed exercise in case you forgot
     addExercise();
 
     const s: SessionInfo = {
@@ -51,7 +48,8 @@
       exercises: currentlyAdded,
     };
 
-    addNewSession(s);
+    betterAdd(seshName, currentlyAdded);
+    //addNewSession(s);
 
     alert('session saved succesfully!');
     // todo: go back to main page

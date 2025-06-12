@@ -11,6 +11,8 @@ import {
 
 import { db } from './firebase';
 
+import type { ExInfoPackage } from './firebaseDataHandler';
+
 /**
  * Data shapes for Firestore operations
  */
@@ -50,7 +52,11 @@ export interface ExerciseInfo {
   finished?: boolean;
 }
 
-function simpleExerciseType(name: string, sets: number, w: number): ExerciseInfo {
+function simpleExerciseType(exif: ExInfoPackage): ExerciseInfo {
+  const name: string = exif.name;
+  const sets: number = exif.sets;
+  const w: number = exif.weight;
+
   const rps = new Array(sets).fill(7);
   const wps = new Array(sets).fill(w);
 
@@ -66,6 +72,15 @@ function simpleExerciseType(name: string, sets: number, w: number): ExerciseInfo
     currentProgress: prog,
   };
   return simple;
+}
+
+function simpleExerciseTypeBatch(pcA: ExInfoPackage[]): ExerciseInfo[] {
+  let result: ExerciseInfo[] = [];
+  pcA.forEach((pck) => {
+    const next = simpleExerciseType(pck);
+    result = [...result, next];
+  });
+  return result;
 }
 
 export interface HistoryEntryInfo {
@@ -245,7 +260,7 @@ export async function batchAddExercises(
 
     batch.set(exerciseRef, {
       name: info.name,
-      muscleGroup: info.muscleGroup,
+      //muscleGroup: info.muscleGroup,
       currentProgress: {
         sets: info.currentProgress.sets,
         repsPerSet: info.currentProgress.repsPerSet,
@@ -302,10 +317,23 @@ export async function testDB() {
   await addSessionByName('user1', sif);
 
   const search = { userId: 'user1', sessionId: 'upper' };
-  const eif = simpleExerciseType('row', 3, 40);
+  const pck: ExInfoPackage = { name: 'row', sets: 3, weight: 40 };
+  const eif = simpleExerciseType(pck);
   // await addExercise(search, eif)
 
   await batchAddExercises(search, exercisesBatchDummy);
 
   console.log('Added files to DB.');
+}
+
+export async function betterAdd(sessionName: string, exif: ExInfoPackage[]) {
+  const s: SessionInfo = {
+    name: sessionName,
+  };
+  await addSessionByName('user1', s);
+
+  const exinfo = simpleExerciseTypeBatch(exif);
+
+  const search = { userId: 'user1', sessionId: sessionName };
+  await batchAddExercises(search, exinfo);
 }
