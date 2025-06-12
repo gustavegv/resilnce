@@ -39,6 +39,7 @@
   const exID: string = $derived(currentExercise?.id ?? '');
   const repArray: number[] = $derived(currentExercise?.currentProgress.repsPerSet ?? []);
   const exWeight: number = $derived(currentExercise?.currentProgress.weightPerSet[0] ?? 0);
+  const finished: boolean = $derived(currentExercise?.finished ?? false);
 
   onMount(async () => {
     try {
@@ -62,8 +63,7 @@
 
   //Functions
 
-  function handleCountChange(event: CustomEvent<{ id: number; count: number }>) {
-    const { id, count } = event.detail;
+  function handleCountChange({ id, count }: { id: number; count: number }) {
     blockStates = { ...blockStates, [id]: count };
   }
 
@@ -77,7 +77,11 @@
   }
 
   async function handleSubmit() {
-    await saveRecordedLift(blockStates, exWeight, exID);
+    const updatedReps = await saveRecordedLift(blockStates, exWeight, exID);
+
+    exercises[currentExerciseIndex].finished = true
+    exercises[currentExerciseIndex].currentProgress.repsPerSet = updatedReps
+
 
     console.log('Block state saved:', blockStates);
     flashLoadingScreen();
@@ -113,13 +117,14 @@
     </header>
 
     {#each repArray as block, index (uniqueKey(index, currentExerciseIndex))}
-      <SetBlock id={index + 1} reps={block} on:countChange={handleCountChange} />
+      <SetBlock id={index + 1} finished={finished} reps={block} onCountChange={handleCountChange} />
     {/each}
 
-    <ConfirmSelection onConfirm={handleSubmit} />
+    <ConfirmSelection finished={finished} onConfirm={handleSubmit} />
     <button class="movement-b" onclick={() => prevExercise()}>Prev</button>
     <button class="movement-b" onclick={() => skipExercise()}>Skip</button>
 
+    
     {#if showOverlay}
       <div class="overlay" transition:fade={{ duration: 100 }}></div>
     {/if}

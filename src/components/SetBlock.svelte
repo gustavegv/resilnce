@@ -2,34 +2,57 @@
   import { onMount, createEventDispatcher } from 'svelte';
   import '../app.css';
 
-  export let id: number;
-  export let reps: number;
-  const dispatch = createEventDispatcher<{ countChange: { id: number; count: number } }>();
-  let curCount = reps;
+  let { 
+    id, 
+    reps, 
+    finished,
+    onCountChange 
+  } = $props<{
+    id: number;
+    reps: number;
+    finished?: boolean;
+    onCountChange?: (detail: { id: number; count: number }) => void;
+  }>();
+
+  let curCount = $state(reps);
+
 
   onMount(() => {
-    dispatch('countChange', { id, count: curCount });
+    onCountChange?.({ id, count: curCount });
   });
 
   function decrement() {
     curCount = Math.max(0, curCount - 1);
-    dispatch('countChange', { id, count: curCount });
+    onCountChange?.({ id, count: curCount });
   }
 
   function increment() {
     curCount += 1;
-    dispatch('countChange', { id, count: curCount });
+    onCountChange?.({ id, count: curCount });
   }
 </script>
 
+
+{#if !finished}
 <div class="counter-container">
   <div>Set {id}</div>
   <div class="controls">
-    <button class="but" on:click={decrement}>-</button>
+    <button class="but" onclick={decrement}>-</button>
     <span>{curCount}</span>
-    <button class="but" on:click={increment}>+</button>
+    <button class="but" onclick={increment}>+</button>
   </div>
 </div>
+{:else}
+<div class="counter-container">
+  <div>Set {id}</div>
+  <div class="controls">
+    <button class="but disabled" onclick={decrement}>-</button>
+    <span>{curCount}</span>
+    <button class="but disabled" onclick={increment}>+</button>
+  </div>
+</div>
+{/if}
+
 
 <style>
   .counter-container {
@@ -60,5 +83,10 @@
     padding: 16px;
     width: 50px;
     border-radius: 50px;
+  }
+
+  .disabled {
+    pointer-events: none;
+    opacity: 0.2;
   }
 </style>

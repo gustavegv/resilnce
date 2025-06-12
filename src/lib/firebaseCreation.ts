@@ -47,6 +47,7 @@ export interface ExerciseInfo {
   };
   order?: number;
   id?: string;
+  finished?: boolean
 }
 
 function simpleExerciseType(name: string, sets: number, w: number): ExerciseInfo {

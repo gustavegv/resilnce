@@ -128,7 +128,7 @@ export async function saveRecordedLift(
   blocks: RecNum,
   weight: number,
   exTag: string,
-): Promise<void> {
+): Promise<number[]> {
   const repArray = transformBlocksToRepArray(blocks);
   const hisData = createHistoricData(blocks, weight);
 
@@ -155,7 +155,8 @@ export async function saveRecordedLift(
     currentProgress: curProg,
     history: arrayUnion(hisData),
   };
-  return;
+
+  return repArray;
   updateDoc(exerciseRef, updatedStats);
 }
 
