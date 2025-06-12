@@ -1,7 +1,7 @@
 <script lang="ts">
   import '../app.css';
   import { goto } from '$app/navigation';
-  import { checkActiveSession, getOrderedExercises2 } from '$lib/firebaseDataHandler';
+  import { checkActiveSession, getOrderedExercises } from '$lib/firebaseDataHandler';
   import { onMount } from 'svelte';
   import { testDB } from '$lib/firebaseCreation';
 
@@ -20,7 +20,7 @@
   });
 
   function gas() {
-    console.log('Results from fetch:', getOrderedExercises2('user1', 'upper'));
+    console.log('Results from fetch:', getOrderedExercises('user1', 'upper'));
   }
 </script>
 

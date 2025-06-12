@@ -78,7 +78,6 @@ export async function getAllSessionMeta(uID: string): Promise<SessionMetaData[]>
     };
   });
 
-  console.log('Session meta:', slugs);
   return slugs;
 }
 
@@ -98,20 +97,31 @@ export async function checkActiveSession(): Promise<{ active: boolean; session: 
   };
 }
 
-function transformBlocksToSets(blocks: RecNum): Set[] {
-  return Object.entries(blocks).map(([id, reps]) => ({
-    id: Number(id),
-    reps,
-  }));
+function transformBlocksToRepArray(blocks: RecNum): number[] {
+  return Object.entries(blocks).map(([_, value]) => value);
 }
 
 // samla och gör om inkommande data till en historiskt sesh
-function createHistoricData(blocks: Record<number, number>, weight: number) {
+function createHistoricData(blocks: RecNum, weight: number) {
   const entries = Object.entries(blocks);
   const totalReps = entries.reduce((sum, [_, reps]) => sum + reps, 0);
   const avgSet = totalReps / entries.length;
 
-  return { avgSet, weightH: weight };
+  const now = new Date();
+  const formatted =
+    now.getFullYear() +
+    '-' +
+    String(now.getMonth() + 1).padStart(2, '0') +
+    '-' +
+    String(now.getDate()).padStart(2, '0') +
+    ' ' +
+    String(now.getHours()).padStart(2, '0') +
+    ':' +
+    String(now.getMinutes()).padStart(2, '0') +
+    ':' +
+    String(now.getSeconds()).padStart(2, '0');
+
+  return { avgSet: avgSet, weightH: weight, date: formatted };
 }
 
 export async function saveRecordedLift(
@@ -119,28 +129,37 @@ export async function saveRecordedLift(
   weight: number,
   exTag: string,
 ): Promise<void> {
+  const repArray = transformBlocksToRepArray(blocks);
   const hisData = createHistoricData(blocks, weight);
 
   // push historic data and update sets
   const exerciseRef = doc(db, 'push-day', exTag);
 
-  return; // obs todo remove
+  let curProg;
+
   if (tryAutoIncrease(hisData)) {
-    await updateDoc(exerciseRef, {
-      historic: arrayUnion(hisData),
-      sets: resetSetCount(blocks),
-      weight: weight + 5,
-    });
+    const increment = 5;
+    const wps = new Array(repArray.length).fill(weight + increment);
+
+    curProg = {
+      repsPerSet: repArray,
+      weightPerSet: wps,
+    };
   } else {
-    await updateDoc(exerciseRef, {
-      historic: arrayUnion(hisData),
-      sets: transformBlocksToSets(blocks),
-    });
+    curProg = {
+      repsPerSet: repArray,
+    };
   }
+
+  const updatedStats = {
+    currentProgress: curProg,
+    history: arrayUnion(hisData),
+  };
+  return;
+  updateDoc(exerciseRef, updatedStats);
 }
 
 function tryAutoIncrease(history: any): boolean {
-  console.log(history);
   if (history.avgSet > 11) {
     return true;
   } else {

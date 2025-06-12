@@ -36,6 +36,7 @@
   );
 
   const exName: string = $derived(currentExercise?.name ?? '');
+  const exID: string = $derived(currentExercise?.id ?? '');
   const repArray: number[] = $derived(currentExercise?.currentProgress.repsPerSet ?? []);
   const exWeight: number = $derived(currentExercise?.currentProgress.weightPerSet[0] ?? 0);
 
@@ -76,7 +77,8 @@
   }
 
   async function handleSubmit() {
-    await saveRecordedLift(blockStates, exWeight, exName);
+    await saveRecordedLift(blockStates, exWeight, exID);
+
     console.log('Block state saved:', blockStates);
     flashLoadingScreen();
     setTimeout(loadNextExercise, 100);

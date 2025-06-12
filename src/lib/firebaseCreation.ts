@@ -46,6 +46,7 @@ export interface ExerciseInfo {
     restSeconds: number;
   };
   order?: number;
+  id?: string;
 }
 
 function simpleExerciseType(name: string, sets: number, w: number): ExerciseInfo {
@@ -210,6 +211,7 @@ export async function addExercise(
         restSeconds: info.currentProgress.restSeconds,
       },
       order: newCount,
+      id: newExerciseRef.id,
     });
 
     // uppdatera session exCount
@@ -239,6 +241,7 @@ export async function batchAddExercises(
   let exCount = 0;
   infos.forEach((info, index) => {
     const exerciseRef = doc(exercisesCol);
+
     batch.set(exerciseRef, {
       name: info.name,
       muscleGroup: info.muscleGroup,
@@ -249,6 +252,7 @@ export async function batchAddExercises(
         restSeconds: info.currentProgress.restSeconds,
       },
       order: index,
+      id: exerciseRef.id,
     });
 
     exCount++;
