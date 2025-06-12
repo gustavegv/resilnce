@@ -113,6 +113,11 @@
   <p>Guen error: {error}</p>
 {:else}
   <main class="app-container">
+    <div class="movement-cont">
+      <button class="movement-b" onclick={() => prevExercise()}>Prev</button>
+      <p>{currentExerciseIndex+1}/{exercises.length}</p>
+      <button class="movement-b" onclick={() => skipExercise()}>Skip</button>
+    </div>
     <header>
       <h1>{exName}</h1>
       <h2>{exWeight} kg</h2>
@@ -123,8 +128,6 @@
     {/each}
 
     <ConfirmSelection {finished} onConfirm={handleSubmit} />
-    <button class="movement-b" onclick={() => prevExercise()}>Prev</button>
-    <button class="movement-b" onclick={() => skipExercise()}>Skip</button>
 
     {#if showOverlay}
       <div class="overlay" transition:fade={{ duration: 100 }}></div>
@@ -150,10 +153,15 @@
   .overlay {
     position: fixed;
     inset: 0;
-    background: black;
+    background: rgb(255, 255, 255);
     pointer-events: none;
   }
+  .movement-cont{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
   .movement-b {
-    margin: 30px 10px;
   }
 </style>
