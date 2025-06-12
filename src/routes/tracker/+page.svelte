@@ -12,13 +12,13 @@
   let slugs: SessionMetaData[];
 
   onMount(async () => {
-    slugs = await getAllSessionMeta();
+    slugs = await getAllSessionMeta('user1');
   });
 </script>
 
 <div class="btn-container">
   {#each slugs as slug}
-    <button class="base-btn sesh" on:click={() => goto(`/tracker/${slug.id}`)}>{slug.name}</button>
+    <button class="base-btn sesh" onclick={() => goto(`/tracker/${slug.id}`)}>{slug.id}</button>
   {/each}
 </div>
 

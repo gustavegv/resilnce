@@ -3,4 +3,4 @@
   export let data: { exID: string };
 </script>
 
-<Track exID={data.exID} />
+<Track sesID={data.exID} />

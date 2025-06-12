@@ -9,17 +9,20 @@
     saveRecordedLift,
   } from '$lib/firebaseDataHandler';
   import type { Exercise } from '$lib/firebaseDataHandler';
+  import type { ExerciseInfo } from '$lib/firebaseCreation';
+
   import '../../app.css';
 
   // Exercise ID som blir tilldelad när man callar komponenten:
-  //   Exempel:  <Track exID="push" />
-  let { exID }: { exID: string } = $props();
+  //   Exempel:  <Track sesID="push" />
+  let { sesID }: { sesID: string } = $props();
 
   type RecNum = Record<number, number>;
   type ExData = { id: number; reps: number };
 
   // State variabler
-  let exercises: Exercise[] = $state([]);
+  let exercises: ExerciseInfo[] = $state([]);
+
   let currentExerciseIndex = $state(0);
   let loading: boolean = $state(true);
   let blockStates: RecNum = $state({});
@@ -33,13 +36,13 @@
   );
 
   const exName: string = $derived(currentExercise?.name ?? '');
-  const exWeight: number = $derived(currentExercise?.weight ?? 0);
-  const exTag: string = $derived(currentExercise?.tag ?? '');
-  const exerciseData: ExData[] = $derived(currentExercise?.sets ?? []);
+  const repArray: number[] = $derived(currentExercise?.currentProgress.repsPerSet ?? []);
+  const exWeight: number = $derived(currentExercise?.currentProgress.weightPerSet[0] ?? 0);
 
   onMount(async () => {
     try {
-      exercises = await getOrderedExercises(exID);
+      exercises = await getOrderedExercises('user1', sesID);
+      console.log('SesID:', sesID);
       console.log('Fetched exercises:', exercises);
     } catch (e) {
       error = (e as Error).message;
@@ -52,7 +55,7 @@
     if (currentExercise) {
       blockStates = {};
       console.log('Index:', currentExerciseIndex, 'loaded');
-      $inspect(exerciseData);
+      $inspect(repArray);
     }
   });
 
@@ -73,7 +76,7 @@
   }
 
   async function handleSubmit() {
-    await saveRecordedLift(blockStates, exWeight, exTag);
+    await saveRecordedLift(blockStates, exWeight, exName);
     console.log('Block state saved:', blockStates);
     flashLoadingScreen();
     setTimeout(loadNextExercise, 100);
@@ -82,12 +85,24 @@
   function uniqueKey(set: number, excerID: number) {
     return `${excerID}-s${set}`;
   }
+
+  function prevExercise() {
+    if (currentExerciseIndex > 0) {
+      currentExerciseIndex--;
+    }
+  }
+
+  function skipExercise() {
+    if (exercises.length > currentExerciseIndex + 1) {
+      currentExerciseIndex++;
+    }
+  }
 </script>
 
 {#if loading}
   <p>Loading exercises...</p>
 {:else if error}
-  <p>Error: {error}</p>
+  <p>Guen error: {error}</p>
 {:else}
   <main class="app-container">
     <header>
@@ -95,11 +110,13 @@
       <h2>{exWeight} kg</h2>
     </header>
 
-    {#each exerciseData as block (uniqueKey(block.id, currentExerciseIndex))}
-      <SetBlock id={block.id} reps={block.reps} on:countChange={handleCountChange} />
+    {#each repArray as block, index (uniqueKey(index, currentExerciseIndex))}
+      <SetBlock id={index + 1} reps={block} on:countChange={handleCountChange} />
     {/each}
 
     <ConfirmSelection onConfirm={handleSubmit} />
+    <button class="movement-b" onclick={() => prevExercise()}>Prev</button>
+    <button class="movement-b" onclick={() => skipExercise()}>Skip</button>
 
     {#if showOverlay}
       <div class="overlay" transition:fade={{ duration: 100 }}></div>
@@ -127,5 +144,8 @@
     inset: 0;
     background: black;
     pointer-events: none;
+  }
+  .movement-b {
+    margin: 30px 10px;
   }
 </style>

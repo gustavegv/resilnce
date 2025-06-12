@@ -8,7 +8,11 @@ import {
   doc,
   updateDoc,
   arrayUnion,
+  writeBatch,
+  WriteBatch,
 } from 'firebase/firestore';
+
+import type { ExerciseInfo } from './firebaseCreation';
 
 export interface Set {
   id: number;
@@ -34,21 +38,37 @@ type SessionMetaData = {
   name: string;
 };
 
+type ExInfo = {
+  name: string;
+  weight: number;
+  sets: number;
+};
+
+type SessionInfo = {
+  name: string;
+  exercises: ExInfo[];
+};
+
 type RecNum = Record<number, number>;
 
-export async function getOrderedExercises(exID: string): Promise<Exercise[]> {
-  const q = query(collection(db, exID), orderBy('order', 'asc'));
+export async function getOrderedExercises(uID: string, sesID: string): Promise<ExerciseInfo[]> {
+  const colRef = collection(db, 'users', uID, 'sessions', sesID, 'exercises');
+  const q = query(colRef, orderBy('order', 'asc'));
+
   const snapshot = await getDocs(q);
 
   if (snapshot.empty) {
+    console.error('Empty snapshot');
     return [];
   }
 
-  return snapshot.docs.map((doc) => doc.data() as Exercise);
+  return snapshot.docs.map((doc) => doc.data() as ExerciseInfo);
 }
 
-export async function getAllSessionMeta(): Promise<SessionMetaData[]> {
-  const snapshot = await getDocs(collection(db, 'sessions'));
+export async function getAllSessionMeta(uID: string): Promise<SessionMetaData[]> {
+  const colRef = collection(db, 'users', uID, 'sessions');
+
+  const snapshot = await getDocs(colRef);
 
   const slugs: SessionMetaData[] = snapshot.docs.map((doc) => {
     const data = doc.data();
@@ -133,4 +153,32 @@ function resetSetCount(blocks: RecNum) {
     id: Number(id),
     reps: 6,
   }));
+}
+
+export async function addNewSession(newSession: SessionInfo) {
+  const batch = writeBatch(db);
+
+  const sessionsRef = doc(db, 'sessions', newSession.name);
+  batch.set(sessionsRef, {
+    title: newSession.name,
+  });
+
+  for (const [index, ex] of newSession.exercises.entries()) {
+    // this creates a document at: /<session-name>/<exercise-name>
+
+    const setsArray = Array.from({ length: ex.sets }, (_, i) => ({
+      id: i + 1,
+      reps: 6,
+    }));
+
+    const ref = doc(db, newSession.name, ex.name);
+    batch.set(ref, {
+      weight: ex.weight,
+      sets: setsArray,
+      order: index,
+      name: ex.name,
+    });
+  }
+
+  await batch.commit();
 }
