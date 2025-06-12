@@ -2,12 +2,7 @@
   import { onMount } from 'svelte';
   import '../app.css';
 
-  let { 
-    id, 
-    reps, 
-    finished,
-    onCountChange 
-  } = $props<{
+  let { id, reps, finished, onCountChange } = $props<{
     id: number;
     reps: number;
     finished?: boolean;
@@ -15,7 +10,6 @@
   }>();
 
   let curCount = $state(reps);
-
 
   onMount(() => {
     onCountChange?.({ id, count: curCount });
@@ -32,27 +26,25 @@
   }
 </script>
 
-
 {#if !finished}
-<div class="counter-container">
-  <div>Set {id}</div>
-  <div class="controls">
-    <button class="but" onclick={decrement}>-</button>
-    <span>{curCount}</span>
-    <button class="but" onclick={increment}>+</button>
+  <div class="counter-container">
+    <div>Set {id}</div>
+    <div class="controls">
+      <button class="but" onclick={decrement}>-</button>
+      <span>{curCount}</span>
+      <button class="but" onclick={increment}>+</button>
+    </div>
   </div>
-</div>
 {:else}
-<div class="counter-container">
-  <div>Set {id}</div>
-  <div class="controls">
-    <button class="but disabled" onclick={decrement}>-</button>
-    <span>{curCount}</span>
-    <button class="but disabled" onclick={increment}>+</button>
+  <div class="counter-container">
+    <div>Set {id}</div>
+    <div class="controls">
+      <button class="but disabled" onclick={decrement}>-</button>
+      <span>{curCount}</span>
+      <button class="but disabled" onclick={increment}>+</button>
+    </div>
   </div>
-</div>
 {/if}
-
 
 <style>
   .counter-container {

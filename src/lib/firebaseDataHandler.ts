@@ -49,7 +49,6 @@ type SessionInfo = {
   exercises: ExInfo[];
 };
 
-
 export async function getOrderedExercises(uID: string, sesID: string): Promise<ExerciseInfo[]> {
   const colRef = collection(db, 'users', uID, 'sessions', sesID, 'exercises');
   const q = query(colRef, orderBy('order', 'asc'));
@@ -98,7 +97,6 @@ export async function checkActiveSession(): Promise<{ active: boolean; session: 
 
 // samla och gör om inkommande data till en historiskt sesh
 function createHistoricData(blocks: number[], weight: number) {
-
   const totalReps = blocks.reduce((total, num) => total + num, 0);
   const avgSet = totalReps / blocks.length;
 

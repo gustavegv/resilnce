@@ -60,9 +60,8 @@
   //Functions
 
   function handleCountChange({ id, count }: { id: number; count: number }) {
-    
-    if (currentExercise){
-      currentExercise.currentProgress.repsPerSet[id-1] = count
+    if (currentExercise) {
+      currentExercise.currentProgress.repsPerSet[id - 1] = count;
     }
   }
 
@@ -72,17 +71,20 @@
   }
 
   function loadNextExercise() {
-    currentExerciseIndex += 1;
+    if (currentExerciseIndex+1 < exercises.length){
+      currentExerciseIndex += 1;
+    } else {
+      console.log("Workout finished?")
+    }
   }
 
   async function handleSubmit() {
-    if (currentExercise){
-      const finalReps = currentExercise.currentProgress.repsPerSet
+    if (currentExercise) {
+      const finalReps = currentExercise.currentProgress.repsPerSet;
       const updatedReps = await saveRecordedLift(finalReps, exWeight, exID);
-
     }
 
-    exercises[currentExerciseIndex].finished = true
+    exercises[currentExerciseIndex].finished = true;
 
     flashLoadingScreen();
     setTimeout(loadNextExercise, 100);
@@ -99,7 +101,6 @@
   }
 
   function skipExercise() {
-    return
     if (exercises.length > currentExerciseIndex + 1) {
       currentExerciseIndex++;
     }
@@ -118,13 +119,12 @@
     </header>
 
     {#each repArray as block, index (uniqueKey(index, currentExerciseIndex))}
-      <SetBlock id={index + 1} finished={finished} reps={block} onCountChange={handleCountChange} />
+      <SetBlock id={index + 1} {finished} reps={block} onCountChange={handleCountChange} />
     {/each}
 
-    <ConfirmSelection finished={finished} onConfirm={handleSubmit} />
+    <ConfirmSelection {finished} onConfirm={handleSubmit} />
     <button class="movement-b" onclick={() => prevExercise()}>Prev</button>
     <button class="movement-b" onclick={() => skipExercise()}>Skip</button>
-
 
     {#if showOverlay}
       <div class="overlay" transition:fade={{ duration: 100 }}></div>

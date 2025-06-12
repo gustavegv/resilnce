@@ -2,30 +2,24 @@
   import { createEventDispatcher } from 'svelte';
   import '../app.css';
 
-
-  let { 
-    onConfirm, 
-    finished
-  }: { 
+  let {
+    onConfirm,
+    finished,
+  }: {
     onConfirm?: () => void;
     finished?: boolean;
   } = $props();
-
 
   function handleClick() {
     if (onConfirm) onConfirm();
   }
 </script>
 
-
 {#if !finished}
-<button class="confirm-button" onclick={handleClick}> Confirm </button>
+  <button class="confirm-button" onclick={handleClick}> Confirm </button>
 {:else}
-<button class="confirm-button diabled" onclick={handleClick}> Set saved! </button>
+  <button class="confirm-button diabled" onclick={handleClick}> Set saved! </button>
 {/if}
-
-
-
 
 <style>
   .confirm-button {
