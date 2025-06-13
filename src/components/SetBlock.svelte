@@ -36,7 +36,7 @@
     </div>
   </div>
 {:else}
-  <div class="counter-container">
+  <div class="counter-container disabled">
     <div>Set {id}</div>
     <div class="controls">
       <button class="but disabled" onclick={decrement}>-</button>
@@ -50,10 +50,11 @@
   .counter-container {
     text-align: center;
     margin: 0.5rem 0;
-    background-color: rgb(37, 37, 37);
+    background-color: var(--color-secondary);
     width: 80%;
     border-radius: 10px;
     padding: 0.5rem 0;
+    box-shadow: var(--shadow-dark);
   }
 
   .controls {
@@ -83,6 +84,6 @@
 
   .disabled {
     pointer-events: none;
-    opacity: 0.2;
+    opacity: 0.5;
   }
 </style>

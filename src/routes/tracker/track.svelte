@@ -130,7 +130,7 @@
     <ConfirmSelection {finished} onConfirm={handleSubmit} />
 
     {#if showOverlay}
-      <div class="overlay" transition:fade={{ duration: 100 }}></div>
+      <div class="overlay" transition:fade={{ duration: 150 }}></div>
     {/if}
   </main>
 {/if}
@@ -139,25 +139,30 @@
   .app-container {
     display: flex;
     flex-direction: column;
-    padding: 2rem;
+    padding: 4rem 2rem;
     max-width: 30rem;
     margin: 0 auto;
     text-align: center;
     align-items: center;
+    height: 100%;
+    background: var(--gradient-prim);
   }
   header h1 {
     font-size: 2.5rem;
     margin-bottom: 0.5rem;
-    margin-top: 0;
+    margin-top: 0.5rem;
   }
   header h2 {
     font-size: 1.5rem;
-    color: var(--color-secondary);
+    color: var(--color-gray);
+    font-weight: 400;
+    margin-top: 0;
   }
   .overlay {
     position: fixed;
     inset: 0;
     background: rgb(255, 255, 255);
+    opacity: 0.2;
     pointer-events: none;
   }
   .movement-cont {
@@ -165,5 +170,10 @@
     flex-direction: row;
     justify-content: space-between;
     width: 100%;
+  }
+
+  .movement-b {
+    background-color: var(--color-gray);
+    color: black;
   }
 </style>

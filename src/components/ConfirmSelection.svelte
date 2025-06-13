@@ -18,7 +18,7 @@
 {#if !finished}
   <button class="confirm-button" onclick={handleClick}> Confirm </button>
 {:else}
-  <button class="confirm-button diabled" onclick={handleClick}> Set saved! </button>
+  <button class="confirm-button diabled" onclick={handleClick}> Set saved! ✓</button>
 {/if}
 
 <style>
@@ -35,9 +35,8 @@
   }
 
   .confirm-button.diabled {
-    background-color: var(--color-gray);
-    color: rgb(62, 162, 28);
-    font-weight: 600;
+    background-color: #95a38c;
+    color: rgb(255, 255, 255);
     pointer-events: none;
   }
 </style>
