@@ -1,9 +1,10 @@
 <script lang="ts">
   import '../app.css';
   import { goto } from '$app/navigation';
-  import { checkActiveSession, getOrderedExercises } from '$lib/firebaseDataHandler';
+  import { checkActiveSession } from '$lib/firebaseDataHandler';
   import { onMount } from 'svelte';
-  import { testDB } from '$lib/firebaseCreation';
+  import DbIcon from '../components/icons/DBIcon.svelte';
+  import AddIcon from '../components/icons/AddIcon.svelte';
 
   let existingSession = $state(false);
   let existingID = $state('');
@@ -26,8 +27,15 @@
   <h1 class="wid">The only tracker you need.</h1>
   <hr />
   <div class="btn-container">
-    <button class="base-btn sesh" onclick={() => goto('/tracker')}>Begin a workout</button>
-    <button class="base-btn sesh" onclick={() => goto('/create')}>Create new session</button>
+    <button class="base-btn sesh" onclick={() => goto('/tracker')}>
+      <g>Begin a workout</g>
+      <DbIcon />
+    </button>
+
+    <button class="base-btn sesh" onclick={() => goto('/create')}>
+      <g>Add new session</g>
+      <AddIcon />
+    </button>
 
     {#if existingSession}
       <button class="base-btn alt" onclick={() => goto(`/tracker/${existingID}`)}>
@@ -88,6 +96,11 @@
   }
 
   .base-btn {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    -webkit-text-stroke: 0.6px rgb(255, 255, 255);
   }
 
   button {

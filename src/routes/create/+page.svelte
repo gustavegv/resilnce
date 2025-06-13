@@ -4,6 +4,7 @@
 
   import type { ExInfoPackage } from '$lib/firebaseDataHandler';
   import { betterAdd } from '$lib/firebaseCreation';
+  import InputField from '../../components/InputField.svelte';
 
   type SessionInfo = {
     name: string;
@@ -24,7 +25,10 @@
   let newWeight: string = $state('');
 
   function addExercise() {
-    if (!newName || !newSets || !newWeight) return;
+    if (!newName || !newSets || !newWeight) {
+      console.log('No set to add:', !newName, !newSets, !newWeight);
+      return;
+    }
 
     const entry: ExInfoPackage = {
       name: newName,
@@ -47,8 +51,8 @@
       name: seshName,
       exercises: currentlyAdded,
     };
-
-    betterAdd(seshName, currentlyAdded);
+    console.log(s);
+    //betterAdd(seshName, currentlyAdded);
     //addNewSession(s);
 
     alert('session saved succesfully!');
@@ -57,21 +61,17 @@
 </script>
 
 <div class="container">
-  <h1>Session name</h1>
-  <input bind:value={seshName} placeholder="e.g. Leg day" />
+  <input bind:value={seshName} placeholder="Untitled session" class="title" />
 
   <div class="add-box">
-    <h3>Add exercise</h3>
-    <h4>Exercise name</h4>
-    <input bind:value={newName} placeholder="e.g. Squat" />
-    <h4>Number of sets</h4>
-    <input type="number" bind:value={newSets} placeholder="e.g. 4" min="1" />
-    <h4>Starting weigh</h4>
-    <input type="number" bind:value={newWeight} placeholder="e.g. 60" min="0" />
+    <h3>Add an exercise</h3>
+    <InputField label={'Exercise name'} bind:value={newName} type={'text'} />
+
+    <InputField label={'Sets'} bind:value={newSets} type={'number'} />
+
+    <InputField label={'Weight'} bind:value={newWeight} type={'number'} />
     <button onclick={addExercise}>+</button>
   </div>
-
-  <button onclick={saveSession}>Finish and save exercise</button>
 
   {#each currentlyAdded as blob, index}
     <div class="blob-cont">
@@ -85,6 +85,8 @@
       </div>
     </div>
   {/each}
+
+  <button onclick={saveSession} class="finish">Finish and save exercise</button>
 </div>
 
 <style>
@@ -93,30 +95,60 @@
     flex-direction: column;
     align-items: center;
     overflow: scroll;
+    background: var(--gradient-prim);
+    height: 100%;
+    box-sizing: border-box;
+    padding: 1rem 0;
+  }
+
+  .title {
+    font-size: 2em; /* Like an h1 */
+    font-weight: bold;
+    border: none;
+    outline: none;
+    background: transparent;
+    width: 80%;
+    font-family: inherit;
+    color: white;
+    margin: 1rem 0;
   }
 
   .add-box {
     display: flex;
     flex-direction: column;
-
+    padding: 1rem;
     width: 70%;
     height: fit-content;
-    background-color: var(--color-gray);
+    background-color: var(--color-background);
+    border-radius: 15px;
+
+    box-shadow: var(--shadow-dark);
   }
 
   .blob-cont {
     display: flex;
     box-sizing: border-box;
-    padding: 5px;
+    padding: 0 2rem;
     flex-direction: row;
-    background-color: antiquewhite;
+    background-color: var(--color-background);
     justify-content: space-between;
     align-items: center;
-    width: 70%;
+    width: 80%;
+    border-radius: 15px;
     margin: 5px;
+
+    box-shadow: var(--shadow-dark);
   }
 
   .blob-inner {
     color: gray;
+  }
+
+  .finish {
+    -webkit-text-stroke: 0.7px rgb(255, 255, 255);
+    height: 5rem;
+    box-shadow: var(--shadow-dark);
+    background: var(--gradient-alt);
+    font-size: 20px;
   }
 </style>
