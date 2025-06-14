@@ -10,7 +10,7 @@
 
 button {
   margin: 10px;
-  width: 90%;
+  width: 80%;
   font-size: 18px;
 
   padding: 15px 20px;
@@ -76,9 +76,14 @@ html {
   touch-action: manipulation;
   user-select: none;
   margin: 0;
-  height: 100%;
-  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  overflow-x: hidden;
   font-family: -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--gradient-alt);
   color: var(--color-text);
+  height: 100%;
+  overflow-x: hidden;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }

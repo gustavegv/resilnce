@@ -12,6 +12,7 @@
   import type { ExerciseInfo } from '$lib/firebaseCreation';
 
   import '../../app.css';
+  import { goto } from '$app/navigation';
 
   // Exercise ID som blir tilldelad när man callar komponenten:
   //   Exempel:  <Track sesID="push" />
@@ -24,8 +25,8 @@
   let loading: boolean = $state(true);
 
   let showOverlay: boolean = $state(false);
-
   let error: string | null = $state(null);
+  let allFinished: boolean = $state(false);
 
   // Derived variabler
   const currentExercise = $derived(
@@ -87,7 +88,23 @@
     exercises[currentExerciseIndex].finished = true;
 
     flashLoadingScreen();
-    setTimeout(loadNextExercise, 100);
+
+    if (checkAllFinished()) {
+      allFinished = true;
+    } else {
+      setTimeout(loadNextExercise, 100);
+    }
+  }
+
+  function checkAllFinished(): boolean {
+    let finished: boolean = true;
+
+    exercises.forEach((ex) => {
+      if (ex.finished == undefined || ex.finished == false) {
+        finished = false;
+      }
+    });
+    return finished;
   }
 
   function uniqueKey(set: number, excerID: number) {
@@ -111,6 +128,28 @@
   <p>Loading exercises...</p>
 {:else if error}
   <p>Guen error: {error}</p>
+{:else if allFinished}
+  <div class="container">
+    <h1>Session finished!</h1>
+    <div class="box">
+      <h2>Session overview</h2>
+      {#each exercises as blob, index}
+        <div class="blob-cont">
+          <div class="blob-info">
+            <p class="lowkey">{index + 1}.</p>
+            <h3>{blob.name}</h3>
+            <p>{blob.currentProgress.weightPerSet[0]} kg</p>
+          </div>
+          <div class="blob-inner">
+            {#each blob.currentProgress.repsPerSet as rep, index}
+              <p>{rep} reps</p>
+            {/each}
+          </div>
+        </div>
+      {/each}
+    </div>
+    <button onclick={() => goto('/')}>Return to homepage</button>
+  </div>
 {:else}
   <main class="app-container">
     <div class="movement-cont">
@@ -136,6 +175,66 @@
 {/if}
 
 <style>
+  .container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .box {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    width: 80%;
+    box-sizing: border-box;
+
+    border-radius: 15px;
+    background-color: #2b2b2b;
+    padding: 20px;
+    padding-top: 0;
+    text-align: left;
+    box-shadow: var(--shadow-dark);
+  }
+
+  .lowkey {
+    color: grey;
+  }
+
+  h3 {
+    margin: 0;
+  }
+
+  .blob-cont {
+    display: flex;
+    box-sizing: border-box;
+    padding: 0 2rem;
+    flex-direction: row;
+    background-color: var(--color-background);
+    justify-content: space-between;
+    align-items: baseline;
+    width: 100%;
+    border-radius: 15px;
+    margin: 5px;
+
+    box-shadow: var(--shadow-dark);
+  }
+
+  .blob-info {
+    display: flex;
+    flex-direction: column;
+    align-items: baseline;
+    text-align: left;
+    width: 70%;
+  }
+
+  .blob-inner {
+    color: gray;
+  }
+
   .app-container {
     display: flex;
     flex-direction: column;
@@ -144,8 +243,9 @@
     margin: 0 auto;
     text-align: center;
     align-items: center;
-    height: 100%;
     background: var(--gradient-prim);
+
+    min-height: 100vh;
   }
   header h1 {
     font-size: 2.5rem;

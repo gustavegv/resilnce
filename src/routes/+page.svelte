@@ -105,6 +105,7 @@
 
   button {
     background-color: #151515;
+    width: 90%;
   }
 
   .base-btn.sesh {

@@ -5,6 +5,7 @@
   import type { ExInfoPackage } from '$lib/firebaseDataHandler';
   import { betterAdd } from '$lib/firebaseCreation';
   import InputField from '../../components/InputField.svelte';
+  import { goto } from '$app/navigation';
 
   type SessionInfo = {
     name: string;
@@ -17,7 +18,7 @@
     sets: 4,
   };
 
-  let currentlyAdded: ExInfoPackage[] = $state([dummy1]);
+  let currentlyAdded: ExInfoPackage[] = $state([]);
 
   let seshName = $state('');
   let newName = $state('');
@@ -52,10 +53,11 @@
       exercises: currentlyAdded,
     };
     console.log(s);
-    //betterAdd(seshName, currentlyAdded);
+    betterAdd(seshName, currentlyAdded);
     //addNewSession(s);
 
     alert('session saved succesfully!');
+    goto('/');
     // todo: go back to main page
   }
 </script>
@@ -86,7 +88,7 @@
     </div>
   {/each}
 
-  <button onclick={saveSession} class="finish">Finish and save exercise</button>
+  <button onclick={saveSession} class="finish">Finish and save session</button>
 </div>
 
 <style>
@@ -130,7 +132,7 @@
     box-sizing: border-box;
     padding: 0 2rem;
     flex-direction: row;
-    background-color: var(--color-background);
+    background-color: var(--color-secondary);
     justify-content: space-between;
     align-items: center;
     width: 80%;
@@ -150,5 +152,10 @@
     box-shadow: var(--shadow-dark);
     background: var(--gradient-alt);
     font-size: 20px;
+    margin-bottom: 12rem;
+  }
+
+  body {
+    overflow: hidden;
   }
 </style>

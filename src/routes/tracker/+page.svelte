@@ -27,6 +27,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    box-sizing: border-box;
+    padding: 4rem 0;
     width: 100%;
   }
 </style>

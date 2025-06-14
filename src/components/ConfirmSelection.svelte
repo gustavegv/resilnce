@@ -27,7 +27,7 @@
     width: 100%;
     padding: 1rem;
     margin-top: 2rem;
-    background-color: var(--color-secondary);
+    background-color: var(--color-background);
     font-size: 1.25rem;
     border: none;
     border-radius: 0.5rem;
