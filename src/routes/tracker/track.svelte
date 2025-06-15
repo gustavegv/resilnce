@@ -8,6 +8,7 @@
     getOrderedExercises,
     saveRecordedLift,
   } from '$lib/firebaseDataHandler';
+  import { setActivityStatus } from '$lib/firebaseCreation';
   import type { Exercise } from '$lib/firebaseDataHandler';
   import type { ExerciseInfo } from '$lib/firebaseCreation';
 
@@ -44,6 +45,9 @@
       exercises = await getOrderedExercises('user1', sesID);
       console.log('SesID:', sesID);
       console.log('Fetched exercises:', exercises);
+
+      // todo uncomment
+      await setActivityStatus('user1', sesID, true);
     } catch (e) {
       error = (e as Error).message;
     } finally {
@@ -91,6 +95,7 @@
 
     if (checkAllFinished()) {
       allFinished = true;
+      await setActivityStatus('user1', sesID, false);
     } else {
       setTimeout(loadNextExercise, 100);
     }
@@ -122,6 +127,11 @@
       currentExerciseIndex++;
     }
   }
+
+  function quitSession() {
+    setActivityStatus('user1', sesID, false);
+    goto('/');
+  }
 </script>
 
 {#if loading}
@@ -151,6 +161,7 @@
     <button onclick={() => goto('/')}>Return to homepage</button>
   </div>
 {:else}
+  <button onclick={() => quitSession()} class="abs">Quit</button>
   <main class="app-container">
     <div class="movement-cont">
       <button class="movement-b mini" onclick={() => prevExercise()}>Prev</button>
@@ -175,6 +186,17 @@
 {/if}
 
 <style>
+  .abs {
+    position: absolute;
+    font-weight: 900;
+    width: fit-content;
+    height: fit-content;
+    background-color: rgba(240, 248, 255, 0);
+    box-shadow: none;
+    right: -0rem;
+    top: -1rem;
+    z-index: 4;
+  }
   .container {
     height: 100%;
     display: flex;

@@ -10,7 +10,8 @@
   let existingID = $state('');
 
   onMount(async () => {
-    const prevSession = await checkActiveSession();
+    const prevSession = await checkActiveSession('user1');
+
     if (prevSession != null) {
       existingSession = prevSession.active;
       console.log('exists', existingSession);
@@ -21,12 +22,23 @@
   });
 </script>
 
-<img src="books.png" alt="a" class="books" />
+{#if existingSession}
+  <img src="books.png" alt="a" class="books extra" />
+{:else}
+  <img src="books.png" alt="a" class="books" />
+{/if}
 
 <div class="body">
   <h1 class="wid">The only tracker you need.</h1>
   <hr />
   <div class="btn-container">
+    {#if existingSession}
+      <button class="base-btn alt" onclick={() => goto(`/tracker/${existingID}`)}>
+        <g>Continue session:</g>
+        <h4>{existingID}</h4>
+      </button>
+    {/if}
+
     <button class="base-btn sesh" onclick={() => goto('/tracker')}>
       <g>Begin a workout</g>
       <DbIcon />
@@ -36,27 +48,24 @@
       <g>Add new session</g>
       <AddIcon />
     </button>
-
-    {#if existingSession}
-      <button class="base-btn alt" onclick={() => goto(`/tracker/${existingID}`)}>
-        <h2>Continue session:</h2>
-        <h3>{existingID}</h3>
-      </button>
-    {/if}
   </div>
 </div>
 
 <style>
   .books {
     position: fixed; /* Stay fixed to the viewport */
-    top: 30%;
+    top: 31%;
     left: 50%;
     transform: translate(-50%, -50%); /* Adjust this to where you want it */
     z-index: 0; /* Sit behind interactive content */
     pointer-events: none; /* Let clicks pass through */
     user-select: none;
-    width: 17rem; /* Adjust to taste */
+    width: 16rem; /* Adjust to taste */
     height: auto;
+  }
+
+  .books.extra {
+    top: 27%;
   }
 
   hr {
@@ -78,7 +87,7 @@
     align-items: center;
     justify-content: flex-end;
     box-sizing: border-box;
-    padding: 7rem 0;
+    padding: 5rem 0;
     height: 100vh;
     background: var(--gradient-prim);
   }
@@ -100,7 +109,7 @@
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    -webkit-text-stroke: 0.6px rgb(255, 255, 255);
+    box-shadow: var(--shadow-dark);
   }
 
   button {
@@ -109,11 +118,13 @@
   }
 
   .base-btn.sesh {
-    box-shadow: rgba(0, 0, 0, 0.2) 0px 2px 8px 0px;
+    -webkit-text-stroke: 0.6px rgb(255, 255, 255);
   }
 
   .base-btn.alt {
     background-color: var(--color-alt);
     color: var(--color-secondary);
+    box-shadow: rgba(255, 255, 255, 0.4) 0px 0px 20px 1px;
+    height: 5rem;
   }
 </style>

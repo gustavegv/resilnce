@@ -51,6 +51,10 @@
 
     return 'Just now';
   }
+
+  function startSession(id: string) {
+    goto(`/tracker/${id}`);
+  }
 </script>
 
 <div class="main">
@@ -58,7 +62,7 @@
   <hr />
   <div class="btn-container">
     {#each slugs as slug}
-      <button class="base-btn sesh" onclick={() => goto(`/tracker/${slug.id}`)}>
+      <button class="base-btn sesh" onclick={() => startSession(slug.id)}>
         <p>{slug.id}</p>
         <p class="date">{timeAgo(grd(7))}</p>
       </button>

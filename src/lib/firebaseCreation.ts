@@ -7,6 +7,7 @@ import {
   writeBatch,
   runTransaction,
   FirestoreError,
+  updateDoc,
 } from 'firebase/firestore';
 
 import { db } from './firebase';
@@ -336,4 +337,18 @@ export async function betterAdd(sessionName: string, exif: ExInfoPackage[]) {
 
   const search = { userId: 'user1', sessionId: sessionName };
   await batchAddExercises(search, exinfo);
+}
+
+export async function setActivityStatus(uID: string, sesID: string, activating: boolean) {
+  // Use the session name directly as the document ID
+  const sessionRef = doc(db, 'users', uID);
+
+  if (activating) {
+    await updateDoc(sessionRef, {
+      hasActiveSession: activating,
+      activeSessionName: sesID,
+    });
+  } else {
+    await updateDoc(sessionRef, { hasActiveSession: activating });
+  }
 }

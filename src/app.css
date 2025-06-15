@@ -86,6 +86,9 @@ html {
   overflow-x: hidden;
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 #landscape-warning {

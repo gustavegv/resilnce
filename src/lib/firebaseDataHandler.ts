@@ -85,8 +85,10 @@ export async function getAllSessionMeta(uID: string): Promise<SessionMetaData[]>
   return slugs;
 }
 
-export async function checkActiveSession(): Promise<{ active: boolean; session: string } | null> {
-  const docRef = doc(db, 'sessions', 'session-mangager');
+export async function checkActiveSession(
+  uID: string,
+): Promise<{ active: boolean; session: string } | null> {
+  const docRef = doc(db, 'users', uID);
   const docSnap = await getDoc(docRef);
 
   if (!docSnap.exists()) {
@@ -95,9 +97,10 @@ export async function checkActiveSession(): Promise<{ active: boolean; session: 
   }
 
   const data = docSnap.data();
+  console.log('ahha', data);
   return {
-    active: data.active,
-    session: data.session,
+    active: data.hasActiveSession,
+    session: data.activeSessionName,
   };
 }
 
@@ -164,32 +167,4 @@ function tryAutoIncrease(history: any): boolean {
   } else {
     return false;
   }
-}
-
-export async function addNewSession(newSession: SessionInfo) {
-  const batch = writeBatch(db);
-
-  const sessionsRef = doc(db, 'sessions', newSession.name);
-  batch.set(sessionsRef, {
-    title: newSession.name,
-  });
-
-  for (const [index, ex] of newSession.exercises.entries()) {
-    // this creates a document at: /<session-name>/<exercise-name>
-
-    const setsArray = Array.from({ length: ex.sets }, (_, i) => ({
-      id: i + 1,
-      reps: 6,
-    }));
-
-    const ref = doc(db, newSession.name, ex.name);
-    batch.set(ref, {
-      weight: ex.weight,
-      sets: setsArray,
-      order: index,
-      name: ex.name,
-    });
-  }
-
-  await batch.commit();
 }

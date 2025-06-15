@@ -2,6 +2,8 @@
   import { page } from '$app/state';
   import Logo from '../components/icons/Logo.svelte';
   import CustomHeader from '../components/CustomHeader.svelte';
+  import quitSession from './tracker/track.svelte';
+
   let { children } = $props();
 
   // reactive flags for directory
@@ -39,10 +41,10 @@
   </div>
 
   <div class="head">
-    <g class="compl seen">✖</g>
+    <g class="compl">✖</g>
 
     <Logo size={3} />
-    <r class="compl seen">☰</r>
+    <r class="compl">✖</r>
   </div>
 {/if}
 
