@@ -1,6 +1,6 @@
 <script lang="ts">
   import '../../app.css';
-
+  import Icon from '@iconify/svelte';
   import type { ExInfoPackage } from '$lib/firebaseDataHandler';
   import { betterAdd } from '$lib/firebaseCreation';
   import InputField from '../../components/InputField.svelte';
@@ -12,12 +12,12 @@
   };
 
   const dummy1: ExInfoPackage = {
-    name: 'lopos',
+    name: 'Freelake',
     weight: 30,
     sets: 4,
   };
 
-  let currentlyAdded: ExInfoPackage[] = $state([]);
+  let currentlyAdded: ExInfoPackage[] = $state([dummy1]);
 
   let seshName = $state('');
   let newName = $state('');
@@ -59,6 +59,10 @@
     goto('/');
     // todo: go back to main page
   }
+
+  function removeItem(index: number) {
+    currentlyAdded.splice(index, 1);
+  }
 </script>
 
 <div class="container">
@@ -84,6 +88,9 @@
         <p>{blob.sets} sets</p>
         <p>{blob.weight} kg</p>
       </div>
+      <div class="abs-icon" onclick={() => removeItem(index)}>
+        <Icon icon={'typcn:delete'} color={'red'} width="40"></Icon>
+      </div>
     </div>
   {/each}
 
@@ -91,6 +98,13 @@
 </div>
 
 <style>
+  .abs-icon {
+    position: absolute; /* Positioned relative to .container */
+    top: -12px;
+    right: -15px;
+    z-index: 1000; /* To sit on top of other things */
+  }
+
   .container {
     display: flex;
     flex-direction: column;
@@ -124,9 +138,11 @@
     border-radius: 15px;
 
     box-shadow: var(--shadow-dark);
+    margin-bottom: 1rem;
   }
 
   .blob-cont {
+    position: relative;
     display: flex;
     box-sizing: border-box;
     padding: 0 2rem;
