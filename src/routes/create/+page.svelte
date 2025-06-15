@@ -1,6 +1,5 @@
 <script lang="ts">
   import '../../app.css';
-  import { addNewSession } from '$lib/firebaseDataHandler';
 
   import type { ExInfoPackage } from '$lib/firebaseDataHandler';
   import { betterAdd } from '$lib/firebaseCreation';

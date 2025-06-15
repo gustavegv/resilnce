@@ -2,17 +2,24 @@
   import { goto } from '$app/navigation';
   import { getAllSessionMeta } from '$lib/firebaseDataHandler';
   import { onMount } from 'svelte';
+  import ErrorPopup from '../../components/ErrorPopup.svelte';
+  import Icon from '@iconify/svelte';
 
-  type SessionMetaData = {
-    id: string;
-    name: string;
-  };
+  import type { SessionMetaData } from '$lib/firebaseDataHandler';
 
-  // TODO: Put in db or smt
-  let slugs: SessionMetaData[];
+  import Popup from '../../components/Popup.svelte';
+  import AddIcon from '../../components/icons/AddIcon.svelte';
+
+  let slugs: SessionMetaData[] = $state([]);
+  let activeSession: boolean = $state(false);
+
+  let showPopup: boolean = $state(false);
+  let showError: string = $state('');
 
   onMount(async () => {
-    slugs = await getAllSessionMeta('user1');
+    const data = await getAllSessionMeta('user1');
+    slugs = data.slugs;
+    activeSession = data.active;
   });
 
   function grd(intervalDays: number): Date {
@@ -52,20 +59,50 @@
     return 'Just now';
   }
 
+  function closePopup() {
+    showPopup = false;
+    showError = 'Error broski';
+  }
+
+  function openPopup() {
+    showPopup = true;
+    showError = '';
+  }
+
+  function editWorkout(sesID: string) {
+    console.log('Edit', sesID + '!');
+  }
+
   function startSession(id: string) {
+    if (activeSession) {
+      openPopup();
+    } else {
+    }
     goto(`/tracker/${id}`);
   }
 </script>
 
 <div class="main">
   <h2>Sessions:</h2>
+  <ErrorPopup message={showError}></ErrorPopup>
+
   <hr />
   <div class="btn-container">
     {#each slugs as slug}
-      <button class="base-btn sesh" onclick={() => startSession(slug.id)}>
-        <p>{slug.id}</p>
-        <p class="date">{timeAgo(grd(7))}</p>
-      </button>
+      <div class="inner-cont">
+        <button class="base-btn extended sesh" onclick={() => startSession(slug.id)}>
+          <p>{slug.id}</p>
+          <p class="date">{timeAgo(grd(7))}</p>
+        </button>
+
+        <Icon
+          style="margin:0 2rem; position:fixed; right:0;"
+          onclick={() => editWorkout(slug.id)}
+          icon="material-symbols:edit-outline"
+          width="24"
+          height="24"
+        />
+      </div>
     {/each}
   </div>
 </div>
@@ -74,6 +111,17 @@
   .main {
     box-sizing: border-box;
     padding: 5rem 1rem;
+  }
+
+  .inner-cont {
+    background-color: var(--color-sec-dark);
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 10px;
+    margin: 0.5rem;
   }
 
   hr {
@@ -86,7 +134,7 @@
   .btn-container {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: baseline;
     box-sizing: border-box;
     width: 100%;
     text-align: left;
@@ -94,11 +142,19 @@
 
   .base-btn {
     text-align: left;
-    width: 90%;
+    width: 80%;
     text-transform: capitalize;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
+    padding: 8px 20px;
+    margin: 0;
+    box-shadow: var(--shadow-dark);
+    overflow: hidden;
+  }
+
+  .base-btn.extended {
+    width: 80%;
   }
 
   .date {

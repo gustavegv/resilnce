@@ -33,10 +33,10 @@ export interface Exercise {
   tag: string;
 }
 
-type SessionMetaData = {
+export interface SessionMetaData {
   id: string;
   name: string;
-};
+}
 
 type ExInfo = {
   name: string;
@@ -69,7 +69,9 @@ export async function getOrderedExercises(uID: string, sesID: string): Promise<E
   return snapshot.docs.map((doc) => doc.data() as ExerciseInfo);
 }
 
-export async function getAllSessionMeta(uID: string): Promise<SessionMetaData[]> {
+export async function getAllSessionMeta(
+  uID: string,
+): Promise<{ slugs: SessionMetaData[]; active: boolean }> {
   const colRef = collection(db, 'users', uID, 'sessions');
 
   const snapshot = await getDocs(colRef);
@@ -82,7 +84,7 @@ export async function getAllSessionMeta(uID: string): Promise<SessionMetaData[]>
     };
   });
 
-  return slugs;
+  return { slugs: slugs, active: true };
 }
 
 export async function checkActiveSession(

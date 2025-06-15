@@ -35,8 +35,11 @@ button.mini {
 
 :root {
   /* Colors */
-  --color-primary: #1e90ff;
+  --color-primary: #142d20;
+
   --color-secondary: #142d20;
+  --color-sec-dark: #16261e;
+
   --color-alt: #ffffff;
 
   --color-background: #151515;
@@ -47,6 +50,12 @@ button.mini {
   --color-text: #ffffff;
 
   --gradient-prim: linear-gradient(to right, #0f1f17 0%, #142d20 50%, #193b28 100%);
+
+  --gradient-prim-b: linear-gradient(
+    to right,
+    var(--color-background) 0%,
+    var(--color-secondary) 100%
+  );
 
   --gradient-alt: linear-gradient(to right, #121212 0%, #181818 50%, #1a1b1a 100%);
 
