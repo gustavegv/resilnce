@@ -87,3 +87,23 @@ html {
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
 }
+
+#landscape-warning {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--color-background);
+  color: rgb(255, 255, 255);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 1.5rem;
+}
+
+/* Show overlay when landscape */
+@media screen and (orientation: landscape) {
+  #landscape-warning {
+    display: flex;
+  }
+}

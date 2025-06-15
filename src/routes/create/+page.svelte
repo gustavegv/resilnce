@@ -100,7 +100,7 @@
     background: var(--gradient-prim);
     height: 100%;
     box-sizing: border-box;
-    padding: 1rem 0;
+    padding: 5rem 0;
   }
 
   .title {

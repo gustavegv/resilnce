@@ -49,13 +49,13 @@
 <style>
   .books {
     position: fixed; /* Stay fixed to the viewport */
-    top: 32%;
+    top: 30%;
     left: 50%;
     transform: translate(-50%, -50%); /* Adjust this to where you want it */
     z-index: 0; /* Sit behind interactive content */
     pointer-events: none; /* Let clicks pass through */
     user-select: none;
-    width: 18rem; /* Adjust to taste */
+    width: 17rem; /* Adjust to taste */
     height: auto;
   }
 
@@ -78,7 +78,7 @@
     align-items: center;
     justify-content: flex-end;
     box-sizing: border-box;
-    padding: 10rem 0;
+    padding: 7rem 0;
     height: 100vh;
     background: var(--gradient-prim);
   }
