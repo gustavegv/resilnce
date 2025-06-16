@@ -8,7 +8,7 @@
     getOrderedExercises,
     saveRecordedLift,
   } from '$lib/firebaseDataHandler';
-  import { setActivityStatus } from '$lib/firebaseCreation';
+  import { setActivityStatus, loadFinishedExercises } from '$lib/firebaseCreation';
   import type { Exercise } from '$lib/firebaseDataHandler';
   import type { ExerciseInfo } from '$lib/firebaseCreation';
 
@@ -46,7 +46,7 @@
       console.log('SesID:', sesID);
       console.log('Fetched exercises:', exercises);
 
-      await setActivityStatus('user1', sesID, true);
+      await loadUnfinishedSession()
     } catch (e) {
       error = (e as Error).message;
     } finally {
@@ -100,9 +100,32 @@
 
     if (checkAllFinished()) {
       allFinished = true;
-      await setActivityStatus('user1', sesID, false);
+      await setActivityStatus('user1', sesID, false, [])
+      console.log("Workout finished, active set to false")
     } else {
+      setUnfinishedSession()
       setTimeout(loadNextExercise, 100);
+    }
+  }
+
+  async function setUnfinishedSession(){
+    const fin = getFinished()
+    console.log("Finished so far:", fin )
+    await setActivityStatus('user1', sesID, true, fin);
+  }
+
+  async function loadUnfinishedSession(){
+    const info = await loadFinishedExercises('user1', sesID)
+
+    if (info.unfinished){
+      const fins = info.finishedIDXS
+  
+      fins.forEach(fin => {
+        exercises[fin].finished = true;
+        console.log(fin, "is finished already!")
+      });
+  
+      await setActivityStatus('user1', sesID, true, fins);
     }
   }
 
@@ -112,6 +135,17 @@
     exercises.forEach((ex) => {
       if (ex.finished == undefined || ex.finished == false) {
         finished = false;
+      }
+    });
+    return finished;
+  }
+
+  function getFinished(): number[] {
+    let finished: number[] = [];
+
+    exercises.forEach((ex, index) => {
+      if (ex.finished == true) {
+        finished = [...finished, index]
       }
     });
     return finished;

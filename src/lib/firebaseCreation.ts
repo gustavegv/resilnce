@@ -8,6 +8,7 @@ import {
   runTransaction,
   FirestoreError,
   updateDoc,
+  getDoc,
 } from 'firebase/firestore';
 
 import { db } from './firebase';
@@ -350,16 +351,52 @@ export async function betterAdd(sessionName: string, exif: ExInfoPackage[]) {
   await batchAddExercises(search, exinfo);
 }
 
-export async function setActivityStatus(uID: string, sesID: string, activating: boolean) {
+export async function setActivityStatus(uID: string, sesID: string, activating: boolean, fin?:number[]) {
   // Use the session name directly as the document ID
-  const sessionRef = doc(db, 'users', uID);
+  const globalRef = doc(db, 'users', uID);
+  const localRef = doc(db, 'users', uID, 'sessions', sesID);
+
+  const finished = fin ?? []
 
   if (activating) {
-    await updateDoc(sessionRef, {
+    await updateDoc(globalRef, {
       hasActiveSession: activating,
       activeSessionName: sesID,
     });
+
+    await updateDoc(localRef, {
+      isSessionActive: activating,
+      finished: finished,
+    })
   } else {
-    await updateDoc(sessionRef, { hasActiveSession: activating });
+    await updateDoc(globalRef, { hasActiveSession: activating });
+    await updateDoc(localRef, { isSessionActive: activating });
+
   }
+}
+
+export async function loadFinishedExercises(uID:string, sesID: string):Promise<{finishedIDXS: number[], unfinished: boolean}>{
+  let idxs: number[]
+  let fin: boolean
+
+  const localRef = doc(db, 'users', uID, 'sessions', sesID);
+  
+  const snap = await getDoc(localRef);
+
+  if (snap.exists()) {
+    const data = snap.data();
+    idxs = data.finished ?? [];
+    fin = data.isSessionActive ?? false;
+
+
+
+    console.log('finsihed indexes:', idxs);
+
+  } else {
+    console.error('Document does not exist.');
+    fin = false
+    idxs = []
+  }
+
+  return {unfinished: fin, finishedIDXS: idxs}
 }
