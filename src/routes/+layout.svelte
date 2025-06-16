@@ -4,6 +4,9 @@
   import CustomHeader from '../components/CustomHeader.svelte';
   import quitSession from './tracker/track.svelte';
 
+  import { addUserByForm } from '$lib/firebaseCreation';
+  import Icon from '@iconify/svelte';
+
   let { children } = $props();
 
   // reactive flags for directory
@@ -12,6 +15,11 @@
   let isCreate = $derived(page.url.pathname.startsWith('/create'));
 
   console.log('yalalallalal', isCreate);
+
+  function createUserAdminMode() {
+    addUserByForm('Mr Wang', 'wang@gmail.com');
+    alert('Succesfully created user.');
+  }
 </script>
 
 {#if !isBlog && !isCreate}
@@ -22,10 +30,12 @@
   <div class="head">
     <p class="compl">a</p>
     <Logo />
-    <p class="compl">☰</p>
+    <div class="compl seen" onclick={() => createUserAdminMode()}>
+      <Icon icon={'si:user-fill'} fill={'#fff'} height={28}></Icon>
+    </div>
   </div>
 {:else if isCreate}
-  <div class="abs">
+  <div class="abs small">
     <CustomHeader size={3} />
   </div>
 
@@ -74,6 +84,10 @@
     left: 0px;
     width: 100%;
   }
+
+  .abs.small {
+  }
+
   .head {
     position: fixed;
     width: 100%;

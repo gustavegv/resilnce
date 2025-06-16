@@ -36,6 +36,7 @@ export interface Exercise {
 export interface SessionMetaData {
   id: string;
   name: string;
+  date?: Date;
 }
 
 type ExInfo = {
@@ -159,8 +160,9 @@ export async function saveRecordedLift(
     history: arrayUnion(hisData),
   };
 
-  return repArray;
   updateDoc(exerciseRef, updatedStats);
+
+  return repArray;
 }
 
 function tryAutoIncrease(history: any): boolean {

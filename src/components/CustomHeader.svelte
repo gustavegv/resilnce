@@ -7,11 +7,9 @@
 <svg
   class="svg-color"
   xmlns="http://www.w3.org/2000/svg"
-  xmlns:xlink="http://www.w3.org/1999/xlink"
-  version="1.1"
   width="1080"
-  height="400"
-  viewBox="0 {sz * 3} 1080 400"
+  height={400 - sz * 50}
+  viewBox="0 {sz * 10} 1080 {400 - sz * 50}"
   xml:space="preserve"
 >
   <desc>Created with Fabric.js 5.2.4</desc>

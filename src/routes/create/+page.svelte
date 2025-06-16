@@ -17,7 +17,7 @@
     sets: 4,
   };
 
-  let currentlyAdded: ExInfoPackage[] = $state([dummy1]);
+  let currentlyAdded: ExInfoPackage[] = $state([]);
 
   let seshName = $state('');
   let newName = $state('');
@@ -57,7 +57,6 @@
 
     alert('session saved succesfully!');
     goto('/');
-    // todo: go back to main page
   }
 
   function removeItem(index: number) {

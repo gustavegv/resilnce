@@ -46,7 +46,6 @@
       console.log('SesID:', sesID);
       console.log('Fetched exercises:', exercises);
 
-      // todo uncomment
       await setActivityStatus('user1', sesID, true);
     } catch (e) {
       error = (e as Error).message;

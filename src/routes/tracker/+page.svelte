@@ -92,7 +92,7 @@
       <div class="inner-cont">
         <button class="base-btn extended sesh" onclick={() => startSession(slug.id)}>
           <p>{slug.id}</p>
-          <p class="date">{timeAgo(grd(7))}</p>
+          <p class="date">{slug.date ?? 'No date'}</p>
         </button>
 
         <Icon

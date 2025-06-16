@@ -164,12 +164,13 @@ const historyEntryDummy: HistoryEntryInfo = {
 /**
  * Adds a new user document under 'users/{userId}'
  */
-export async function addUser(search: string, info: UserInfo): Promise<void> {
-  const userRef = doc(db, 'users', search);
+export async function addUser(uID: string, info: UserInfo): Promise<void> {
+  const userRef = doc(db, 'users', uID);
+
   await setDoc(userRef, {
     name: info.name,
     email: info.email || '',
-    // signupDate: info.signupDate,
+    signupDate: new Date(),
     hasActiveSession: false,
   });
 }
@@ -186,7 +187,7 @@ export async function addSessionByName(uID: string, info: SessionInfo): Promise<
 
   await setDoc(sessionRef, {
     name: info.name,
-    // date: info.date,
+    date: new Date(),
     notes: info.notes || '',
     exCount: 0,
   });
@@ -309,6 +310,16 @@ export async function pushHistoryEntry(
     notes: info.notes || '',
   });
   return historyRef.id;
+}
+
+export async function addUserByForm(name: string, mail: string) {
+  let info: UserInfo = {
+    name: name,
+    email: mail,
+    signupDate: new Date(),
+  };
+
+  await addUser('user1', info);
 }
 
 export async function testDB() {
