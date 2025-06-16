@@ -351,12 +351,17 @@ export async function betterAdd(sessionName: string, exif: ExInfoPackage[]) {
   await batchAddExercises(search, exinfo);
 }
 
-export async function setActivityStatus(uID: string, sesID: string, activating: boolean, fin?:number[]) {
+export async function setActivityStatus(
+  uID: string,
+  sesID: string,
+  activating: boolean,
+  fin?: number[],
+) {
   // Use the session name directly as the document ID
   const globalRef = doc(db, 'users', uID);
   const localRef = doc(db, 'users', uID, 'sessions', sesID);
 
-  const finished = fin ?? []
+  const finished = fin ?? [];
 
   if (activating) {
     await updateDoc(globalRef, {
@@ -367,20 +372,22 @@ export async function setActivityStatus(uID: string, sesID: string, activating: 
     await updateDoc(localRef, {
       isSessionActive: activating,
       finished: finished,
-    })
+    });
   } else {
     await updateDoc(globalRef, { hasActiveSession: activating });
     await updateDoc(localRef, { isSessionActive: activating });
-
   }
 }
 
-export async function loadFinishedExercises(uID:string, sesID: string):Promise<{finishedIDXS: number[], unfinished: boolean}>{
-  let idxs: number[]
-  let fin: boolean
+export async function loadFinishedExercises(
+  uID: string,
+  sesID: string,
+): Promise<{ finishedIDXS: number[]; unfinished: boolean }> {
+  let idxs: number[];
+  let fin: boolean;
 
   const localRef = doc(db, 'users', uID, 'sessions', sesID);
-  
+
   const snap = await getDoc(localRef);
 
   if (snap.exists()) {
@@ -388,15 +395,12 @@ export async function loadFinishedExercises(uID:string, sesID: string):Promise<{
     idxs = data.finished ?? [];
     fin = data.isSessionActive ?? false;
 
-
-
     console.log('finsihed indexes:', idxs);
-
   } else {
     console.error('Document does not exist.');
-    fin = false
-    idxs = []
+    fin = false;
+    idxs = [];
   }
 
-  return {unfinished: fin, finishedIDXS: idxs}
+  return { unfinished: fin, finishedIDXS: idxs };
 }

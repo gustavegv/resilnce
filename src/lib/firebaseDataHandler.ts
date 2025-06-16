@@ -137,8 +137,8 @@ export async function saveRecordedLift(
   weight: number,
   exTag: string,
 ): Promise<number[]> {
-  if (exTag == 'error'){
-    console.error("Special ex-ID not found in DB.")
+  if (exTag == 'error') {
+    console.error('Special ex-ID not found in DB.');
   }
 
   const hisData = createHistoricData(repArray, weight);
@@ -148,13 +148,12 @@ export async function saveRecordedLift(
 
   let curProg;
 
-  let updatedStats: DocumentData
+  let updatedStats: DocumentData;
 
   if (tryAutoIncrease(hisData)) {
     const increment = 5;
     const wps = new Array(repArray.length).fill(weight + increment);
     const rps = new Array(repArray.length).fill(7);
-
 
     updatedStats = {
       'currentProgress.repsPerSet': rps,
