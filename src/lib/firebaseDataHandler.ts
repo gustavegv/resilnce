@@ -10,6 +10,7 @@ import {
   arrayUnion,
   writeBatch,
   WriteBatch,
+  type DocumentData,
 } from 'firebase/firestore';
 
 import type { ExerciseInfo } from './firebaseCreation';
@@ -130,37 +131,44 @@ function createHistoricData(blocks: number[], weight: number) {
 }
 
 export async function saveRecordedLift(
+  uID: string,
+  sesID: string,
   repArray: number[],
   weight: number,
   exTag: string,
 ): Promise<number[]> {
+  if (exTag == 'error'){
+    console.error("Special ex-ID not found in DB.")
+  }
+
   const hisData = createHistoricData(repArray, weight);
 
   // push historic data and update sets
-  const exerciseRef = doc(db, 'push-day', exTag);
+  const exRef = doc(db, 'users', uID, 'sessions', sesID, 'exercises', exTag);
 
   let curProg;
+
+  let updatedStats: DocumentData
 
   if (tryAutoIncrease(hisData)) {
     const increment = 5;
     const wps = new Array(repArray.length).fill(weight + increment);
+    const rps = new Array(repArray.length).fill(7);
 
-    curProg = {
-      repsPerSet: repArray,
-      weightPerSet: wps,
+
+    updatedStats = {
+      'currentProgress.repsPerSet': rps,
+      'currentProgress.weightPerSet': wps,
+      history: arrayUnion(hisData),
     };
   } else {
-    curProg = {
-      repsPerSet: repArray,
+    updatedStats = {
+      'currentProgress.repsPerSet': repArray,
+      history: arrayUnion(hisData),
     };
   }
 
-  const updatedStats = {
-    currentProgress: curProg,
-    history: arrayUnion(hisData),
-  };
-
-  updateDoc(exerciseRef, updatedStats);
+  updateDoc(exRef, updatedStats);
 
   return repArray;
 }

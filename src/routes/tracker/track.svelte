@@ -85,7 +85,13 @@
   async function handleSubmit() {
     if (currentExercise) {
       const finalReps = currentExercise.currentProgress.repsPerSet;
-      const updatedReps = await saveRecordedLift(finalReps, exWeight, exID);
+      const updatedReps = await saveRecordedLift(
+                            'user1',
+                            sesID,
+                            finalReps,
+                            exWeight, 
+                            currentExercise.id ?? 'error'
+                          );
     }
 
     exercises[currentExerciseIndex].finished = true;

@@ -14,8 +14,6 @@
   let isBlog = $derived(page.url.pathname.startsWith('/tracker/'));
   let isCreate = $derived(page.url.pathname.startsWith('/create'));
 
-  console.log('yalalallalal', isCreate);
-
   function createUserAdminMode() {
     addUserByForm('Mr Wang', 'wang@gmail.com');
     alert('Succesfully created user.');
