@@ -14,12 +14,15 @@
     slug: SessionMetaData;
   } = $props();
 
-  function handleClick() {
-    if (onEdit) onEdit();
+  function prs() {
     if (onPress) onPress();
+  }
+  function edt() {
+    if (onEdit) onEdit();
+  }
+  function del() {
     if (onDel) onDel();
   }
-
 
   function grd(intervalDays: number): Date {
     const now = new Date();
@@ -57,50 +60,130 @@
 
     return 'Just now';
   }
+
+  let sty = $state('90%');
+
+  function sideway() {
+    sty = '60%';
+
+    setTimeout(() => {
+      sty = '90%';
+    }, 3000);
+  }
 </script>
 
-<div class="inner-cont">
-  <button class="base-btn extended sesh" onclick={handleClick}>
+<!-- <div class="inner-cont">
+  <button class="base-btn extended sesh" onclick={prs}>
     <p>{slug.id}</p>
     <p class="date">{timeAgo(slug.date ?? grd(3))}</p>
   </button>
 
   <Icon
     style="margin:0 2rem; position:fixed; right:0;"
-    onclick={handleClick}
+    onclick={edt}
     icon="material-symbols:edit-outline"
     width="24"
     height="24"
   />
+</div> -->
+
+<div class="inner-cont alt">
+  <button class="base-btn alt" style="width:{sty}" onclick={prs}>
+    <div>
+      <p>{slug.id}</p>
+      <p class="date">{timeAgo(slug.date ?? grd(3))}</p>
+    </div>
+
+    <div class="dots-cont">
+      <Icon onclick={sideway} icon={'uiw:more'} fill={'#fff'} width={'20px'}></Icon>
+    </div>
+  </button>
+
+  <div class="under-cont"></div>
+
+  <div class="under-cont">
+    <div class="icon-under edit">
+      <Icon onclick={edt} icon="material-symbols:edit-outline" width="32" fill={'#FFC107'} />
+    </div>
+    <div class="icon-under del">
+      <Icon
+        onclick={del}
+        icon="material-symbols:delete-outline-rounded"
+        width="32"
+        fill={'#dc3545'}
+      />
+    </div>
+  </div>
 </div>
 
 <style>
-      .inner-cont {
+  .dots-cont {
+    padding: 1rem 0.5rem 1rem 1rem;
+    touch-action: none;
+  }
+
+  .icon-under {
+    padding: 2rem 1rem;
+  }
+
+  .under-cont {
+    display: flex;
+    flex-direction: row;
+    width: 33%;
+    height: 5rem;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .inner-cont {
     background-color: var(--color-sec-dark);
     display: flex;
     flex-direction: row;
-    width: 100%;
+    width: 97%;
     align-items: center;
     justify-content: space-between;
     border-radius: 10px;
     margin: 0.5rem;
-  }
-
-    .base-btn {
-    text-align: left;
-    width: 80%;
-    text-transform: capitalize;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    padding: 8px 20px;
-    margin: 0;
-    box-shadow: var(--shadow-dark);
     overflow: hidden;
   }
 
-  .base-btn.extended {
-    width: 80%;
+  .base-btn {
+    text-align: left;
+    text-transform: capitalize;
+    box-shadow: var(--shadow-dark);
+
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+
+    padding: 8px 20px;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  .inner-cont.alt {
+    height: 5rem;
+    background-color: black;
+    border-radius: 10px;
+  }
+
+  .base-btn.alt {
+    background-color: var(--color-secondary);
+    width: var(--thing);
+    position: absolute;
+    width: 90%;
+    z-index: 4;
+    height: 5rem;
+    border-radius: 10px;
+    align-items: center;
+    opacity: 1;
+  }
+
+  p {
+    padding: 0;
+    margin: 0.5rem 0;
+    font-size: 16px;
   }
 
   .date {

@@ -23,8 +23,6 @@
     activeSession = data.active;
   });
 
-  
-
   function closePopup() {
     showPopup = false;
     showError = 'Error broski';
@@ -39,16 +37,25 @@
     console.log('Edit', sesID + '!');
   }
 
-  function startSession(id: string) {
+  function startSession(id: string) {}
+
+  function startSes(id: string) {
+    console.log(id, 'started');
+
+    return;
     if (activeSession) {
       openPopup();
     } else {
     }
     goto(`/tracker/${id}`);
   }
-
-  function fn(){
-
+  function editSes(id: string) {
+    console.log(id, 'edited');
+    // popup edit?
+  }
+  function delSes(id: string) {
+    console.log(id, 'delted');
+    // popup are you sure
   }
 </script>
 
@@ -59,7 +66,12 @@
   <hr />
   <div class="btn-container">
     {#each slugs as slug}
-      <SessionSlug onPress={fn} onEdit={fn} onDel={fn} slug={slug}></SessionSlug>
+      <SessionSlug
+        onPress={() => startSes(slug.id)}
+        onEdit={() => editSes(slug.id)}
+        onDel={() => delSes(slug.id)}
+        {slug}
+      />
     {/each}
   </div>
 </div>
@@ -85,6 +97,4 @@
     width: 100%;
     text-align: left;
   }
-
-
 </style>
