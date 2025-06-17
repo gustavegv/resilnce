@@ -169,8 +169,12 @@
   }
 
   function quitSession() {
-    setActivityStatus('user1', sesID, false);
-    goto('/');
+    if (confirm('Are you sure you want to quit the session?')) {
+      setActivityStatus('user1', sesID, false);
+      goto('/');
+    } else {
+      console.log('Quit adverted.');
+    }
   }
 </script>
 

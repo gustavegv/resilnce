@@ -63,8 +63,8 @@
     openPopup('delete');
 
     if (confirm(`Are you sure you want to delete ${id}?`)) {
-      await fakeDeleteSession('user1', id)
-      deleteLocalSlug(id)
+      await fakeDeleteSession('user1', id);
+      deleteLocalSlug(id);
       console.log(id, 'deleted.');
     } else {
       console.log('Delete cancelled.');
@@ -73,12 +73,12 @@
     // popup are you sure
   }
 
-  function deleteLocalSlug(id:string){
+  function deleteLocalSlug(id: string) {
     for (const item of slugs) {
-      if (item.id === id){
-        item.deleted = true
-        console.log("Found local copy and delted it");
-      
+      if (item.id === id) {
+        item.deleted = true;
+        console.log('Found local copy and delted it');
+
         break;
       }
     }
@@ -104,14 +104,13 @@
   <div class="btn-container">
     {#each slugs as slug}
       {#if !slug.deleted}
-      <SessionSlug
-        onPress={() => startSes(slug.id)}
-        onEdit={() => editSes(slug.id)}
-        onDel={() => delSes(slug.id)}
-        {slug}
-      />
+        <SessionSlug
+          onPress={() => startSes(slug.id)}
+          onEdit={() => editSes(slug.id)}
+          onDel={() => delSes(slug.id)}
+          {slug}
+        />
       {/if}
-
     {/each}
   </div>
 </div>
