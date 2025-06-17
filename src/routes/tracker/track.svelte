@@ -14,6 +14,7 @@
 
   import '../../app.css';
   import { goto } from '$app/navigation';
+  import Icon from '@iconify/svelte';
 
   // Exercise ID som blir tilldelad när man callar komponenten:
   //   Exempel:  <Track sesID="push" />
@@ -176,13 +177,23 @@
       console.log('Quit adverted.');
     }
   }
+
+  function editCurrentEx(id: string) {
+    if (id == '') {
+      console.error('Edit pen accessed when it cant be');
+    }
+    //todo
+    console.log('We will edit:', id);
+  }
 </script>
 
 {#if loading}
   <p>Loading exercises...</p>
 {:else if error}
   <p>Guen error: {error}</p>
-{:else if allFinished}
+{/if}
+
+{#if allFinished}
   <div class="container">
     <h1>Session finished!</h1>
     <div class="box">
@@ -229,7 +240,20 @@
   </main>
 {/if}
 
+<button class="floating-edit" onclick={() => editCurrentEx(currentExercise?.id ?? '')}>
+  <Icon icon={'material-symbols:edit-outline-rounded'} height={40} />
+</button>
+
 <style>
+  .floating-edit {
+    position: absolute;
+    bottom: 5rem;
+    right: 1rem;
+    width: fit-content;
+    border-radius: 100px;
+    background-color: var(--color-background);
+  }
+
   .abs {
     position: absolute;
     font-weight: 900;
