@@ -46,12 +46,9 @@
 
       if (confirm(`You have an unfinished exercise, do you really want to start a new one?`)) {
         goto(`/tracker/${id}`);
-
       } else {
         goto(`/`);
-
       }
-
     } else {
       goto(`/tracker/${id}`);
     }

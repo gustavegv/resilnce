@@ -116,7 +116,7 @@
 
   async function loadUnfinishedSession() {
     const info = await loadFinishedExercises('user1', sesID);
-
+    let arrFin: number[] = [];
     if (info.unfinished) {
       const fins = info.finishedIDXS;
 
@@ -124,9 +124,10 @@
         exercises[fin].finished = true;
         console.log(fin, 'is finished already!');
       });
-
-      await setActivityStatus('user1', sesID, true, fins);
+      arrFin = fins;
     }
+
+    await setActivityStatus('user1', sesID, true, arrFin);
   }
 
   function checkAllFinished(): boolean {

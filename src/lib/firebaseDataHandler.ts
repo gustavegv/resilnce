@@ -86,7 +86,15 @@ export async function getAllSessionMeta(
     };
   });
 
-  return { slugs: slugs, active: true };
+  const docRef = doc(db, 'users', uID);
+  const docSnap = await getDoc(docRef);
+  const data = docSnap.data();
+  if (data) {
+    const active = data.hasActiveSession ?? false;
+    return { slugs: slugs, active: active };
+  } else {
+    return { slugs: slugs, active: false };
+  }
 }
 
 export async function checkActiveSession(
@@ -101,7 +109,6 @@ export async function checkActiveSession(
   }
 
   const data = docSnap.data();
-  console.log('ahha', data);
   return {
     active: data.hasActiveSession,
     session: data.activeSessionName,
