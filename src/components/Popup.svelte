@@ -3,24 +3,36 @@
 
   let {
     show,
-    onClose,
+    onAccept,
+    onDecline,
     children,
   }: {
     show: boolean;
-    onClose: () => void;
+    onAccept: () => void;
     children?: Snippet;
+    onDecline?: () => void;
   } = $props();
 
   function sas() {}
 </script>
 
 {#if show}
-  <div class="backdrop" role="presentation" onclick={onClose}>
-    <div class="modal">
-      {@render children?.()}
-      <button class="close" onclick={onClose} aria-label="Close modal" type="button"> x </button>
+  {#if onDecline != undefined}
+    <div class="backdrop" role="presentation">
+      <div class="modal">
+        {@render children?.()}
+        <button class="close" onclick={onAccept} aria-label="Accept" type="button"> Yes </button>
+        <button class="close" onclick={onDecline} aria-label="Decline" type="button"> No </button>
+      </div>
     </div>
-  </div>
+  {:else}
+    <div class="backdrop" role="presentation" onclick={onAccept}>
+      <div class="modal">
+        {@render children?.()}
+        <button class="close" onclick={onAccept} aria-label="Close modal" type="button"> x </button>
+      </div>
+    </div>
+  {/if}
 {/if}
 
 <style>

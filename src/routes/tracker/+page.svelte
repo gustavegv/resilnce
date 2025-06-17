@@ -15,6 +15,8 @@
   let activeSession: boolean = $state(false);
 
   let showPopup: boolean = $state(false);
+  let popupResponse: string = $state('');
+
   let showError: string = $state('');
 
   onMount(async () => {
@@ -25,42 +27,67 @@
 
   function closePopup() {
     showPopup = false;
-    showError = 'Error broski';
   }
 
-  function openPopup() {
-    showPopup = true;
-    showError = '';
+  function openPopup(reason: string) {
+    // showPopup = true;
+    // popupResponse = reason
   }
 
   function editWorkout(sesID: string) {
     console.log('Edit', sesID + '!');
   }
 
-  function startSession(id: string) {}
-
   function startSes(id: string) {
     console.log(id, 'started');
 
     if (activeSession) {
-      openPopup();
+      openPopup('active');
+
+      if (confirm(`You have an unfinished exercise, do you really want to start a new one?`)) {
+        goto(`/tracker/${id}`);
+
+      } else {
+        goto(`/`);
+
+      }
+
     } else {
+      goto(`/tracker/${id}`);
     }
-    goto(`/tracker/${id}`);
   }
   function editSes(id: string) {
     console.log(id, 'edited');
+
     // popup edit?
   }
   function delSes(id: string) {
-    console.log(id, 'delted');
+    openPopup('delete');
+
+    if (confirm(`Are you sure you want to delete ${id}?`)) {
+      console.log(id, 'deleted.');
+    } else {
+      console.log('Delete cancelled.');
+    }
+
     // popup are you sure
+  }
+
+  function handlePop(accept: boolean) {
+    if (accept) {
+      console.log('accepted');
+    } else {
+      console.log('declined');
+    }
+    closePopup();
   }
 </script>
 
 <div class="main">
   <h2>Sessions:</h2>
   <ErrorPopup message={showError}></ErrorPopup>
+  <Popup show={showPopup} onAccept={() => handlePop(true)} onDecline={() => handlePop(false)}
+  ></Popup>
 
   <hr />
   <div class="btn-container">
