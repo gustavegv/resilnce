@@ -5,6 +5,9 @@
   import { betterAdd } from '$lib/firebaseCreation';
   import InputField from '../../components/InputField.svelte';
   import { goto } from '$app/navigation';
+  import SetBlock from '../../components/SetBlock.svelte';
+  import SetAutoIncrease from '../../components/SetAutoIncrease.svelte';
+  import { onDestroy, onMount } from 'svelte';
 
   type SessionInfo = {
     name: string;
@@ -23,12 +26,16 @@
   let newName = $state('');
   let newSets: string = $state('');
   let newWeight: string = $state('');
+  let newAutoInc: number = $state(2.5);
 
   function addExercise() {
     if (!newName || !newSets || !newWeight) {
       console.log('No set to add:', !newName, !newSets, !newWeight);
       return;
     }
+
+    //todo add auto inc here
+    console.log('autothing added:', newAutoInc);
 
     const entry: ExInfoPackage = {
       name: newName,
@@ -62,6 +69,10 @@
   function removeItem(index: number) {
     currentlyAdded.splice(index, 1);
   }
+
+  function autoIncreaseChange(count: number) {
+    newAutoInc = count;
+  }
 </script>
 
 <div class="container">
@@ -74,6 +85,9 @@
     <InputField label={'Sets'} bind:value={newSets} type={'number'} />
 
     <InputField label={'Weight'} bind:value={newWeight} type={'number'} />
+
+    <SetAutoIncrease weight={2.5} onCountChange={(count: number) => autoIncreaseChange(count)} />
+
     <button onclick={addExercise}>+</button>
   </div>
 
