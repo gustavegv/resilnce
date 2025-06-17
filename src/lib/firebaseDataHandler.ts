@@ -38,6 +38,7 @@ export interface SessionMetaData {
   id: string;
   name: string;
   date?: Date;
+  deleted?: boolean
 }
 
 type ExInfo = {
@@ -83,12 +84,14 @@ export async function getAllSessionMeta(
     return {
       id: doc.id,
       name: data.title || '(untitled)', // fallback om .title saknas
+      deleted: data.sessionDeleted || false
     };
   });
 
   const docRef = doc(db, 'users', uID);
   const docSnap = await getDoc(docRef);
   const data = docSnap.data();
+
   if (data) {
     const active = data.hasActiveSession ?? false;
     return { slugs: slugs, active: active };
@@ -185,4 +188,15 @@ function tryAutoIncrease(history: any): boolean {
   } else {
     return false;
   }
+}
+
+
+export async function fakeDeleteSession(uID:string, sesID: string){
+  const globalRef = doc(db, 'users', uID);
+  const localRef = doc(db, 'users', uID, 'sessions', sesID);
+
+    await updateDoc(localRef, {
+      sessionDeleted: true
+    });
+
 }
