@@ -72,32 +72,17 @@
   }
 </script>
 
-<!-- <div class="inner-cont">
-  <button class="base-btn extended sesh" onclick={prs}>
-    <p>{slug.id}</p>
-    <p class="date">{timeAgo(slug.date ?? grd(3))}</p>
-  </button>
-
-  <Icon
-    style="margin:0 2rem; position:fixed; right:0;"
-    onclick={edt}
-    icon="material-symbols:edit-outline"
-    width="24"
-    height="24"
-  />
-</div> -->
-
 <div class="inner-cont alt">
-  <button class="base-btn alt" style="width:{sty}" onclick={prs}>
-    <div>
+  <div class="base-btn alt" style="width:{sty}">
+    <button class="start-side" onclick={prs}>
       <p>{slug.id}</p>
       <p class="date">{timeAgo(slug.date ?? grd(3))}</p>
-    </div>
+    </button>
 
-    <div class="dots-cont">
-      <Icon onclick={sideway} icon={'uiw:more'} fill={'#fff'} width={'20px'}></Icon>
-    </div>
-  </button>
+    <button class="dots-cont" onclick={sideway}>
+      <Icon icon={'uiw:more'} fill={'#fff'} width={'20px'}></Icon>
+    </button>
+  </div>
 
   <div class="under-cont"></div>
 
@@ -117,9 +102,31 @@
 </div>
 
 <style>
+  .start-side {
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    text-align: left;
+    height: 5rem;
+    background-color: none;
+    padding-left: 1rem;
+    width: 80%;
+  }
+
   .dots-cont {
-    padding: 1rem 0.5rem 1rem 1rem;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    background-color: none;
+
+    box-shadow: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     touch-action: none;
+    width: 20%;
+    height: 5rem;
   }
 
   .icon-under {
@@ -136,7 +143,6 @@
   }
 
   .inner-cont {
-    background-color: var(--color-sec-dark);
     display: flex;
     flex-direction: row;
     width: 97%;
@@ -147,37 +153,34 @@
     overflow: hidden;
   }
 
+  .inner-cont.alt {
+    height: 5rem;
+    background-color: black;
+    box-shadow: var(--shadow-dark);
+  }
+
   .base-btn {
-    text-align: left;
     text-transform: capitalize;
     box-shadow: var(--shadow-dark);
 
-    position: relative;
     display: flex;
     flex-direction: row;
-    justify-content: space-between;
 
-    padding: 8px 20px;
     margin: 0;
     overflow: hidden;
   }
 
-  .inner-cont.alt {
-    height: 5rem;
-    background-color: black;
-    border-radius: 10px;
-  }
-
   .base-btn.alt {
     background-color: var(--color-secondary);
-    width: var(--thing);
     position: absolute;
-    width: 90%;
     z-index: 4;
     height: 5rem;
     border-radius: 10px;
     align-items: center;
     opacity: 1;
+    justify-content: space-between;
+    padding: 0;
+    transition: all 0.3s;
   }
 
   p {

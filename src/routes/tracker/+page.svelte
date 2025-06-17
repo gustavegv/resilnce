@@ -42,7 +42,6 @@
   function startSes(id: string) {
     console.log(id, 'started');
 
-    return;
     if (activeSession) {
       openPopup();
     } else {
