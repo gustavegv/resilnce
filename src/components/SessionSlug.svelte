@@ -1,6 +1,7 @@
 <script lang="ts">
   import Icon from '@iconify/svelte';
   import type { SessionMetaData } from '$lib/firebaseDataHandler';
+  import { fade, fly, slide } from 'svelte/transition';
 
   let {
     onEdit,

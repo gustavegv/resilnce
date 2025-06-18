@@ -55,12 +55,14 @@ button.mini {
   --color-background: #232323;
   --color-contrast: #f1f1f1;
 
-  --gradient-prim: linear-gradient(to right, var(--color-background) 0%, var(--color-background) 100%);
-
+  --gradient-prim: linear-gradient(
+    to right,
+    var(--color-background) 0%,
+    var(--color-background) 100%
+  );
 
   --color-darker: #222536;
   --color-gray: #edf2f4;
-
 
   --gradient-prim-b: linear-gradient(
     to right,
@@ -102,8 +104,8 @@ html {
   width: 100vw;
   overflow-x: hidden;
   font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  background: var(--gradient-alt);
-  color: var(--color-text);
+  background: var(--color-background);
+  color: var(--color-contrast);
   height: 100%;
   overflow-x: hidden;
   overscroll-behavior: none;

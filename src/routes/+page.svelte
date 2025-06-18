@@ -93,7 +93,7 @@
 
   h1 {
     font-weight: 600;
-    color: var(--color-contrast)
+    color: var(--color-contrast);
   }
 
   .btn-container {

@@ -3,19 +3,18 @@
   import { getAllSessionMeta, fakeDeleteSession } from '$lib/firebaseDataHandler';
   import { onMount } from 'svelte';
   import ErrorPopup from '../../components/ErrorPopup.svelte';
-  import Icon from '@iconify/svelte';
   import SessionSlug from '../../components/SessionSlug.svelte';
 
   import type { SessionMetaData } from '$lib/firebaseDataHandler';
 
   import Popup from '../../components/Popup.svelte';
-  import AddIcon from '../../components/icons/AddIcon.svelte';
+  import { fade } from 'svelte/transition';
+  import Icon from '@iconify/svelte';
 
   let slugs: SessionMetaData[] = $state([]);
   let activeSession: boolean = $state(false);
 
   let showPopup: boolean = $state(false);
-  let popupResponse: string = $state('');
 
   let showError: string = $state('');
 
@@ -24,6 +23,10 @@
     slugs = data.slugs;
     activeSession = data.active;
   });
+
+  function delay(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
 
   function closePopup() {
     showPopup = false;
@@ -95,29 +98,40 @@
 </script>
 
 <div class="main">
-  <h2>Sessions:</h2>
+  <h2 style="width: 100%;">Sessions:</h2>
   <ErrorPopup message={showError}></ErrorPopup>
   <Popup show={showPopup} onAccept={() => handlePop(true)} onDecline={() => handlePop(false)}
   ></Popup>
 
   <hr />
-  <div class="btn-container">
-    {#each slugs as slug}
-      {#if !slug.deleted}
-        <SessionSlug
-          onPress={() => startSes(slug.id)}
-          onEdit={() => editSes(slug.id)}
-          onDel={() => delSes(slug.id)}
-          {slug}
-        />
-      {/if}
-    {/each}
-  </div>
+
+  {#if slugs.length}
+    <div class="btn-container">
+      {#each slugs as slug, i}
+        {#if !slug.deleted}
+          <div in:fade|global={{ delay: i * 50 }}>
+            <SessionSlug
+              onPress={() => startSes(slug.id)}
+              onEdit={() => editSes(slug.id)}
+              onDel={() => delSes(slug.id)}
+              {slug}
+            />
+          </div>
+        {/if}
+      {/each}
+    </div>
+  {:else}
+    <Icon icon="svg-spinners:3-dots-bounce" width="30" />
+  {/if}
 </div>
 
 <style>
   .main {
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: left;
     padding: 5rem 1rem;
   }
 

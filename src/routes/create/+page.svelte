@@ -111,8 +111,7 @@
 </div>
 
 <style>
-
-  .add{
+  .add {
     background-color: var(--color-alt);
     width: 92%;
   }

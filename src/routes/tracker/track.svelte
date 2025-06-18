@@ -291,7 +291,7 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background:var(--color-background);
+    background: var(--color-background);
   }
 
   .box {
