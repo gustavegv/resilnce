@@ -16,6 +16,7 @@
   import { goto } from '$app/navigation';
   import Icon from '@iconify/svelte';
   import ExerciseTrackScreen from './ExerciseTrackScreen.svelte';
+  import LoadingSkeleton from './LoadingSkeleton.svelte';
 
   // Exercise ID som blir tilldelad när man callar komponenten:
   //   Exempel:  <Track sesID="push" />
@@ -47,8 +48,7 @@
   onMount(async () => {
     try {
       exercises = await getOrderedExercises('user1', sesID);
-      console.log('SesID:', sesID);
-      console.log('Fetched exercises:', exercises);
+      console.log('\n\nSesID:', sesID);
 
       await loadUnfinishedSession();
     } catch (e) {
@@ -60,8 +60,7 @@
 
   $effect(() => {
     if (currentExercise) {
-      console.log('Index:', currentExerciseIndex, 'loaded');
-      $inspect(repArray);
+      console.log('Exercise index', currentExerciseIndex, 'rendered');
     }
   });
 
@@ -186,13 +185,15 @@
   }
 </script>
 
-{#if loading}
-  <p>Loading exercises...</p>
-{:else if error}
-  <p>Guen error: {error}</p>
-{/if}
-
-{#if allFinished}
+{#if loading || error}
+  {#if loading}
+    <main class="app-container">
+      <LoadingSkeleton />
+    </main>
+  {:else if error}
+    <p>Guen error: {error}</p>
+  {/if}
+{:else if allFinished}
   <div class="container">
     <h1>Session finished!</h1>
     <div class="box">
