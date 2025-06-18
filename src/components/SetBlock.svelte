@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import '../app.css';
+  import Icon from '@iconify/svelte';
 
   let {
     id,
@@ -22,31 +23,34 @@
 
   function decrement() {
     curCount = Math.max(0, curCount - 1);
+    checksRep();
     onCountChange?.({ id, count: curCount });
   }
 
   function increment() {
     curCount += 1;
+    checksRep();
     onCountChange?.({ id, count: curCount });
   }
+
+  function checksRep() {
+    console.log('Checked rep');
+    if (!checked) {
+      checked = true;
+    }
+  }
+
+  let checked: boolean = $state(false);
 </script>
 
-{#if !finished && !(id === -1)}
+{#if !finished}
   <div class="counter-container">
+    <div class="check {checked}"><Icon icon="gg:check-o" /></div>
     <div>Set {id}</div>
     <div class="controls">
       <button class="but" onclick={decrement}>-</button>
-      <span>{curCount}</span>
+      <span onclick={checksRep}>{curCount}</span>
       <button class="but" onclick={increment}>+</button>
-    </div>
-  </div>
-{:else if id == -1}
-  <div class="counter-container mini">
-    <div>Weight increase intervals</div>
-    <div class="controls mini">
-      <button class="but mini" onclick={decrement}>-</button>
-      <gf class="mini-count">{curCount}</gf>
-      <button class="but mini" onclick={increment}>+</button>
     </div>
   </div>
 {:else}
@@ -61,7 +65,19 @@
 {/if}
 
 <style>
+  .check {
+    position: absolute;
+    right: 0.5rem;
+    transition: all 0.3s;
+    opacity: 1;
+  }
+
+  .check.false {
+    opacity: 0;
+  }
+
   .counter-container {
+    position: relative;
     text-align: center;
     margin: 0.5rem 0;
     background-color: var(--color-secondary);

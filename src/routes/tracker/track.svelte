@@ -375,7 +375,8 @@
   }
 
   .movement-b {
-    background-color: var(--color-gray);
-    color: black;
+    background-color: var(--color-background);
+    color: white;
+    box-shadow: var(--shadow-dark);
   }
 </style>
