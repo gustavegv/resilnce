@@ -267,7 +267,7 @@
     right: 1rem;
     width: fit-content;
     border-radius: 100px;
-    background-color: var(--color-background);
+    background-color: var(--color-secondary);
   }
 
   .floating-edit.true {
@@ -291,6 +291,7 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    background:var(--color-background);
   }
 
   .box {
@@ -303,7 +304,7 @@
     box-sizing: border-box;
 
     border-radius: 15px;
-    background-color: #2b2b2b;
+    background-color: var(--color-secondary);
     padding: 20px;
     padding-top: 0;
     text-align: left;
@@ -376,8 +377,8 @@
   }
 
   .movement-b {
-    background-color: var(--color-background);
-    color: white;
+    background-color: var(--color-secondary);
+    color: var(--color-contrast);
     box-shadow: var(--shadow-dark);
   }
 </style>

@@ -190,7 +190,7 @@
   }
 
   .date {
-    color: gray;
+    color: var(--color-alt);
     text-transform: none;
   }
 </style>

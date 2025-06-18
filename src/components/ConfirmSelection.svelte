@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
   import '../app.css';
 
   let {
@@ -27,7 +26,7 @@
     width: 100%;
     padding: 1rem;
     margin-top: 2rem;
-    background-color: var(--color-background);
+    background-color: var(--color-secondary);
     font-size: 1.25rem;
     border: none;
     border-radius: 0.5rem;

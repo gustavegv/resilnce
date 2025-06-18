@@ -88,7 +88,7 @@
 
     <SetAutoIncrease weight={2.5} onCountChange={(count: number) => autoIncreaseChange(count)} />
 
-    <button onclick={addExercise}>+</button>
+    <button class="add" onclick={addExercise}>+</button>
   </div>
 
   {#each currentlyAdded as blob, index}
@@ -111,6 +111,11 @@
 </div>
 
 <style>
+
+  .add{
+    background-color: var(--color-alt);
+    width: 92%;
+  }
   .abs-icon {
     position: absolute; /* Positioned relative to .container */
     top: -12px;
@@ -147,7 +152,7 @@
     padding: 1rem;
     width: 70%;
     height: fit-content;
-    background-color: var(--color-background);
+    background-color: var(--color-secondary);
     border-radius: 15px;
 
     box-shadow: var(--shadow-dark);
@@ -178,7 +183,7 @@
     -webkit-text-stroke: 0.7px rgb(255, 255, 255);
     height: 5rem;
     box-shadow: var(--shadow-dark);
-    background: var(--gradient-alt);
+    background: var(--color-secondary);
     font-size: 20px;
     margin-bottom: 12rem;
   }

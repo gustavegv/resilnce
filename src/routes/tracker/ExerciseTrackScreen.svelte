@@ -125,7 +125,7 @@
     background: transparent;
     width: 80%;
     font-family: inherit;
-    color: white;
+    color: var(--color-secondary);
     margin: 1rem 0;
     text-align: center;
   }

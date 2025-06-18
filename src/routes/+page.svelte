@@ -89,12 +89,11 @@
     box-sizing: border-box;
     padding: 5rem 0;
     height: 100vh;
-    background: var(--gradient-prim);
   }
 
   h1 {
     font-weight: 600;
-    color: white;
+    color: var(--color-contrast)
   }
 
   .btn-container {
@@ -113,7 +112,8 @@
   }
 
   button {
-    background-color: #151515;
+    background-color: var(--color-secondary);
+
     width: 90%;
   }
 
@@ -123,7 +123,7 @@
 
   .base-btn.alt {
     background-color: var(--color-alt);
-    color: var(--color-secondary);
+    color: var(--color-contrast);
     box-shadow: rgba(255, 255, 255, 0.4) 0px 0px 20px 1px;
     height: 5rem;
   }

@@ -35,21 +35,32 @@ button.mini {
 
 :root {
   /* Colors */
-  --color-primary: #142d20;
+  --color-primary-o: #142d20;
+  --color-secondary-o: #142d20;
+  --color-background-o: #151515;
 
-  --color-secondary: #142d20;
   --color-sec-dark: #16261e;
+  --color-alt-o: #ffffff;
+  --color-gray-o: #dfdfdf;
 
-  --color-alt: #ffffff;
-
-  --color-background: #151515;
   --color-white: #f5f5f5;
-  --color-gray: #dfdfdf;
   --color-black: #000000;
 
   --color-text: #ffffff;
 
-  --gradient-prim: linear-gradient(to right, #0f1f17 0%, #142d20 50%, #193b28 100%);
+  --gradient-prim-o: linear-gradient(to right, #0f1f17 0%, #142d20 50%, #193b28 100%);
+
+  --color-secondary: #518071;
+  --color-alt: #00c896;
+  --color-background: #232323;
+  --color-contrast: #f1f1f1;
+
+  --gradient-prim: linear-gradient(to right, var(--color-background) 0%, var(--color-background) 100%);
+
+
+  --color-darker: #222536;
+  --color-gray: #edf2f4;
+
 
   --gradient-prim-b: linear-gradient(
     to right,

@@ -33,7 +33,7 @@
     background-image: linear-gradient(
       135deg,
       var(--color-secondary) 25%,
-      #2c3d2b 50%,
+      #aaa 50%,
       var(--color-secondary) 75%
     );
     background-size: 200% 200%;
