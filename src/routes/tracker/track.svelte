@@ -15,6 +15,7 @@
   import '../../app.css';
   import { goto } from '$app/navigation';
   import Icon from '@iconify/svelte';
+  import ExerciseTrackScreen from './ExerciseTrackScreen.svelte';
 
   // Exercise ID som blir tilldelad när man callar komponenten:
   //   Exempel:  <Track sesID="push" />
@@ -29,6 +30,8 @@
   let showOverlay: boolean = $state(false);
   let error: string | null = $state(null);
   let allFinished: boolean = $state(false);
+
+  let editMode: boolean = $state(false);
 
   // Derived variabler
   const currentExercise = $derived(
@@ -153,10 +156,6 @@
     return finished;
   }
 
-  function uniqueKey(set: number, excerID: number) {
-    return `${excerID}-s${set}`;
-  }
-
   function prevExercise() {
     if (currentExerciseIndex > 0) {
       currentExerciseIndex--;
@@ -178,12 +177,12 @@
     }
   }
 
-  function editCurrentEx(id: string) {
-    if (id == '') {
-      console.error('Edit pen accessed when it cant be');
-    }
-    //todo
-    console.log('We will edit:', id);
+  function exitEditMode() {
+    editMode = false;
+  }
+
+  function enterEditMode() {
+    editMode = true;
   }
 </script>
 
@@ -215,6 +214,21 @@
     </div>
     <button onclick={() => goto('/')}>Return to homepage</button>
   </div>
+{:else if editMode}
+  <main class="app-container edit-mode">
+    <ExerciseTrackScreen
+      name={exName}
+      weight={exWeight}
+      reps={repArray}
+      finished={true}
+      exIndex={currentExerciseIndex}
+      onCount={handleCountChange}
+      onSubmit={handleSubmit}
+      onCancel={exitEditMode}
+      edit={true}
+      {sesID}
+    />
+  </main>
 {:else}
   <button onclick={() => quitSession()} class="abs">Quit</button>
   <main class="app-container">
@@ -223,26 +237,27 @@
       <p>{currentExerciseIndex + 1}/{exercises.length}</p>
       <button class="movement-b mini" onclick={() => skipExercise()}>Skip</button>
     </div>
-    <header>
-      <h1>{exName}</h1>
-      <h2>{exWeight} kg</h2>
-    </header>
 
-    {#each repArray as block, index (uniqueKey(index, currentExerciseIndex))}
-      <SetBlock id={index + 1} {finished} reps={block} onCountChange={handleCountChange} />
-    {/each}
-
-    <ConfirmSelection {finished} onConfirm={handleSubmit} />
-
-    {#if showOverlay}
-      <div class="overlay" transition:fade={{ duration: 150 }}></div>
-    {/if}
+    <ExerciseTrackScreen
+      name={exName}
+      weight={exWeight}
+      reps={repArray}
+      {finished}
+      exIndex={currentExerciseIndex}
+      onCount={handleCountChange}
+      onSubmit={handleSubmit}
+      {sesID}
+    />
   </main>
 {/if}
 
-<button class="floating-edit" onclick={() => editCurrentEx(currentExercise?.id ?? '')}>
+<button class="floating-edit {editMode}" onclick={enterEditMode}>
   <Icon icon={'material-symbols:edit-outline-rounded'} height={40} />
 </button>
+
+{#if showOverlay}
+  <div class="overlay" transition:fade={{ duration: 150 }}></div>
+{/if}
 
 <style>
   .floating-edit {
@@ -252,6 +267,10 @@
     width: fit-content;
     border-radius: 100px;
     background-color: var(--color-background);
+  }
+
+  .floating-edit.true {
+    opacity: 0;
   }
 
   .abs {
@@ -337,17 +356,10 @@
 
     min-height: 100vh;
   }
-  header h1 {
-    font-size: 2.5rem;
-    margin-bottom: 0.5rem;
-    margin-top: 0.5rem;
+  .app-container.edit-mode {
+    background: var(--gradient-edit);
   }
-  header h2 {
-    font-size: 1.5rem;
-    color: var(--color-gray);
-    font-weight: 400;
-    margin-top: 0;
-  }
+
   .overlay {
     position: fixed;
     inset: 0;

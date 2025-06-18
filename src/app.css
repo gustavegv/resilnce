@@ -57,6 +57,8 @@ button.mini {
     var(--color-secondary) 100%
   );
 
+  --gradient-edit: linear-gradient(to right, var(--color-background) 0%, #545454 100%);
+
   --gradient-alt: linear-gradient(to right, #121212 0%, #181818 50%, #1a1b1a 100%);
 
   /* Spacing */
