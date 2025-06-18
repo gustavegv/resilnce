@@ -35,6 +35,7 @@
     oldName: string;
     newName?: string;
     newW?: number;
+    addedSets: number;
   }
 
   function onDone() {
@@ -42,6 +43,7 @@
       oldName: name,
       newName: newName,
       newW: newWeight ?? -1,
+      addedSets: addedSetsCount,
     };
 
     console.log('Done. Added:', data);
@@ -52,8 +54,14 @@
     // updateExercise('user1', sesID, data)
   }
 
+  function addSet() {
+    addedSetsCount++;
+    reps = [...reps, 7];
+  }
+
   let newName = $state('');
   let newWeight: number;
+  let addedSetsCount: number = $state(0);
 </script>
 
 {#if edit}
@@ -103,7 +111,7 @@
 {/each}
 
 {#if edit}
-  <h1>Add set</h1>
+  <button onclick={addSet}><h1>Add set</h1></button>
 {:else}
   <ConfirmSelection {finished} onConfirm={onSubmit} />
 {/if}
