@@ -2,7 +2,7 @@
   import { fade } from 'svelte/transition';
   import SetBlock from '../../components/SetBlock.svelte';
   import ConfirmSelection from '../../components/ConfirmSelection.svelte';
-    import { editExercise, type EditData } from '$lib/firebaseDataHandler';
+  import { editExercise, type EditData } from '$lib/firebaseDataHandler';
 
   let {
     name = $bindable(),
@@ -16,7 +16,6 @@
     sesID,
     onCancel,
     exID,
-
   }: {
     name: string;
     weight: number;
@@ -35,8 +34,6 @@
     return `${excerID}-s${set}`;
   }
 
-
-
   async function onDone() {
     let data: EditData = {
       user: 'user1',
@@ -52,7 +49,7 @@
     console.log('Done. Added:', data);
 
     // todo: finish edit
-    await editExercise(data)
+    await editExercise(data);
 
     if (onCancel) {
       onCancel();

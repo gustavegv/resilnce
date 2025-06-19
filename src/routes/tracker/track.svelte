@@ -51,7 +51,6 @@
       console.log('\n\nSesID:', sesID);
 
       await loadUnfinishedSession();
-
     } catch (e) {
       error = (e as Error).message;
     } finally {
@@ -62,7 +61,6 @@
   $effect(() => {
     if (currentExercise) {
       console.log('Exercise index', currentExerciseIndex, 'rendered');
-
     }
   });
 
@@ -224,7 +222,7 @@
       weight={exWeight}
       reps={repArray}
       finished={true}
-      exID={exID}
+      {exID}
       exIndex={currentExerciseIndex}
       onCount={handleCountChange}
       onSubmit={handleSubmit}
