@@ -15,6 +15,16 @@ import {
 
 import type { ExerciseInfo } from './firebaseCreation';
 
+export interface EditData {
+    user: string,
+    sesID: string,
+    exID: string,
+    oldName: string;
+    newName?: string;
+    newW?: number;
+    addedSets: number;
+}
+
 export interface Set {
   id: number;
   reps: number;
@@ -199,4 +209,28 @@ export async function fakeDeleteSession(uID: string, sesID: string) {
   await updateDoc(localRef, {
     sessionDeleted: true,
   });
+}
+
+
+export async function editExercise(eData: EditData){
+  
+  const uID = eData.user
+  const sesID = eData.sesID
+  const exID = eData.exID
+
+  const exRef = doc(db, 'users', uID, 'sessions', sesID, 'exercises', exID);
+
+  const updatedStats: any = {};
+  
+  if (eData.newName !== undefined) {
+    updatedStats.name = eData.newName;
+  }
+  if (eData.newW !== undefined) {
+    updatedStats.weight = eData.newW;
+  }
+
+  if (Object.keys(updatedStats).length > 0) {
+    await updateDoc(exRef, updatedStats);
+  }
+
 }

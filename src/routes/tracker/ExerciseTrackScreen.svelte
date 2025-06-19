@@ -2,10 +2,11 @@
   import { fade } from 'svelte/transition';
   import SetBlock from '../../components/SetBlock.svelte';
   import ConfirmSelection from '../../components/ConfirmSelection.svelte';
+    import { editExercise, type EditData } from '$lib/firebaseDataHandler';
 
   let {
-    name,
-    weight,
+    name = $bindable(),
+    weight = $bindable(),
     reps,
     finished,
     exIndex,
@@ -14,6 +15,8 @@
     edit,
     sesID,
     onCancel,
+    exID,
+
   }: {
     name: string;
     weight: number;
@@ -25,28 +28,32 @@
     edit?: boolean;
     sesID: string;
     onCancel?: () => void;
+    exID?: string;
   } = $props();
 
   function uniqueKey(set: number, excerID: number) {
     return `${excerID}-s${set}`;
   }
 
-  interface updateData {
-    oldName: string;
-    newName?: string;
-    newW?: number;
-    addedSets: number;
-  }
 
-  function onDone() {
-    let data: updateData = {
+
+  async function onDone() {
+    let data: EditData = {
+      user: 'user1',
+      sesID: sesID,
+      exID: exID ?? '',
+
       oldName: name,
-      newName: newName,
-      newW: newWeight ?? -1,
+      newName: newName ?? undefined,
+      newW: newWeight ?? undefined,
       addedSets: addedSetsCount,
     };
 
     console.log('Done. Added:', data);
+
+    // todo: finish edit
+    await editExercise(data)
+
     if (onCancel) {
       onCancel();
     }
@@ -59,7 +66,7 @@
     reps = [...reps, 7];
   }
 
-  let newName = $state('');
+  let newName: string;
   let newWeight: number;
   let addedSetsCount: number = $state(0);
 </script>

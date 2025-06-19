@@ -51,6 +51,7 @@
       console.log('\n\nSesID:', sesID);
 
       await loadUnfinishedSession();
+
     } catch (e) {
       error = (e as Error).message;
     } finally {
@@ -61,6 +62,7 @@
   $effect(() => {
     if (currentExercise) {
       console.log('Exercise index', currentExerciseIndex, 'rendered');
+
     }
   });
 
@@ -222,6 +224,7 @@
       weight={exWeight}
       reps={repArray}
       finished={true}
+      exID={exID}
       exIndex={currentExerciseIndex}
       onCount={handleCountChange}
       onSubmit={handleSubmit}
@@ -268,6 +271,9 @@
     width: fit-content;
     border-radius: 100px;
     background-color: var(--color-secondary);
+
+    opacity: 0;
+    touch-action: none;
   }
 
   .floating-edit.true {
