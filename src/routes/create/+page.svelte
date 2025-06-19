@@ -1,7 +1,7 @@
 <script lang="ts">
   import '../../app.css';
   import Icon from '@iconify/svelte';
-  import type { ExInfoPackage } from '$lib/firebaseDataHandler';
+  import type { ExInfoPackage } from '$lib/firebaseCreation';
   import { betterAdd } from '$lib/firebaseCreation';
   import InputField from '../../components/InputField.svelte';
   import { goto } from '$app/navigation';
@@ -41,6 +41,7 @@
       name: newName,
       sets: Number(newSets),
       weight: Number(newWeight),
+      autoIncrease: newAutoInc,
     };
 
     currentlyAdded = [...currentlyAdded, entry];

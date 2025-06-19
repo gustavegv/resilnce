@@ -52,12 +52,6 @@ type SessionInfo = {
   exercises: ExInfo[];
 };
 
-export interface ExInfoPackage {
-  name: string;
-  weight: number;
-  sets: number;
-}
-
 export async function getOrderedExercises(uID: string, sesID: string): Promise<ExerciseInfo[]> {
   const colRef = collection(db, 'users', uID, 'sessions', sesID, 'exercises');
   const q = query(colRef, orderBy('order', 'asc'));
@@ -161,8 +155,16 @@ export async function saveRecordedLift(
   let updatedStats: DocumentData;
 
   if (tryAutoIncrease(hisData)) {
-    const increment = 5;
-    const wps = new Array(repArray.length).fill(weight + increment);
+    let autoInc: number = 2.5; //standard 2.5
+
+    const docSnap = await getDoc(exRef);
+    const data = docSnap.data();
+
+    if (data) {
+      autoInc = data.autoIncrease ?? 2.5; //standard 2.5
+    }
+
+    const wps = new Array(repArray.length).fill(weight + autoInc);
     const rps = new Array(repArray.length).fill(7);
 
     updatedStats = {

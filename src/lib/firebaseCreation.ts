@@ -13,7 +13,12 @@ import {
 
 import { db } from './firebase';
 
-import type { ExInfoPackage } from './firebaseDataHandler';
+export interface ExInfoPackage {
+  name: string;
+  weight: number;
+  sets: number;
+  autoIncrease?: number;
+}
 
 /**
  * Data shapes for Firestore operations
@@ -52,12 +57,14 @@ export interface ExerciseInfo {
   order?: number;
   id?: string;
   finished?: boolean;
+  autoIncrease?: number;
 }
 
 function simpleExerciseType(exif: ExInfoPackage): ExerciseInfo {
   const name: string = exif.name;
   const sets: number = exif.sets;
   const w: number = exif.weight;
+  const autoInc: number = exif.autoIncrease ?? 2.5; //standard 2.5
 
   const rps = new Array(sets).fill(7);
   const wps = new Array(sets).fill(w);
@@ -72,6 +79,7 @@ function simpleExerciseType(exif: ExInfoPackage): ExerciseInfo {
   const simple: ExerciseInfo = {
     name: name,
     currentProgress: prog,
+    autoIncrease: autoInc,
   };
   return simple;
 }
@@ -231,6 +239,7 @@ export async function addExercise(
       },
       order: newCount,
       id: newExerciseRef.id,
+      autoIncrease: info.autoIncrease,
     });
 
     // uppdatera session exCount
@@ -272,6 +281,7 @@ export async function batchAddExercises(
       },
       order: index,
       id: exerciseRef.id,
+      autoIncrease: info.autoIncrease,
     });
 
     exCount++;
