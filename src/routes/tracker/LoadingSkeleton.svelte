@@ -18,6 +18,11 @@
 
 <style>
   /* SHIMMER ANIMATION */
+
+  :root {
+    --main: #343434;
+    --alt: #383838;
+  }
   @keyframes shimmer {
     0% {
       background-position: -1000px 0;
@@ -30,12 +35,7 @@
   .skeleton {
     position: relative;
     overflow: hidden;
-    background-image: linear-gradient(
-      135deg,
-      var(--color-secondary) 25%,
-      #aaa 50%,
-      var(--color-secondary) 75%
-    );
+    background-image: linear-gradient(135deg, var(--main) 25%, var(--alt) 50%, var(--main) 75%);
     background-size: 200% 200%;
     animation: shimmer 5.5s infinite linear;
     animation-delay: var(--delay, 0s);
@@ -54,14 +54,14 @@
     height: 3em;
     margin: 1em auto;
     border-radius: inherit;
-    background-color: var(--color-secondary);
+    background-color: var(--main);
   }
   .skeleton-subtitle {
     width: 50%;
     height: 2em;
     margin: 0.25em auto;
     border-radius: inherit;
-    background-color: var(--color-secondary);
+    background-color: var(--main);
   }
 
   /* REPS BLOCK SKELETON */
