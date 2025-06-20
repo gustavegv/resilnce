@@ -105,8 +105,8 @@
   </header>
 {:else}
   <header>
-    <h1>{name}</h1>
-    <h2>{weight} kg</h2>
+    <h1 class="font-bold text-4xl">{name}</h1>
+    <h2 class="font-bold text-2xl">{weight} kg</h2>
   </header>
 {/if}
 

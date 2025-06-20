@@ -27,6 +27,7 @@
   h1 {
     color: var(--color-white);
     margin: 0 10px;
+    font-weight: 700;
     -webkit-text-stroke: 0.6px rgb(255, 255, 255);
   }
 </style>

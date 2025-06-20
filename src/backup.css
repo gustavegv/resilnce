@@ -1,8 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap");
 
 .montserrat-400 {
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;
@@ -48,7 +48,12 @@ button.mini {
 
   --color-text: #ffffff;
 
-  --gradient-prim-o: linear-gradient(to right, #0f1f17 0%, #142d20 50%, #193b28 100%);
+  --gradient-prim-o: linear-gradient(
+    to right,
+    #0f1f17 0%,
+    #142d20 50%,
+    #193b28 100%
+  );
 
   --color-secondary: #518071;
   --color-alt: #00c896;
@@ -70,9 +75,18 @@ button.mini {
     var(--color-secondary) 100%
   );
 
-  --gradient-edit: linear-gradient(to right, var(--color-background) 0%, #545454 100%);
+  --gradient-edit: linear-gradient(
+    to right,
+    var(--color-background) 0%,
+    #545454 100%
+  );
 
-  --gradient-alt: linear-gradient(to right, #121212 0%, #181818 50%, #1a1b1a 100%);
+  --gradient-alt: linear-gradient(
+    to right,
+    #121212 0%,
+    #181818 50%,
+    #1a1b1a 100%
+  );
 
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -81,7 +95,7 @@ button.mini {
   --spacing-lg: 2rem;
 
   /* Typography */
-  --font-family-sans: 'Helvetica Neue', Arial, sans-serif;
+  --font-family-sans: "Helvetica Neue", Arial, sans-serif;
   --font-size-base: 1rem;
   --font-size-lg: 1.25rem;
   --font-size-xl: 1.5rem;

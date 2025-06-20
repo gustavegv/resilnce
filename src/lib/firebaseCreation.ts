@@ -9,9 +9,9 @@ import {
   FirestoreError,
   updateDoc,
   getDoc,
-} from 'firebase/firestore';
+} from "firebase/firestore";
 
-import { db } from './firebase';
+import { db } from "./firebase";
 
 export interface ExInfoPackage {
   name: string;
@@ -101,7 +101,11 @@ export interface HistoryEntryInfo {
   notes?: string;
 }
 
-function simpleHistoryType(name: string, sets: number, w: number): HistoryEntryInfo {
+function simpleHistoryType(
+  name: string,
+  sets: number,
+  w: number,
+): HistoryEntryInfo {
   const rps = new Array(sets).fill(7);
   const wps = new Array(sets).fill(w);
 
@@ -123,22 +127,22 @@ function simpleHistoryType(name: string, sets: number, w: number): HistoryEntryI
 
 // 1) UserInfo
 const userDummy: UserInfo = {
-  name: 'Dummy User',
-  email: 'dummy@example.com',
-  signupDate: new Date('2025-01-01T10:00:00Z'),
+  name: "Dummy User",
+  email: "dummy@example.com",
+  signupDate: new Date("2025-01-01T10:00:00Z"),
 };
 
 // 2) SessionInfo
 const sessionDummy: SessionInfo = {
-  name: 'Leg Day',
-  date: new Date('2025-06-15T08:30:00Z'),
-  notes: 'Focus on squats and lunges',
+  name: "Leg Day",
+  date: new Date("2025-06-15T08:30:00Z"),
+  notes: "Focus on squats and lunges",
 };
 
 // 3) ExerciseInfo
 const exerciseDummy: ExerciseInfo = {
-  name: 'Squat',
-  muscleGroup: 'Legs',
+  name: "Squat",
+  muscleGroup: "Legs",
   currentProgress: {
     sets: 4,
     repsPerSet: [8, 8, 6, 6],
@@ -148,8 +152,8 @@ const exerciseDummy: ExerciseInfo = {
 };
 
 const exerciseDummy2: ExerciseInfo = {
-  name: 'Leg Press',
-  muscleGroup: 'Legs',
+  name: "Leg Press",
+  muscleGroup: "Legs",
   currentProgress: {
     sets: 3,
     repsPerSet: [12, 10, 8],
@@ -163,22 +167,22 @@ const exercisesBatchDummy: ExerciseInfo[] = [exerciseDummy, exerciseDummy2];
 
 // 5) HistoryEntryInfo
 const historyEntryDummy: HistoryEntryInfo = {
-  date: new Date('2025-06-01T07:00:00Z'),
+  date: new Date("2025-06-01T07:00:00Z"),
   sets: 4,
   repsPerSet: [8, 8, 8, 8],
   weightPerSet: [75, 75, 80, 80],
-  notes: 'Felt strong today!',
+  notes: "Felt strong today!",
 };
 
 /**
  * Adds a new user document under 'users/{userId}'
  */
 export async function addUser(uID: string, info: UserInfo): Promise<void> {
-  const userRef = doc(db, 'users', uID);
+  const userRef = doc(db, "users", uID);
 
   await setDoc(userRef, {
     name: info.name,
-    email: info.email || '',
+    email: info.email || "",
     signupDate: new Date(),
     hasActiveSession: false,
   });
@@ -189,15 +193,18 @@ export async function addUser(uID: string, info: UserInfo): Promise<void> {
  * Uses the session name as the document ID.
  * Returns the sessionName used as the ID.
  */
-export async function addSessionByName(uID: string, info: SessionInfo): Promise<string> {
+export async function addSessionByName(
+  uID: string,
+  info: SessionInfo,
+): Promise<string> {
   // Use the session name directly as the document ID
   const sessionId = info.name;
-  const sessionRef = doc(db, 'users', uID, 'sessions', sessionId);
+  const sessionRef = doc(db, "users", uID, "sessions", sessionId);
 
   await setDoc(sessionRef, {
     name: info.name,
     date: new Date(),
-    notes: info.notes || '',
+    notes: info.notes || "",
     exCount: 0,
   });
 
@@ -213,15 +220,24 @@ export async function addExercise(
   info: ExerciseInfo,
 ): Promise<string> {
   const { userId, sessionId } = search;
-  const sessionRef = doc(db, 'users', userId, 'sessions', sessionId);
-  const exercisesCol = collection(db, 'users', userId, 'sessions', sessionId, 'exercises');
+  const sessionRef = doc(db, "users", userId, "sessions", sessionId);
+  const exercisesCol = collection(
+    db,
+    "users",
+    userId,
+    "sessions",
+    sessionId,
+    "exercises",
+  );
   // autogenererad ID
   const newExerciseRef = doc(exercisesCol);
 
   await runTransaction(db, async (tx) => {
     const sessionSnap = await tx.get(sessionRef);
     if (!sessionSnap.exists()) {
-      throw new Error(`firestore error 69: Session ${sessionId} for user ${userId} does not exist`);
+      throw new Error(
+        `firestore error 69: Session ${sessionId} for user ${userId} does not exist`,
+      );
     }
 
     // läs exCount
@@ -230,7 +246,7 @@ export async function addExercise(
 
     tx.set(newExerciseRef, {
       name: info.name,
-      muscleGroup: info.muscleGroup || '',
+      muscleGroup: info.muscleGroup || "",
       currentProgress: {
         sets: info.currentProgress.sets,
         repsPerSet: info.currentProgress.repsPerSet,
@@ -259,11 +275,11 @@ export async function batchAddExercises(
   const batch = writeBatch(db);
   const exercisesCol = collection(
     db,
-    'users',
+    "users",
     search.userId,
-    'sessions',
+    "sessions",
     search.sessionId,
-    'exercises',
+    "exercises",
   );
 
   let exCount = 0;
@@ -288,7 +304,13 @@ export async function batchAddExercises(
   });
   await batch.commit();
 
-  const sessionRef = doc(db, 'users', search.userId, 'sessions', search.sessionId);
+  const sessionRef = doc(
+    db,
+    "users",
+    search.userId,
+    "sessions",
+    search.sessionId,
+  );
 
   await setDoc(sessionRef, {
     exCount: exCount,
@@ -305,20 +327,20 @@ export async function pushHistoryEntry(
 ): Promise<string> {
   const historyCol = collection(
     db,
-    'users',
+    "users",
     search.userId,
-    'sessions',
+    "sessions",
     search.sessionId,
-    'exercises',
+    "exercises",
     search.exerciseId,
-    'history',
+    "history",
   );
   const historyRef = await addDoc(historyCol, {
     date: info.date,
     sets: info.sets,
     repsPerSet: info.repsPerSet,
     weightPerSet: info.weightPerSet,
-    notes: info.notes || '',
+    notes: info.notes || "",
   });
   return historyRef.id;
 }
@@ -330,34 +352,34 @@ export async function addUserByForm(name: string, mail: string) {
     signupDate: new Date(),
   };
 
-  await addUser('user1', info);
+  await addUser("user1", info);
 }
 
 export async function testDB() {
-  await addUser('user1', simpleUserType('user1'));
+  await addUser("user1", simpleUserType("user1"));
 
-  const sif = simpleSessionType('upper');
-  await addSessionByName('user1', sif);
+  const sif = simpleSessionType("upper");
+  await addSessionByName("user1", sif);
 
-  const search = { userId: 'user1', sessionId: 'upper' };
-  const pck: ExInfoPackage = { name: 'row', sets: 3, weight: 40 };
+  const search = { userId: "user1", sessionId: "upper" };
+  const pck: ExInfoPackage = { name: "row", sets: 3, weight: 40 };
   const eif = simpleExerciseType(pck);
   // await addExercise(search, eif)
 
   await batchAddExercises(search, exercisesBatchDummy);
 
-  console.log('Added files to DB.');
+  console.log("Added files to DB.");
 }
 
 export async function betterAdd(sessionName: string, exif: ExInfoPackage[]) {
   const s: SessionInfo = {
     name: sessionName,
   };
-  await addSessionByName('user1', s);
+  await addSessionByName("user1", s);
 
   const exinfo = simpleExerciseTypeBatch(exif);
 
-  const search = { userId: 'user1', sessionId: sessionName };
+  const search = { userId: "user1", sessionId: sessionName };
   await batchAddExercises(search, exinfo);
 }
 
@@ -368,8 +390,8 @@ export async function setActivityStatus(
   fin?: number[],
 ) {
   // Use the session name directly as the document ID
-  const globalRef = doc(db, 'users', uID);
-  const localRef = doc(db, 'users', uID, 'sessions', sesID);
+  const globalRef = doc(db, "users", uID);
+  const localRef = doc(db, "users", uID, "sessions", sesID);
 
   const finished = fin ?? [];
 
@@ -396,7 +418,7 @@ export async function loadFinishedExercises(
   let idxs: number[];
   let fin: boolean;
 
-  const localRef = doc(db, 'users', uID, 'sessions', sesID);
+  const localRef = doc(db, "users", uID, "sessions", sesID);
 
   const snap = await getDoc(localRef);
 
@@ -405,9 +427,9 @@ export async function loadFinishedExercises(
     idxs = data.finished ?? [];
     fin = data.isSessionActive ?? false;
 
-    console.log('finsihed indexes:', idxs);
+    console.log("finsihed indexes:", idxs);
   } else {
-    console.error('Document does not exist.');
+    console.error("Document does not exist.");
     fin = false;
     idxs = [];
   }
