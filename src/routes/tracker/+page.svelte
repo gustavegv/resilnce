@@ -13,6 +13,7 @@
 
   let slugs: SessionMetaData[] = $state([]);
   let activeSession: boolean = $state(false);
+  let loaded:boolean = $state(false)
 
   let showPopup: boolean = $state(false);
 
@@ -22,6 +23,7 @@
     const data = await getAllSessionMeta('user1');
     slugs = data.slugs;
     activeSession = data.active;
+    loaded = true
   });
 
   function delay(ms: number) {
@@ -105,7 +107,7 @@
 
   <hr />
 
-  {#if slugs.length}
+  {#if slugs.length && loaded}
     <div class="btn-container">
       {#each slugs as slug, i}
         {#if !slug.deleted}
@@ -120,8 +122,10 @@
         {/if}
       {/each}
     </div>
-  {:else}
+  {:else if !loaded}
     <Icon icon="svg-spinners:3-dots-bounce" width="30" />
+  {:else}
+    <h2>No sessions created yet.</h2>
   {/if}
 </div>
 
