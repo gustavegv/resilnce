@@ -183,6 +183,18 @@
   function enterEditMode() {
     editMode = true;
   }
+
+  function checkPR(ar: number[]):boolean{
+    let repLimit = 12
+    let count = 0
+
+    ar.forEach(nu => {
+      count += nu
+    });
+
+    let avg = count / ar.length
+    return avg > repLimit
+  }
 </script>
 
 {#if loading || error}
@@ -195,25 +207,30 @@
   {/if}
 {:else if allFinished}
   <div class="container">
-    <h1>Session finished!</h1>
+    <h1 class="text-2xl font-bold pb-8">Session finished!</h1>
     <div class="box">
-      <h2>Session overview</h2>
+      <h2 class="text-lg font-semibold py-2">Session overview</h2>
       {#each exercises as blob, index}
-        <div class="blob-cont">
+        <div class="blob-cont relative">
           <div class="blob-info">
             <p class="lowkey">{index + 1}.</p>
-            <h3>{blob.name}</h3>
+            <h3 class="capitalize">{blob.name}</h3>
             <p>{blob.currentProgress.weightPerSet[0]} kg</p>
           </div>
-          <div class="blob-inner">
+          <div class="blob-inner pr-3">
             {#each blob.currentProgress.repsPerSet as rep, index}
               <p>{rep} reps</p>
             {/each}
           </div>
+          {#if checkPR(blob.currentProgress.repsPerSet)}
+          <div class="absolute right-1">
+            <Icon icon="ri:medal-line" width="35" color="gold"/>
+          </div>
+          {/if}
         </div>
       {/each}
     </div>
-    <button class="buttonClass" onclick={() => goto('/')}>Return to homepage</button>
+    <button class="buttonClass but" onclick={() => goto('/')}>Return to homepage</button>
   </div>
 {:else if editMode}
   <main class="app-container edit-mode">
@@ -262,6 +279,11 @@
 {/if}
 
 <style>
+.but {
+  width: 80%;
+  background: var(--color-alt);
+}
+
   .floating-edit {
     position: absolute;
     bottom: 5rem;
@@ -309,7 +331,7 @@
 
     border-radius: 15px;
     background-color: var(--color-secondary);
-    padding: 20px;
+    padding: 2rem 1rem;
     padding-top: 0;
     text-align: left;
     box-shadow: var(--shadow-dark);
@@ -344,6 +366,7 @@
     align-items: baseline;
     text-align: left;
     width: 70%;
+    padding: 1rem 0;
   }
 
   .blob-inner {
