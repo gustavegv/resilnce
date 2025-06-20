@@ -128,13 +128,7 @@
     justify-content: space-between;
     align-items: center;
     box-shadow: var(--shadow-dark);
-    width:82%;
-  }
-
-  button {
-    background-color: var(--color-secondary);
-
-    width: 90%;
+    width:90%;
   }
 
   .base-btn.sesh {

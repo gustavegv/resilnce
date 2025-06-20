@@ -37,6 +37,16 @@
     //todo add auto inc here
     console.log('autothing added:', newAutoInc);
 
+    if (
+      Number(newSets) > 20 ||
+      Number(newWeight) > 9999 ||
+      newName.length > 100 ||
+      currentlyAdded.length > 100
+    ){
+      alert("Max threshold met.")
+      return
+    }
+
     const entry: ExInfoPackage = {
       name: newName,
       sets: Number(newSets),
@@ -71,7 +81,7 @@
 </script>
 
 <div class="container">
-  <input bind:value={seshName} placeholder="Untitled session" class="title" />
+  <input maxlength="50" bind:value={seshName} placeholder="Untitled session" class="title" />
 
   <div class="add-box shadow">
     <h3 class="font-semibold text-xl pb-2">Add an exercise</h3>

@@ -9,7 +9,7 @@
 </script>
 
 <label class="inp">
-  <input type={typet} min={1} placeholder=" " bind:value />
+  <input maxlength="70" type={typet} min={1} placeholder=" " bind:value />
   <span class="label">{label}</span>
   <span class="focus-bg"></span>
 </label>

@@ -74,6 +74,7 @@ let loggedIn = false
 
       <div class="flex items-center space-x-3">
               <Input
+                maxlength={2}
                 id="rep"
                 type="number"
                 placeholder='Rep limit (12 reps is standard)'
@@ -112,8 +113,10 @@ let loggedIn = false
         <Card.Content>
           <div class="flex flex-col gap-6">
             <div class="grid gap-2">
-              <Label for="text">Email</Label>
+              <Label for="text">Username</Label>
               <Input
+                maxlength={20}
+
                 id="text"
                 type="text"
                 placeholder='"user1"'
@@ -124,6 +127,7 @@ let loggedIn = false
             <div class="grid gap-2">
               <Label for="password">Password</Label>
               <Input
+                maxlength={20}
                 id="password"
                 type="password"
                 bind:value={password}
