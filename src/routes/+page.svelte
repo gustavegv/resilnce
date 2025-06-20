@@ -5,32 +5,35 @@
   import { onMount } from 'svelte';
   import DbIcon from '../components/icons/DBIcon.svelte';
   import AddIcon from '../components/icons/AddIcon.svelte';
+    import { user } from './account/user';
+    import Icon from '@iconify/svelte';
 
   let existingSession = $state(false);
   let existingID = $state('');
 
   onMount(async () => {
-    const prevSession = await checkActiveSession('user1');
 
-    if (prevSession != null) {
-      existingSession = prevSession.active;
-      console.log('exists', existingSession);
-      if (existingSession) {
-        existingID = prevSession.session;
+    if ($user){
+      const prevSession = await checkActiveSession('user1');
+  
+      if (prevSession != null) {
+        existingSession = prevSession.active;
+        console.log('exists', existingSession);
+        if (existingSession) {
+          existingID = prevSession.session;
+        }
       }
     }
+
   });
 </script>
-
-{#if existingSession}
-  <img src="books.png" alt="a" class="books extra" />
-{:else}
-  <img src="books.png" alt="a" class="books" />
-{/if}
+<img src="books.png" alt="a" class="books {existingSession}" />
+{#if $user}
 
 <div class="body">
   <h1 class="wid">The only tracker you need.</h1>
   <hr />
+
   <div class="btn-container">
     {#if existingSession}
       <button class="base-btn alt buttonClass" onclick={() => goto(`/tracker/${existingID}`)}>
@@ -50,6 +53,16 @@
     </button>
   </div>
 </div>
+{:else}
+<div class="body">
+  <h1 class="wid">The only tracker you need.</h1>
+  <hr />
+    <button class="base-btn sesh buttonClass" onclick={() => goto('/account')}>
+      <g>Log in</g>
+      <Icon icon="material-symbols:login-rounded" width="35"/>
+    </button>
+  </div>
+{/if}
 
 <style>
   .books {
@@ -64,7 +77,7 @@
     height: auto;
   }
 
-  .books.extra {
+  .books.true {
     top: 27%;
   }
 
@@ -109,6 +122,7 @@
     justify-content: space-between;
     align-items: center;
     box-shadow: var(--shadow-dark);
+    width:82%;
   }
 
   button {

@@ -42,7 +42,7 @@ let loggedIn = false
 
 {#if $user}
 <main class="main">
-<Card.Root class="w-full max-w-sm bg-neutral-900 rounded-2xl p-6 space-y-4 shadow">
+<Card.Root class="w-full max-w-sm bg-neutral-900 rounded-2xl px-2 shadow">
     <Card.Header class="border-b border-neutral-700">
       <Card.Title class="text-lg font-semibold text-white">
         Logged in as <strong>{$user}</strong>
@@ -50,14 +50,14 @@ let loggedIn = false
     </Card.Header>
 
     <Card.Footer class="flex justify-start">
-      <Button variant="outline" onclick={handleLogout}>
+      <Button variant="destructive" onclick={handleLogout}>
         Logout
       </Button>
     </Card.Footer>
   </Card.Root>
 
   <!-- Settings Card -->
-  <Card.Root class="w-full max-w-sm bg-neutral-900 rounded-2xl p-6 space-y-4 shadow">
+  <Card.Root class="w-full max-w-sm bg-neutral-900 rounded-2xl px-2 shadow">
     <Card.Header class="border-b border-neutral-700 pb-3">
       <Card.Title class="text-lg font-semibold text-white">
         Settings
@@ -68,15 +68,30 @@ let loggedIn = false
       <div class="flex items-center space-x-3">
         <Checkbox id="cb1" />
         <label for="cb1" class="text-neutral-300 select-none">
-          Autoincrease weight when rep-goal is hit
+          Automatically increase weight after reaching rep goal
         </label>
       </div>
+
+      <div class="flex items-center space-x-3">
+              <Input
+                id="rep"
+                type="number"
+                placeholder='Rep limit (12 reps is standard)'
+                class=""
+                required
+              />
+
+      </div>
+
       <div class="flex items-center space-x-3">
         <Checkbox id="cb2" />
         <label for="cb2" class="text-neutral-300 select-none">
           Checkbox 2
         </label>
       </div>
+
+      
+
     </Card.Content>
   </Card.Root>
   </main>
