@@ -11,6 +11,7 @@ import {
   writeBatch,
   WriteBatch,
   type DocumentData,
+  Timestamp,
 } from "firebase/firestore";
 
 import type { ExerciseInfo } from "./firebaseCreation";
@@ -88,10 +89,20 @@ export async function getAllSessionMeta(
 
   const slugs: SessionMetaData[] = snapshot.docs.map((doc) => {
     const data = doc.data();
+
+    let formattedDate: Date | undefined = undefined;
+    if (data.date) {
+      const sec = data.date.seconds;
+      const nano = data.date.nanoseconds;
+      const ts = new Timestamp(sec, nano);
+      formattedDate = ts.toDate();
+    }
+
     return {
       id: doc.id,
       name: data.title || "(untitled)", // fallback om .title saknas
       deleted: data.sessionDeleted || false,
+      date: formattedDate || undefined,
     };
   });
 

@@ -55,13 +55,7 @@
     // adds inputed exercise in case you forgot
     addExercise();
 
-    const s: SessionInfo = {
-      name: seshName,
-      exercises: currentlyAdded,
-    };
-    console.log(s);
     betterAdd(seshName, currentlyAdded);
-    //addNewSession(s);
 
     alert('session saved succesfully!');
     goto('/');

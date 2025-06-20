@@ -201,6 +201,8 @@ export async function addSessionByName(
   const sessionId = info.name;
   const sessionRef = doc(db, "users", uID, "sessions", sessionId);
 
+  console.log("ADDING SEESION");
+
   await setDoc(sessionRef, {
     name: info.name,
     date: new Date(),
@@ -244,19 +246,23 @@ export async function addExercise(
     const prevCount = (sessionSnap.data().exCount as number) || 0;
     const newCount = prevCount + 1;
 
-    tx.set(newExerciseRef, {
-      name: info.name,
-      muscleGroup: info.muscleGroup || "",
-      currentProgress: {
-        sets: info.currentProgress.sets,
-        repsPerSet: info.currentProgress.repsPerSet,
-        weightPerSet: info.currentProgress.weightPerSet,
-        restSeconds: info.currentProgress.restSeconds,
+    tx.set(
+      newExerciseRef,
+      {
+        name: info.name,
+        muscleGroup: info.muscleGroup || "",
+        currentProgress: {
+          sets: info.currentProgress.sets,
+          repsPerSet: info.currentProgress.repsPerSet,
+          weightPerSet: info.currentProgress.weightPerSet,
+          restSeconds: info.currentProgress.restSeconds,
+        },
+        order: newCount,
+        id: newExerciseRef.id,
+        autoIncrease: info.autoIncrease,
       },
-      order: newCount,
-      id: newExerciseRef.id,
-      autoIncrease: info.autoIncrease,
-    });
+      { merge: true },
+    );
 
     // uppdatera session exCount
     tx.update(sessionRef, { exCount: newCount });
@@ -286,19 +292,23 @@ export async function batchAddExercises(
   infos.forEach((info, index) => {
     const exerciseRef = doc(exercisesCol);
 
-    batch.set(exerciseRef, {
-      name: info.name,
-      //muscleGroup: info.muscleGroup,
-      currentProgress: {
-        sets: info.currentProgress.sets,
-        repsPerSet: info.currentProgress.repsPerSet,
-        weightPerSet: info.currentProgress.weightPerSet,
-        restSeconds: info.currentProgress.restSeconds,
+    batch.set(
+      exerciseRef,
+      {
+        name: info.name,
+        //muscleGroup: info.muscleGroup,
+        currentProgress: {
+          sets: info.currentProgress.sets,
+          repsPerSet: info.currentProgress.repsPerSet,
+          weightPerSet: info.currentProgress.weightPerSet,
+          restSeconds: info.currentProgress.restSeconds,
+        },
+        order: index,
+        id: exerciseRef.id,
+        autoIncrease: info.autoIncrease,
       },
-      order: index,
-      id: exerciseRef.id,
-      autoIncrease: info.autoIncrease,
-    });
+      { merge: true },
+    );
 
     exCount++;
   });
@@ -312,9 +322,13 @@ export async function batchAddExercises(
     search.sessionId,
   );
 
-  await setDoc(sessionRef, {
-    exCount: exCount,
-  });
+  await setDoc(
+    sessionRef,
+    {
+      exCount: exCount,
+    },
+    { merge: true },
+  );
 }
 
 /**
