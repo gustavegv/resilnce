@@ -22,9 +22,28 @@
   onMount(async () => {
     const data = await getAllSessionMeta('user1');
     slugs = data.slugs;
+
+    slugs = sortByDateSafe(slugs, 'desc');
+
     activeSession = data.active;
     loaded = true
   });
+
+  function sortByDateSafe<T extends { date?: string | Date }>(
+    array: T[],
+    direction: 'asc' | 'desc' = 'asc'
+  ): T[] {
+    return array.sort((a, b) => {
+      const dateA = a.date ? new Date(a.date).getTime() : null;
+      const dateB = b.date ? new Date(b.date).getTime() : null;
+
+      if (dateA === null && dateB === null) return 0;
+      if (dateA === null) return direction === 'asc' ? 1 : -1; // undefined dates go last in asc, first in desc
+      if (dateB === null) return direction === 'asc' ? -1 : 1;
+
+      return direction === 'asc' ? dateA - dateB : dateB - dateA;
+    });
+  }
 
   function delay(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
