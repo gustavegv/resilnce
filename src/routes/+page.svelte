@@ -33,18 +33,18 @@
   <hr />
   <div class="btn-container">
     {#if existingSession}
-      <button class="base-btn alt" onclick={() => goto(`/tracker/${existingID}`)}>
+      <button class="base-btn alt buttonClass" onclick={() => goto(`/tracker/${existingID}`)}>
         <g>Continue session:</g>
         <h4>{existingID}</h4>
       </button>
     {/if}
 
-    <button class="base-btn sesh" onclick={() => goto('/tracker')}>
+    <button class="base-btn sesh buttonClass" onclick={() => goto('/tracker')}>
       <g>Begin a workout</g>
       <DbIcon />
     </button>
 
-    <button class="base-btn sesh" onclick={() => goto('/create')}>
+    <button class="base-btn sesh buttonClass" onclick={() => goto('/create')}>
       <g>Add new session</g>
       <AddIcon />
     </button>

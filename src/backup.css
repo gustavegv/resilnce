@@ -1,0 +1,179 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+
+.montserrat-400 {
+  font-family: 'Montserrat', sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+}
+
+button {
+  margin: 10px;
+  width: 80%;
+  font-size: 18px;
+
+  padding: 15px 20px;
+  border: none;
+  outline: none;
+  background-color: var(--color-secondary);
+  color: #eee;
+  border-radius: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease-out;
+  box-shadow: var(--shadow-dark);
+}
+
+button.mini {
+  margin: 5px;
+  padding: 0px;
+  height: 2rem;
+  width: 4rem;
+  font-size: 12px;
+}
+
+:root {
+  /* Colors */
+  --color-primary-o: #142d20;
+  --color-secondary-o: #142d20;
+  --color-background-o: #151515;
+
+  --color-sec-dark: #16261e;
+  --color-alt-o: #ffffff;
+  --color-gray-o: #dfdfdf;
+
+  --color-white: #f5f5f5;
+  --color-black: #000000;
+
+  --color-text: #ffffff;
+
+  --gradient-prim-o: linear-gradient(to right, #0f1f17 0%, #142d20 50%, #193b28 100%);
+
+  --color-secondary: #518071;
+  --color-alt: #00c896;
+  --color-background: #232323;
+  --color-contrast: #f1f1f1;
+
+  --gradient-prim: linear-gradient(
+    to right,
+    var(--color-background) 0%,
+    var(--color-background) 100%
+  );
+
+  --color-darker: #222536;
+  --color-gray: #edf2f4;
+
+  --gradient-prim-b: linear-gradient(
+    to right,
+    var(--color-background) 0%,
+    var(--color-secondary) 100%
+  );
+
+  --gradient-edit: linear-gradient(to right, var(--color-background) 0%, #545454 100%);
+
+  --gradient-alt: linear-gradient(to right, #121212 0%, #181818 50%, #1a1b1a 100%);
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 2rem;
+
+  /* Typography */
+  --font-family-sans: 'Helvetica Neue', Arial, sans-serif;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+
+  --shadow-dark:
+    inset 0 0 0.5px 1px hsla(0, 0%, 100%, 0.075),
+    /* shadow ring 👇 */ 0 0 0 1px hsla(0, 0%, 0%, 0.05),
+    /* multiple soft shadows 👇 */ 0 0.3px 0.4px hsla(0, 0%, 0%, 0.02),
+    0 0.9px 1.5px hsla(0, 0%, 0%, 0.045), 0 3.5px 6px hsla(0, 0%, 0%, 0.09);
+
+  --shadow-alt: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+}
+
+body,
+html {
+  touch-action: manipulation;
+  user-select: none;
+  margin: 0;
+  height: 100vh;
+  width: 100vw;
+  overflow-x: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--color-background);
+  color: var(--color-contrast);
+  height: 100%;
+  overflow-x: hidden;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+#landscape-warning {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--color-background);
+  color: rgb(255, 255, 255);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 1.5rem;
+}
+
+/* Show overlay when landscape */
+@media screen and (orientation: landscape) {
+  #landscape-warning {
+    display: flex;
+  }
+}
+
+/* 
+
+1. Moody Minimalist
+60%: #232323 (Dark Charcoal)
+30%: #E0E0E0 (Light Gray)
+10%: #00BFA6 (Teal Green)
+
+Elegant, professional, and modern with a pop of tech-style color.
+
+
+2. High-Contrast Luxury
+60%: #232323 (Dark Charcoal)
+30%: #F5F5F5 (Off-White)
+10%: #FFD700 (Gold)
+
+Classic black-and-gold with a clean base.
+
+
+3. Urban Editorial
+60%: #232323
+30%: #F9F9F9 (Soft White)
+10%: #E63946 (Bold Red)
+
+Great for media, fashion, or portfolios. Editorial and stylish.
+
+
+4. Tech Futurism
+60%: #232323
+30%: #1F1F2E (Slightly Bluish Dark)
+10%: #00FFFF (Cyan)
+
+Cool neon vibe—works well with animation or dark-mode UI.
+
+
+5. Organic Modern
+60%: #232323
+30%: #D8CAB8 (Desaturated Beige)
+10%: #89B0AE (Dusty Teal)
+
+A muted, calming palette that still feels modern and readable.
+
+*/

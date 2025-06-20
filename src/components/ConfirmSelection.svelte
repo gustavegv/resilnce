@@ -15,9 +15,9 @@
 </script>
 
 {#if !finished}
-  <button class="confirm-button" onclick={handleClick}> Confirm </button>
+  <button class="confirm-button buttonClass" onclick={handleClick}> Confirm </button>
 {:else}
-  <button class="confirm-button diabled" onclick={handleClick}> Set saved! ✓</button>
+  <button class="confirm-button diabled buttonClass" onclick={handleClick}> Set saved! ✓</button>
 {/if}
 
 <style>

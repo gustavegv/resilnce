@@ -48,18 +48,18 @@
     <div class="check {checked}"><Icon icon="gg:check-o" /></div>
     <div>Set {id}</div>
     <div class="controls">
-      <button class="but" onclick={decrement}>-</button>
+      <button class="but buttonClass" onclick={decrement}>-</button>
       <span onclick={checksRep}>{curCount}</span>
-      <button class="but" onclick={increment}>+</button>
+      <button class="but buttonClass" onclick={increment}>+</button>
     </div>
   </div>
 {:else}
   <div class="counter-container disabled">
     <div>Set {id}</div>
     <div class="controls">
-      <button class="but disabled" onclick={decrement}>-</button>
+      <button class="but disabled buttonClass" onclick={decrement}>-</button>
       <span class="mini">{curCount}</span>
-      <button class="but disabled" onclick={increment}>+</button>
+      <button class="but disabled buttonClass" onclick={increment}>+</button>
     </div>
   </div>
 {/if}

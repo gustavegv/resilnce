@@ -213,7 +213,7 @@
         </div>
       {/each}
     </div>
-    <button onclick={() => goto('/')}>Return to homepage</button>
+    <button class="buttonClass" onclick={() => goto('/')}>Return to homepage</button>
   </div>
 {:else if editMode}
   <main class="app-container edit-mode">
@@ -232,12 +232,12 @@
     />
   </main>
 {:else}
-  <button onclick={() => quitSession()} class="abs">Quit</button>
+  <button onclick={() => quitSession()} class="abs buttonClass">Quit</button>
   <main class="app-container">
     <div class="movement-cont">
-      <button class="movement-b mini" onclick={() => prevExercise()}>Prev</button>
+      <button class="movement-b mini buttonClass" onclick={() => prevExercise()}>Prev</button>
       <p>{currentExerciseIndex + 1}/{exercises.length}</p>
-      <button class="movement-b mini" onclick={() => skipExercise()}>Skip</button>
+      <button class="movement-b mini buttonClass" onclick={() => skipExercise()}>Skip</button>
     </div>
 
     <ExerciseTrackScreen
@@ -253,7 +253,7 @@
   </main>
 {/if}
 
-<button class="floating-edit {editMode}" onclick={enterEditMode}>
+<button class="floating-edit buttonClass {editMode}" onclick={enterEditMode}>
   <Icon icon={'material-symbols:edit-outline-rounded'} height={40} />
 </button>
 

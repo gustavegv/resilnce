@@ -1,19 +1,17 @@
 <script>
+  import '../app.css';
   import { page } from '$app/state';
   import Logo from '../components/icons/Logo.svelte';
   import CustomHeader from '../components/CustomHeader.svelte';
   import quitSession from './tracker/track.svelte';
-
   import { addUserByForm } from '$lib/firebaseCreation';
   import Icon from '@iconify/svelte';
-
+  import { goto } from '$app/navigation';
+  
   let { children } = $props();
-
-  // reactive flags for directory
-  // e.g. “/blog”, “/shop”, etc.
   let isBlog = $derived(page.url.pathname.startsWith('/tracker/'));
   let isCreate = $derived(page.url.pathname.startsWith('/create'));
-
+  
   function createUserAdminMode() {
     addUserByForm('Mr Wang', 'wang@gmail.com');
     alert('Succesfully created user.');
@@ -28,7 +26,7 @@
   <div class="head">
     <p class="compl">a</p>
     <Logo />
-    <div class="compl seen" onclick={() => createUserAdminMode()}>
+    <div class="compl seen" onclick={() => goto('/account')}>
       <Icon icon={'si:user-fill'} fill={'#fff'} height={28}></Icon>
     </div>
   </div>

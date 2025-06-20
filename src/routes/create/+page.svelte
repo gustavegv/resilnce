@@ -89,7 +89,7 @@
 
     <SetAutoIncrease weight={2.5} onCountChange={(count: number) => autoIncreaseChange(count)} />
 
-    <button class="add" onclick={addExercise}>+</button>
+    <button class="add buttonClass" onclick={addExercise}>+</button>
   </div>
 
   {#each currentlyAdded as blob, index}
@@ -108,7 +108,7 @@
     </div>
   {/each}
 
-  <button onclick={saveSession} class="finish">Finish and save session</button>
+  <button onclick={saveSession} class="finish buttonClass">Finish and save session</button>
 </div>
 
 <style>

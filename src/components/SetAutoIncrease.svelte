@@ -43,11 +43,11 @@
 <div class="counter-container mini">
   <div>Increase</div>
   <div class="controls mini">
-    <button class="but mini" onclick={decrement}>
+    <button class="but mini buttonClass" onclick={decrement}>
       <Icon icon={'gg:remove'} height={'30'} />
     </button>
     <gf class="mini-count">{curCount}</gf>
-    <button class="but mini" onclick={increment}>
+    <button class="but mini buttonClass" onclick={increment}>
       <Icon icon={'gg:add'} height={'30'} />
     </button>
   </div>

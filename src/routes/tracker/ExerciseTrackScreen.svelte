@@ -115,7 +115,7 @@
 {/each}
 
 {#if edit}
-  <button onclick={addSet}><h1>Add set</h1></button>
+  <button class="buttonClass" onclick={addSet}><h1>Add set</h1></button>
 {:else}
   <ConfirmSelection {finished} onConfirm={onSubmit} />
 {/if}

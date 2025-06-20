@@ -21,15 +21,15 @@
     <div class="backdrop" role="presentation">
       <div class="modal">
         {@render children?.()}
-        <button class="close" onclick={onAccept} aria-label="Accept" type="button"> Yes </button>
-        <button class="close" onclick={onDecline} aria-label="Decline" type="button"> No </button>
+        <button class="close buttonClass" onclick={onAccept} aria-label="Accept" type="button"> Yes </button>
+        <button class="close buttonClass" onclick={onDecline} aria-label="Decline" type="button"> No </button>
       </div>
     </div>
   {:else}
     <div class="backdrop" role="presentation" onclick={onAccept}>
       <div class="modal">
         {@render children?.()}
-        <button class="close" onclick={onAccept} aria-label="Close modal" type="button"> x </button>
+        <button class="close buttonClass" onclick={onAccept} aria-label="Close modal" type="button"> x </button>
       </div>
     </div>
   {/if}

@@ -75,12 +75,12 @@
 
 <div class="inner-cont alt">
   <div class="base-btn alt" style="width:{sty}">
-    <button class="start-side" onclick={prs}>
+    <button class="start-side buttonClass" onclick={prs}>
       <p>{slug.id}</p>
       <p class="date">{timeAgo(slug.date ?? grd(3))}</p>
     </button>
 
-    <button class="dots-cont" onclick={sideway}>
+    <button class="dots-cont buttonClass" onclick={sideway}>
       <Icon icon={'uiw:more'} fill={'#fff'} width={'20px'}></Icon>
     </button>
   </div>
