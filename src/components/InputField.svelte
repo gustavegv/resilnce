@@ -23,7 +23,6 @@
 
   .inp {
     position: relative;
-    margin: auto;
     width: 100%;
     max-width: 280px;
     border-radius: 3px;

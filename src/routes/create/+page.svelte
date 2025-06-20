@@ -73,8 +73,8 @@
 <div class="container">
   <input bind:value={seshName} placeholder="Untitled session" class="title" />
 
-  <div class="add-box">
-    <h3>Add an exercise</h3>
+  <div class="add-box shadow">
+    <h3 class="font-semibold text-xl pb-2">Add an exercise</h3>
     <InputField label={'Exercise name'} bind:value={newName} type={'text'} />
 
     <InputField label={'Sets'} bind:value={newSets} type={'number'} />
@@ -144,7 +144,7 @@
     display: flex;
     flex-direction: column;
     padding: 1rem;
-    width: 70%;
+    width: 80%;
     height: fit-content;
     background-color: var(--color-secondary);
     border-radius: 15px;
@@ -157,7 +157,7 @@
     position: relative;
     display: flex;
     box-sizing: border-box;
-    padding: 0 2rem;
+    padding: 1rem 2rem;
     flex-direction: row;
     background-color: var(--color-secondary);
     justify-content: space-between;
@@ -174,12 +174,12 @@
   }
 
   .finish {
-    -webkit-text-stroke: 0.7px rgb(255, 255, 255);
     height: 5rem;
     box-shadow: var(--shadow-dark);
     background: var(--color-secondary);
     font-size: 20px;
     margin-bottom: 12rem;
+    width: 80%;
   }
 
   body {
