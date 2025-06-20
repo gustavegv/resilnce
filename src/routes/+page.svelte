@@ -7,6 +7,7 @@
   import AddIcon from '../components/icons/AddIcon.svelte';
     import { user } from './account/user';
     import Icon from '@iconify/svelte';
+    import { blur, crossfade, fade, scale, slide } from 'svelte/transition';
 
   let existingSession = $state(false);
   let existingID = $state('');
@@ -31,12 +32,13 @@
 {#if $user}
 
 <div class="body">
-  <h1 class="wid">The only tracker you need.</h1>
+  <h1 class="wid">Good evening <span class="toUpper">{$user}</span>.</h1>
+
   <hr />
 
   <div class="btn-container">
     {#if existingSession}
-      <button class="base-btn alt buttonClass" onclick={() => goto(`/tracker/${existingID}`)}>
+      <button in:slide|global={{ duration:600 }} class="base-btn alt buttonClass" onclick={() => goto(`/tracker/${existingID}`)}>
         <g>Continue session:</g>
         <h4>{existingID}</h4>
       </button>
@@ -55,7 +57,7 @@
 </div>
 {:else}
 <div class="body">
-  <h1 class="wid">The only tracker you need.</h1>
+    <h1 class="wid">The only tracker you need.</h1>
   <hr />
     <button class="base-btn sesh buttonClass" onclick={() => goto('/account')}>
       <g>Log in</g>
@@ -75,6 +77,10 @@
     user-select: none;
     width: 16rem; /* Adjust to taste */
     height: auto;
+  }
+
+  .toUpper{
+    text-transform: capitalize;
   }
 
   .books.true {
@@ -138,7 +144,7 @@
   .base-btn.alt {
     background-color: var(--color-alt);
     color: var(--color-contrast);
-    box-shadow: rgba(255, 255, 255, 0.4) 0px 0px 20px 1px;
+    box-shadow: var(--color-alt) 0px 0px 20px 1px;
     height: 5rem;
   }
 </style>
