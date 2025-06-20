@@ -49,7 +49,7 @@
     <div>Set {id}</div>
     <div class="controls">
       <button class="but buttonClass" onclick={decrement}>-</button>
-      <span onclick={checksRep}>{curCount}</span>
+      <button onclick={checksRep}>{curCount}</button>
       <button class="but buttonClass" onclick={increment}>+</button>
     </div>
   </div>

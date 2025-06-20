@@ -26,9 +26,9 @@
   <div class="head">
     <p class="compl">a</p>
     <Logo />
-    <div class="compl seen" onclick={() => goto('/account')}>
+    <button class="compl seen" onclick={() => goto('/account')}>
       <Icon icon={'si:user-fill'} fill={'#fff'} height={28}></Icon>
-    </div>
+    </button>
   </div>
 {:else if isCreate}
   <div class="abs small">
@@ -60,11 +60,12 @@
   .compl {
     opacity: 0;
     margin: 0;
-    width: 4rem;
+    width: 3rem;
     align-items: center;
     text-align: center;
     font-size: 25px;
     padding: 0;
+    height: 3rem;
   }
 
   .compl.seen {
@@ -81,9 +82,6 @@
     width: 100%;
   }
 
-  .abs.small {
-  }
-
   .head {
     position: fixed;
     width: 100%;
@@ -98,20 +96,4 @@
     background-color: var(--color-background);
   }
 
-  .nav {
-    margin: 0 10px;
-    color: rgb(255, 255, 255);
-    font-size: 30px;
-  }
-
-  a {
-    color: inherit;
-    text-decoration: none;
-  }
-
-  h1 {
-    color: var(--color-white);
-    margin: 0 10px;
-    -webkit-text-stroke: 0.6px rgb(255, 255, 255);
-  }
 </style>

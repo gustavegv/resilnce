@@ -71,11 +71,5 @@
     margin: 0.5rem auto;
   }
 
-  /* BUTTON SKELETON */
-  .skeleton-button {
-    width: 100%;
-    height: 4rem;
-    margin: 2em auto;
-    border-radius: inherit;
-  }
+
 </style>

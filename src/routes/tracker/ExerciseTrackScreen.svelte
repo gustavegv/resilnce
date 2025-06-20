@@ -63,8 +63,8 @@
     reps = [...reps, 7];
   }
 
-  let newName: string;
-  let newWeight: number;
+  let newName: string = $state('');
+  let newWeight: number= $state(-1);
   let addedSetsCount: number = $state(0);
 </script>
 
