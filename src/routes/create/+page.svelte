@@ -8,6 +8,8 @@
   import SetBlock from '../../components/SetBlock.svelte';
   import SetAutoIncrease from '../../components/SetAutoIncrease.svelte';
   import { onDestroy, onMount } from 'svelte';
+    import { user } from '../account/user';
+    import { get } from 'svelte/store';
 
   type SessionInfo = {
     name: string;
@@ -20,6 +22,7 @@
     sets: 4,
   };
 
+
   let currentlyAdded: ExInfoPackage[] = $state([]);
 
   let seshName = $state('');
@@ -27,6 +30,15 @@
   let newSets: string = $state('');
   let newWeight: string = $state('');
   let newAutoInc: number = $state(2.5);
+
+  onMount(async () => {
+    const us = get(user)
+    if (!us){
+      goto('/account')
+    }
+
+    console.log("bru",us)
+  })
 
   function addExercise() {
     if (!newName || !newSets || !newWeight) {
@@ -64,11 +76,16 @@
   function saveSession() {
     // adds inputed exercise in case you forgot
     addExercise();
+    const username = get(user);
+    if (username){
+      betterAdd(username, seshName, currentlyAdded);
+      alert('Session saved succesfully!');
+      goto('/');
 
-    betterAdd(seshName, currentlyAdded);
+    } else {
+      alert("Problem with log-in authentication")
+    }
 
-    alert('session saved succesfully!');
-    goto('/');
   }
 
   function removeItem(index: number) {
@@ -192,7 +209,4 @@
     width: 80%;
   }
 
-  body {
-    overflow: hidden;
-  }
 </style>

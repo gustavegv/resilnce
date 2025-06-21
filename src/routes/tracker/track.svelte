@@ -17,6 +17,8 @@
   import Icon from '@iconify/svelte';
   import ExerciseTrackScreen from './ExerciseTrackScreen.svelte';
   import LoadingSkeleton from './LoadingSkeleton.svelte';
+    import { get } from 'svelte/store';
+    import { user } from '../account/user';
 
   // Exercise ID som blir tilldelad när man callar komponenten:
   //   Exempel:  <Track sesID="push" />
@@ -45,9 +47,16 @@
   const exWeight: number = $derived(currentExercise?.currentProgress.weightPerSet[0] ?? 0);
   const finished: boolean = $derived(currentExercise?.finished ?? false);
 
+  const userID = $derived(get(user))
+
+
   onMount(async () => {
+    if(!userID){
+      goto('/account')
+      return
+    }
     try {
-      exercises = await getOrderedExercises('user1', sesID);
+      exercises = await getOrderedExercises(userID, sesID);
       console.log('\n\nSesID:', sesID);
 
       await loadUnfinishedSession();
@@ -88,8 +97,8 @@
   async function handleSubmit() {
     if (currentExercise) {
       const finalReps = currentExercise.currentProgress.repsPerSet;
-      const updatedReps = await saveRecordedLift(
-        'user1',
+      await saveRecordedLift(
+        userID ?? 'error',
         sesID,
         finalReps,
         exWeight,
@@ -103,7 +112,7 @@
 
     if (checkAllFinished()) {
       allFinished = true;
-      await setActivityStatus('user1', sesID, false, []);
+      await setActivityStatus(userID ?? 'error', sesID, false, []);
       console.log('Workout finished, active set to false');
     } else {
       setUnfinishedSession();
@@ -114,11 +123,11 @@
   async function setUnfinishedSession() {
     const fin = getFinished();
     console.log('Finished so far:', fin);
-    await setActivityStatus('user1', sesID, true, fin);
+    await setActivityStatus(userID ?? 'error', sesID, true, fin);
   }
 
   async function loadUnfinishedSession() {
-    const info = await loadFinishedExercises('user1', sesID);
+    const info = await loadFinishedExercises(userID ?? 'error', sesID);
     let arrFin: number[] = [];
     if (info.unfinished) {
       const fins = info.finishedIDXS;
@@ -130,7 +139,7 @@
       arrFin = fins;
     }
 
-    await setActivityStatus('user1', sesID, true, arrFin);
+    await setActivityStatus(userID ?? 'error', sesID, true, arrFin);
   }
 
   function checkAllFinished(): boolean {
@@ -169,7 +178,7 @@
 
   function quitSession() {
     if (confirm('Are you sure you want to quit the session?')) {
-      setActivityStatus('user1', sesID, false);
+      setActivityStatus(userID ?? 'error', sesID, false);
       goto('/');
     } else {
       console.log('Quit adverted.');

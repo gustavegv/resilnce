@@ -124,7 +124,7 @@ let loggedIn = false
 
                 id="text"
                 type="text"
-                placeholder='"user1"'
+                placeholder='username'
                 bind:value={username}
                 required
               />

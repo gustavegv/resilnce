@@ -8,14 +8,15 @@
     import { user } from './account/user';
     import Icon from '@iconify/svelte';
     import { blur, crossfade, fade, scale, slide } from 'svelte/transition';
+    import { get } from 'svelte/store';
 
   let existingSession = $state(false);
   let existingID = $state('');
 
   onMount(async () => {
-
-    if ($user){
-      const prevSession = await checkActiveSession('user1');
+    const userID = get(user)
+    if (userID){
+      const prevSession = await checkActiveSession(userID);
   
       if (prevSession != null) {
         existingSession = prevSession.active;

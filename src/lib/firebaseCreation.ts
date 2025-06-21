@@ -25,12 +25,13 @@ export interface ExInfoPackage {
  */
 export interface UserInfo {
   name: string;
+  pass: string;
   email?: string;
   signupDate?: Date;
 }
 
-function simpleUserType(name: string): UserInfo {
-  const simple: UserInfo = { name: name };
+function simpleUserType(name: string, pass: string): UserInfo {
+  const simple: UserInfo = { name: name, pass: pass };
   return simple;
 }
 
@@ -124,13 +125,6 @@ function simpleHistoryType(
   };
   return simple;
 }
-
-// 1) UserInfo
-const userDummy: UserInfo = {
-  name: "Dummy User",
-  email: "dummy@example.com",
-  signupDate: new Date("2025-01-01T10:00:00Z"),
-};
 
 // 2) SessionInfo
 const sessionDummy: SessionInfo = {
@@ -364,25 +358,30 @@ export async function pushHistoryEntry(
   return historyRef.id;
 }
 
-export async function addUserByForm(name: string, mail: string) {
+export async function addUserByForm(name: string, pass: string, mail: string) {
   let info: UserInfo = {
     name: name,
+    pass: pass,
     email: mail,
     signupDate: new Date(),
   };
 
-  await addUser("user1", "pass", info);
+  await addUser(name, "pass", info);
 }
 
-export async function betterAdd(sessionName: string, exif: ExInfoPackage[]) {
+export async function betterAdd(
+  uID: string,
+  sessionName: string,
+  exif: ExInfoPackage[],
+) {
   const s: SessionInfo = {
     name: sessionName,
   };
-  await addSessionByName("user1", s);
+  await addSessionByName(uID, s);
 
   const exinfo = simpleExerciseTypeBatch(exif);
 
-  const search = { userId: "user1", sessionId: sessionName };
+  const search = { userId: uID, sessionId: sessionName };
   await batchAddExercises(search, exinfo);
 }
 
@@ -458,10 +457,13 @@ export async function signInOrSignUp(
         }
         return false;
       } else {
-        const d = simpleUserType(username);
-        await addUser(username, password, d);
+        if (confirm(`Createa a new user with username: ${username}`)) {
+          const d = simpleUserType(username, password);
+          await addUser(username, password, d);
+          return true;
+        }
+        return false;
       }
-      return true;
     });
   } catch (e) {
     if ((e as FirestoreError).code === "aborted") {

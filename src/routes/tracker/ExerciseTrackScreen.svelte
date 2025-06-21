@@ -3,6 +3,8 @@
   import SetBlock from '../../components/SetBlock.svelte';
   import ConfirmSelection from '../../components/ConfirmSelection.svelte';
   import { editExercise, type EditData } from '$lib/firebaseDataHandler';
+    import { get } from 'svelte/store';
+    import { user } from '../account/user';
 
   let {
     name = $bindable(),
@@ -35,8 +37,13 @@
   }
 
   async function onDone() {
+    const userID = get(user);
+    if (!userID) {
+      alert("No user signed in")
+      return;
+    }
     let data: EditData = {
-      user: 'user1',
+      user:  userID,
       sesID: sesID,
       exID: exID ?? '',
 
