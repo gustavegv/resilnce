@@ -9,18 +9,23 @@ import { Button } from '$lib/components/ui/button'
   import * as Card   from '$lib/components/ui/card'
 
   import { user } from './user';
+    import { signInOrSignUp } from '$lib/firebaseCreation';
 
   let username = '';
   let password = '';
 
-  export function tempLogin(user:string, pass:string):boolean{
-    return true
+  export async function tempLogin(user:string, pass:string):Promise<boolean>{
+    const response = await signInOrSignUp(user, pass)
+    return response
   }
 
-  function handleSubmit(event: Event) {
+  async function handleSubmit(event: Event) {
     console.log("d")
-    if (tempLogin(username, password)){
+
+    if (await tempLogin(username, password)){
       handleLogin()
+    } else {
+      alert("Login error. (Wrong username/password perhaps?)")
     }
   }
 

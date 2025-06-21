@@ -177,11 +177,16 @@ const historyEntryDummy: HistoryEntryInfo = {
 /**
  * Adds a new user document under 'users/{userId}'
  */
-export async function addUser(uID: string, info: UserInfo): Promise<void> {
+export async function addUser(
+  uID: string,
+  pass: string,
+  info: UserInfo,
+): Promise<void> {
   const userRef = doc(db, "users", uID);
 
   await setDoc(userRef, {
     name: info.name,
+    pass: pass,
     email: info.email || "",
     signupDate: new Date(),
     hasActiveSession: false,
@@ -366,23 +371,7 @@ export async function addUserByForm(name: string, mail: string) {
     signupDate: new Date(),
   };
 
-  await addUser("user1", info);
-}
-
-export async function testDB() {
-  await addUser("user1", simpleUserType("user1"));
-
-  const sif = simpleSessionType("upper");
-  await addSessionByName("user1", sif);
-
-  const search = { userId: "user1", sessionId: "upper" };
-  const pck: ExInfoPackage = { name: "row", sets: 3, weight: 40 };
-  const eif = simpleExerciseType(pck);
-  // await addExercise(search, eif)
-
-  await batchAddExercises(search, exercisesBatchDummy);
-
-  console.log("Added files to DB.");
+  await addUser("user1", "pass", info);
 }
 
 export async function betterAdd(sessionName: string, exif: ExInfoPackage[]) {
@@ -449,4 +438,35 @@ export async function loadFinishedExercises(
   }
 
   return { unfinished: fin, finishedIDXS: idxs };
+}
+
+export async function signInOrSignUp(
+  username: string,
+  password: string,
+): Promise<boolean> {
+  const nameKey = username.toLowerCase().trim();
+  const userRef = doc(db, "users", nameKey);
+
+  try {
+    return await runTransaction(db, async (tx) => {
+      const userSnap = await tx.get(userRef);
+
+      if (userSnap.exists()) {
+        // User already exists, log in
+        if (userSnap.data().pass == password) {
+          return true;
+        }
+        return false;
+      } else {
+        const d = simpleUserType(username);
+        await addUser(username, password, d);
+      }
+      return true;
+    });
+  } catch (e) {
+    if ((e as FirestoreError).code === "aborted") {
+      console.error("Transaction repeatedly conflicted.");
+    }
+    throw e;
+  }
 }
