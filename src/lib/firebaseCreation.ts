@@ -9,9 +9,9 @@ import {
   FirestoreError,
   updateDoc,
   getDoc,
-} from "firebase/firestore";
+} from 'firebase/firestore';
 
-import { db } from "./firebase";
+import { db } from './firebase';
 
 export interface ExInfoPackage {
   name: string;
@@ -102,11 +102,7 @@ export interface HistoryEntryInfo {
   notes?: string;
 }
 
-function simpleHistoryType(
-  name: string,
-  sets: number,
-  w: number,
-): HistoryEntryInfo {
+function simpleHistoryType(name: string, sets: number, w: number): HistoryEntryInfo {
   const rps = new Array(sets).fill(7);
   const wps = new Array(sets).fill(w);
 
@@ -128,15 +124,15 @@ function simpleHistoryType(
 
 // 2) SessionInfo
 const sessionDummy: SessionInfo = {
-  name: "Leg Day",
-  date: new Date("2025-06-15T08:30:00Z"),
-  notes: "Focus on squats and lunges",
+  name: 'Leg Day',
+  date: new Date('2025-06-15T08:30:00Z'),
+  notes: 'Focus on squats and lunges',
 };
 
 // 3) ExerciseInfo
 const exerciseDummy: ExerciseInfo = {
-  name: "Squat",
-  muscleGroup: "Legs",
+  name: 'Squat',
+  muscleGroup: 'Legs',
   currentProgress: {
     sets: 4,
     repsPerSet: [8, 8, 6, 6],
@@ -146,8 +142,8 @@ const exerciseDummy: ExerciseInfo = {
 };
 
 const exerciseDummy2: ExerciseInfo = {
-  name: "Leg Press",
-  muscleGroup: "Legs",
+  name: 'Leg Press',
+  muscleGroup: 'Legs',
   currentProgress: {
     sets: 3,
     repsPerSet: [12, 10, 8],
@@ -161,27 +157,23 @@ const exercisesBatchDummy: ExerciseInfo[] = [exerciseDummy, exerciseDummy2];
 
 // 5) HistoryEntryInfo
 const historyEntryDummy: HistoryEntryInfo = {
-  date: new Date("2025-06-01T07:00:00Z"),
+  date: new Date('2025-06-01T07:00:00Z'),
   sets: 4,
   repsPerSet: [8, 8, 8, 8],
   weightPerSet: [75, 75, 80, 80],
-  notes: "Felt strong today!",
+  notes: 'Felt strong today!',
 };
 
 /**
  * Adds a new user document under 'users/{userId}'
  */
-export async function addUser(
-  uID: string,
-  pass: string,
-  info: UserInfo,
-): Promise<void> {
-  const userRef = doc(db, "users", uID);
+export async function addUser(uID: string, pass: string, info: UserInfo): Promise<void> {
+  const userRef = doc(db, 'users', uID);
 
   await setDoc(userRef, {
     name: info.name,
     pass: pass,
-    email: info.email || "",
+    email: info.email || '',
     signupDate: new Date(),
     hasActiveSession: false,
   });
@@ -192,20 +184,17 @@ export async function addUser(
  * Uses the session name as the document ID.
  * Returns the sessionName used as the ID.
  */
-export async function addSessionByName(
-  uID: string,
-  info: SessionInfo,
-): Promise<string> {
+export async function addSessionByName(uID: string, info: SessionInfo): Promise<string> {
   // Use the session name directly as the document ID
   const sessionId = info.name;
-  const sessionRef = doc(db, "users", uID, "sessions", sessionId);
+  const sessionRef = doc(db, 'users', uID, 'sessions', sessionId);
 
-  console.log("ADDING SEESION");
+  console.log('ADDING SEESION');
 
   await setDoc(sessionRef, {
     name: info.name,
     date: new Date(),
-    notes: info.notes || "",
+    notes: info.notes || '',
     exCount: 0,
   });
 
@@ -218,27 +207,18 @@ export async function addSessionByName(
  */
 export async function addExercise(
   search: { userId: string; sessionId: string },
-  info: ExerciseInfo,
+  info: ExerciseInfo
 ): Promise<string> {
   const { userId, sessionId } = search;
-  const sessionRef = doc(db, "users", userId, "sessions", sessionId);
-  const exercisesCol = collection(
-    db,
-    "users",
-    userId,
-    "sessions",
-    sessionId,
-    "exercises",
-  );
+  const sessionRef = doc(db, 'users', userId, 'sessions', sessionId);
+  const exercisesCol = collection(db, 'users', userId, 'sessions', sessionId, 'exercises');
   // autogenererad ID
   const newExerciseRef = doc(exercisesCol);
 
   await runTransaction(db, async (tx) => {
     const sessionSnap = await tx.get(sessionRef);
     if (!sessionSnap.exists()) {
-      throw new Error(
-        `firestore error 69: Session ${sessionId} for user ${userId} does not exist`,
-      );
+      throw new Error(`firestore error 69: Session ${sessionId} for user ${userId} does not exist`);
     }
 
     // läs exCount
@@ -249,7 +229,7 @@ export async function addExercise(
       newExerciseRef,
       {
         name: info.name,
-        muscleGroup: info.muscleGroup || "",
+        muscleGroup: info.muscleGroup || '',
         currentProgress: {
           sets: info.currentProgress.sets,
           repsPerSet: info.currentProgress.repsPerSet,
@@ -260,7 +240,7 @@ export async function addExercise(
         id: newExerciseRef.id,
         autoIncrease: info.autoIncrease,
       },
-      { merge: true },
+      { merge: true }
     );
 
     // uppdatera session exCount
@@ -275,16 +255,16 @@ export async function addExercise(
  */
 export async function batchAddExercises(
   search: { userId: string; sessionId: string },
-  infos: ExerciseInfo[],
+  infos: ExerciseInfo[]
 ): Promise<void> {
   const batch = writeBatch(db);
   const exercisesCol = collection(
     db,
-    "users",
+    'users',
     search.userId,
-    "sessions",
+    'sessions',
     search.sessionId,
-    "exercises",
+    'exercises'
   );
 
   let exCount = 0;
@@ -306,27 +286,21 @@ export async function batchAddExercises(
         id: exerciseRef.id,
         autoIncrease: info.autoIncrease,
       },
-      { merge: true },
+      { merge: true }
     );
 
     exCount++;
   });
   await batch.commit();
 
-  const sessionRef = doc(
-    db,
-    "users",
-    search.userId,
-    "sessions",
-    search.sessionId,
-  );
+  const sessionRef = doc(db, 'users', search.userId, 'sessions', search.sessionId);
 
   await setDoc(
     sessionRef,
     {
       exCount: exCount,
     },
-    { merge: true },
+    { merge: true }
   );
 }
 
@@ -336,24 +310,24 @@ export async function batchAddExercises(
  */
 export async function pushHistoryEntry(
   search: { userId: string; sessionId: string; exerciseId: string },
-  info: HistoryEntryInfo,
+  info: HistoryEntryInfo
 ): Promise<string> {
   const historyCol = collection(
     db,
-    "users",
+    'users',
     search.userId,
-    "sessions",
+    'sessions',
     search.sessionId,
-    "exercises",
+    'exercises',
     search.exerciseId,
-    "history",
+    'history'
   );
   const historyRef = await addDoc(historyCol, {
     date: info.date,
     sets: info.sets,
     repsPerSet: info.repsPerSet,
     weightPerSet: info.weightPerSet,
-    notes: info.notes || "",
+    notes: info.notes || '',
   });
   return historyRef.id;
 }
@@ -366,14 +340,10 @@ export async function addUserByForm(name: string, pass: string, mail: string) {
     signupDate: new Date(),
   };
 
-  await addUser(name, "pass", info);
+  await addUser(name, 'pass', info);
 }
 
-export async function betterAdd(
-  uID: string,
-  sessionName: string,
-  exif: ExInfoPackage[],
-) {
+export async function betterAdd(uID: string, sessionName: string, exif: ExInfoPackage[]) {
   const s: SessionInfo = {
     name: sessionName,
   };
@@ -389,13 +359,15 @@ export async function setActivityStatus(
   uID: string,
   sesID: string,
   activating: boolean,
-  fin?: number[],
+  fin?: number[]
 ) {
   // Use the session name directly as the document ID
-  const globalRef = doc(db, "users", uID);
-  const localRef = doc(db, "users", uID, "sessions", sesID);
+  const globalRef = doc(db, 'users', uID);
+  const localRef = doc(db, 'users', uID, 'sessions', sesID);
 
   const finished = fin ?? [];
+
+  console.log('Activity status changed, now:', activating);
 
   if (activating) {
     await updateDoc(globalRef, {
@@ -415,12 +387,12 @@ export async function setActivityStatus(
 
 export async function loadFinishedExercises(
   uID: string,
-  sesID: string,
+  sesID: string
 ): Promise<{ finishedIDXS: number[]; unfinished: boolean }> {
   let idxs: number[];
   let fin: boolean;
 
-  const localRef = doc(db, "users", uID, "sessions", sesID);
+  const localRef = doc(db, 'users', uID, 'sessions', sesID);
 
   const snap = await getDoc(localRef);
 
@@ -429,9 +401,9 @@ export async function loadFinishedExercises(
     idxs = data.finished ?? [];
     fin = data.isSessionActive ?? false;
 
-    console.log("finsihed indexes:", idxs);
+    console.log('finsihed indexes:', idxs);
   } else {
-    console.error("Document does not exist.");
+    console.error('Document does not exist.');
     fin = false;
     idxs = [];
   }
@@ -439,12 +411,9 @@ export async function loadFinishedExercises(
   return { unfinished: fin, finishedIDXS: idxs };
 }
 
-export async function signInOrSignUp(
-  username: string,
-  password: string,
-): Promise<boolean> {
+export async function signInOrSignUp(username: string, password: string): Promise<boolean> {
   const nameKey = username.toLowerCase().trim();
-  const userRef = doc(db, "users", nameKey);
+  const userRef = doc(db, 'users', nameKey);
 
   try {
     return await runTransaction(db, async (tx) => {
@@ -466,8 +435,8 @@ export async function signInOrSignUp(
       }
     });
   } catch (e) {
-    if ((e as FirestoreError).code === "aborted") {
-      console.error("Transaction repeatedly conflicted.");
+    if ((e as FirestoreError).code === 'aborted') {
+      console.error('Transaction repeatedly conflicted.');
     }
     throw e;
   }

@@ -10,23 +10,23 @@
   import Popup from '../../components/Popup.svelte';
   import { fade } from 'svelte/transition';
   import Icon from '@iconify/svelte';
-    import { user } from '../account/user';
-    import { get } from 'svelte/store';
+  import { user } from '../account/user';
+  import { get } from 'svelte/store';
 
   let slugs: SessionMetaData[] = $state([]);
   let activeSession: boolean = $state(false);
-  let loaded:boolean = $state(false)
+  let loaded: boolean = $state(false);
 
   let showPopup: boolean = $state(false);
 
   let showError: string = $state('');
 
-  const userID = $derived(get(user))
+  const userID = $derived(get(user));
 
   onMount(async () => {
-    if (!userID){
-      goto('/account')
-      return
+    if (!userID) {
+      goto('/account');
+      return;
     }
 
     const data = await getAllSessionMeta(userID);
@@ -35,7 +35,7 @@
     slugs = sortByDateSafe(slugs, 'desc');
 
     activeSession = data.active;
-    loaded = true
+    loaded = true;
   });
 
   function sortByDateSafe<T extends { date?: string | Date }>(
@@ -94,7 +94,7 @@
 
   async function delSes(id: string) {
     openPopup('delete');
-    if (!userID) return
+    if (!userID) return;
 
     if (confirm(`Are you sure you want to delete ${id}?`)) {
       await fakeDeleteSession(userID, id);

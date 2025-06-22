@@ -3,8 +3,8 @@
   import SetBlock from '../../components/SetBlock.svelte';
   import ConfirmSelection from '../../components/ConfirmSelection.svelte';
   import { editExercise, type EditData } from '$lib/firebaseDataHandler';
-    import { get } from 'svelte/store';
-    import { user } from '../account/user';
+  import { get } from 'svelte/store';
+  import { user } from '../account/user';
 
   let {
     name = $bindable(),
@@ -39,11 +39,11 @@
   async function onDone() {
     const userID = get(user);
     if (!userID) {
-      alert("No user signed in")
+      alert('No user signed in');
       return;
     }
     let data: EditData = {
-      user:  userID,
+      user: userID,
       sesID: sesID,
       exID: exID ?? '',
 
@@ -71,7 +71,7 @@
   }
 
   let newName: string = $state('');
-  let newWeight: number= $state(-1);
+  let newWeight: number = $state(-1);
   let addedSetsCount: number = $state(0);
 </script>
 
@@ -112,8 +112,8 @@
   </header>
 {:else}
   <header>
-    <h1 class="font-bold text-4xl">{name}</h1>
-    <h2 class="font-bold text-2xl">{weight} kg</h2>
+    <h1 class="text-4xl font-bold">{name}</h1>
+    <h2 class="text-2xl font-bold">{weight} kg</h2>
   </header>
 {/if}
 

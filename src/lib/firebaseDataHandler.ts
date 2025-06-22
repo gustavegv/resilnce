@@ -1,4 +1,4 @@
-import { db } from "./firebase";
+import { db } from './firebase';
 import {
   collection,
   query,
@@ -12,9 +12,9 @@ import {
   WriteBatch,
   type DocumentData,
   Timestamp,
-} from "firebase/firestore";
+} from 'firebase/firestore';
 
-import type { ExerciseInfo } from "./firebaseCreation";
+import type { ExerciseInfo } from './firebaseCreation';
 
 export interface EditData {
   user: string;
@@ -63,17 +63,14 @@ type SessionInfo = {
   exercises: ExInfo[];
 };
 
-export async function getOrderedExercises(
-  uID: string,
-  sesID: string,
-): Promise<ExerciseInfo[]> {
-  const colRef = collection(db, "users", uID, "sessions", sesID, "exercises");
-  const q = query(colRef, orderBy("order", "asc"));
+export async function getOrderedExercises(uID: string, sesID: string): Promise<ExerciseInfo[]> {
+  const colRef = collection(db, 'users', uID, 'sessions', sesID, 'exercises');
+  const q = query(colRef, orderBy('order', 'asc'));
 
   const snapshot = await getDocs(q);
 
   if (snapshot.empty) {
-    console.error("Empty snapshot");
+    console.error('Empty snapshot');
     return [];
   }
 
@@ -81,9 +78,9 @@ export async function getOrderedExercises(
 }
 
 export async function getAllSessionMeta(
-  uID: string,
+  uID: string
 ): Promise<{ slugs: SessionMetaData[]; active: boolean }> {
-  const colRef = collection(db, "users", uID, "sessions");
+  const colRef = collection(db, 'users', uID, 'sessions');
 
   const snapshot = await getDocs(colRef);
 
@@ -100,13 +97,13 @@ export async function getAllSessionMeta(
 
     return {
       id: doc.id,
-      name: data.title || "(untitled)", // fallback om .title saknas
+      name: data.title || '(untitled)', // fallback om .title saknas
       deleted: data.sessionDeleted || false,
       date: formattedDate || undefined,
     };
   });
 
-  const docRef = doc(db, "users", uID);
+  const docRef = doc(db, 'users', uID);
   const docSnap = await getDoc(docRef);
   const data = docSnap.data();
 
@@ -119,13 +116,13 @@ export async function getAllSessionMeta(
 }
 
 export async function checkActiveSession(
-  uID: string,
+  uID: string
 ): Promise<{ active: boolean; session: string } | null> {
-  const docRef = doc(db, "users", uID);
+  const docRef = doc(db, 'users', uID);
   const docSnap = await getDoc(docRef);
 
   if (!docSnap.exists()) {
-    console.warn("No such document!");
+    console.warn('No such document!');
     return null;
   }
 
@@ -144,16 +141,16 @@ function createHistoricData(blocks: number[], weight: number) {
   const now = new Date();
   const formatted =
     now.getFullYear() +
-    "-" +
-    String(now.getMonth() + 1).padStart(2, "0") +
-    "-" +
-    String(now.getDate()).padStart(2, "0") +
-    " " +
-    String(now.getHours()).padStart(2, "0") +
-    ":" +
-    String(now.getMinutes()).padStart(2, "0") +
-    ":" +
-    String(now.getSeconds()).padStart(2, "0");
+    '-' +
+    String(now.getMonth() + 1).padStart(2, '0') +
+    '-' +
+    String(now.getDate()).padStart(2, '0') +
+    ' ' +
+    String(now.getHours()).padStart(2, '0') +
+    ':' +
+    String(now.getMinutes()).padStart(2, '0') +
+    ':' +
+    String(now.getSeconds()).padStart(2, '0');
 
   return { avgSet: avgSet, weightH: weight, date: formatted };
 }
@@ -163,16 +160,16 @@ export async function saveRecordedLift(
   sesID: string,
   repArray: number[],
   weight: number,
-  exTag: string,
+  exTag: string
 ): Promise<number[]> {
-  if (exTag == "error") {
-    console.error("Special ex-ID not found in DB.");
+  if (exTag == 'error') {
+    console.error('Special ex-ID not found in DB.');
   }
 
   const hisData = createHistoricData(repArray, weight);
 
   // push historic data and update sets
-  const exRef = doc(db, "users", uID, "sessions", sesID, "exercises", exTag);
+  const exRef = doc(db, 'users', uID, 'sessions', sesID, 'exercises', exTag);
 
   let curProg;
 
@@ -192,13 +189,13 @@ export async function saveRecordedLift(
     const rps = new Array(repArray.length).fill(7);
 
     updatedStats = {
-      "currentProgress.repsPerSet": rps,
-      "currentProgress.weightPerSet": wps,
+      'currentProgress.repsPerSet': rps,
+      'currentProgress.weightPerSet': wps,
       history: arrayUnion(hisData),
     };
   } else {
     updatedStats = {
-      "currentProgress.repsPerSet": repArray,
+      'currentProgress.repsPerSet': repArray,
       history: arrayUnion(hisData),
     };
   }
@@ -217,8 +214,8 @@ function tryAutoIncrease(history: any): boolean {
 }
 
 export async function fakeDeleteSession(uID: string, sesID: string) {
-  const globalRef = doc(db, "users", uID);
-  const localRef = doc(db, "users", uID, "sessions", sesID);
+  const globalRef = doc(db, 'users', uID);
+  const localRef = doc(db, 'users', uID, 'sessions', sesID);
 
   await updateDoc(localRef, {
     sessionDeleted: true,
@@ -230,7 +227,7 @@ export async function editExercise(eData: EditData) {
   const sesID = eData.sesID;
   const exID = eData.exID;
 
-  const exRef = doc(db, "users", uID, "sessions", sesID, "exercises", exID);
+  const exRef = doc(db, 'users', uID, 'sessions', sesID, 'exercises', exID);
 
   const updatedStats: any = {};
 

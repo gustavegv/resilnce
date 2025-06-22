@@ -8,8 +8,8 @@
   import SetBlock from '../../components/SetBlock.svelte';
   import SetAutoIncrease from '../../components/SetAutoIncrease.svelte';
   import { onDestroy, onMount } from 'svelte';
-    import { user } from '../account/user';
-    import { get } from 'svelte/store';
+  import { user } from '../account/user';
+  import { get } from 'svelte/store';
 
   type SessionInfo = {
     name: string;
@@ -22,7 +22,6 @@
     sets: 4,
   };
 
-
   let currentlyAdded: ExInfoPackage[] = $state([]);
 
   let seshName = $state('');
@@ -32,13 +31,13 @@
   let newAutoInc: number = $state(2.5);
 
   onMount(async () => {
-    const us = get(user)
-    if (!us){
-      goto('/account')
+    const us = get(user);
+    if (!us) {
+      goto('/account');
     }
 
-    console.log("bru",us)
-  })
+    console.log('bru', us);
+  });
 
   function addExercise() {
     if (!newName || !newSets || !newWeight) {
@@ -54,9 +53,9 @@
       Number(newWeight) > 9999 ||
       newName.length > 100 ||
       currentlyAdded.length > 100
-    ){
-      alert("Max threshold met.")
-      return
+    ) {
+      alert('Max threshold met.');
+      return;
     }
 
     const entry: ExInfoPackage = {
@@ -77,15 +76,13 @@
     // adds inputed exercise in case you forgot
     addExercise();
     const username = get(user);
-    if (username){
+    if (username) {
       betterAdd(username, seshName, currentlyAdded);
       alert('Session saved succesfully!');
       goto('/');
-
     } else {
-      alert("Problem with log-in authentication")
+      alert('Problem with log-in authentication');
     }
-
   }
 
   function removeItem(index: number) {
@@ -101,7 +98,7 @@
   <input maxlength="50" bind:value={seshName} placeholder="Untitled session" class="title" />
 
   <div class="add-box shadow">
-    <h3 class="font-semibold text-xl pb-2">Add an exercise</h3>
+    <h3 class="pb-2 text-xl font-semibold">Add an exercise</h3>
     <InputField label={'Exercise name'} bind:value={newName} type={'text'} />
 
     <InputField label={'Sets'} bind:value={newSets} type={'number'} />
@@ -208,5 +205,4 @@
     margin-bottom: 12rem;
     width: 80%;
   }
-
 </style>

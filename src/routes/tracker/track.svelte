@@ -17,8 +17,8 @@
   import Icon from '@iconify/svelte';
   import ExerciseTrackScreen from './ExerciseTrackScreen.svelte';
   import LoadingSkeleton from './LoadingSkeleton.svelte';
-    import { get } from 'svelte/store';
-    import { user } from '../account/user';
+  import { get } from 'svelte/store';
+  import { user } from '../account/user';
 
   // Exercise ID som blir tilldelad när man callar komponenten:
   //   Exempel:  <Track sesID="push" />
@@ -38,7 +38,7 @@
 
   // Derived variabler
   const currentExercise = $derived(
-    !loading && exercises[currentExerciseIndex] ? exercises[currentExerciseIndex] : undefined,
+    !loading && exercises[currentExerciseIndex] ? exercises[currentExerciseIndex] : undefined
   );
 
   const exName: string = $derived(currentExercise?.name ?? '');
@@ -47,13 +47,12 @@
   const exWeight: number = $derived(currentExercise?.currentProgress.weightPerSet[0] ?? 0);
   const finished: boolean = $derived(currentExercise?.finished ?? false);
 
-  const userID = $derived(get(user))
-
+  const userID = $derived(get(user));
 
   onMount(async () => {
-    if(!userID){
-      goto('/account')
-      return
+    if (!userID) {
+      goto('/account');
+      return;
     }
     try {
       exercises = await getOrderedExercises(userID, sesID);
@@ -102,7 +101,7 @@
         sesID,
         finalReps,
         exWeight,
-        currentExercise.id ?? 'error',
+        currentExercise.id ?? 'error'
       );
     }
 
@@ -193,16 +192,16 @@
     editMode = true;
   }
 
-  function checkPR(ar: number[]):boolean{
-    let repLimit = 12
-    let count = 0
+  function checkPR(ar: number[]): boolean {
+    let repLimit = 12;
+    let count = 0;
 
-    ar.forEach(nu => {
-      count += nu
+    ar.forEach((nu) => {
+      count += nu;
     });
 
-    let avg = count / ar.length
-    return avg > repLimit
+    let avg = count / ar.length;
+    return avg > repLimit;
   }
 </script>
 
@@ -216,9 +215,9 @@
   {/if}
 {:else if allFinished}
   <div class="container">
-    <h1 class="text-2xl font-bold pb-8">Session finished!</h1>
+    <h1 class="pb-8 text-2xl font-bold">Session finished!</h1>
     <div class="box">
-      <h2 class="text-lg font-semibold py-2">Session overview</h2>
+      <h2 class="py-2 text-lg font-semibold">Session overview</h2>
       {#each exercises as blob, index}
         <div class="blob-cont relative">
           <div class="blob-info">
@@ -232,9 +231,9 @@
             {/each}
           </div>
           {#if checkPR(blob.currentProgress.repsPerSet)}
-          <div class="absolute right-1">
-            <Icon icon="ri:medal-line" width="35" color="gold"/>
-          </div>
+            <div class="absolute right-1">
+              <Icon icon="ri:medal-line" width="35" color="gold" />
+            </div>
           {/if}
         </div>
       {/each}
@@ -288,10 +287,10 @@
 {/if}
 
 <style>
-.but {
-  width: 80%;
-  background: var(--color-alt);
-}
+  .but {
+    width: 80%;
+    background: var(--color-alt);
+  }
 
   .floating-edit {
     position: absolute;

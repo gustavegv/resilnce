@@ -7,11 +7,10 @@
   import { addUserByForm } from '$lib/firebaseCreation';
   import Icon from '@iconify/svelte';
   import { goto } from '$app/navigation';
-  
+
   let { children } = $props();
   let isBlog = $derived(page.url.pathname.startsWith('/tracker/'));
   let isCreate = $derived(page.url.pathname.startsWith('/create'));
-  
 </script>
 
 {#if !isBlog && !isCreate}
@@ -91,5 +90,4 @@
   .head.view {
     background-color: var(--color-background);
   }
-
 </style>

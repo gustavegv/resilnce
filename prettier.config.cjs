@@ -2,7 +2,7 @@
 
 module.exports = {
   // 🔌 Load the plugin that tells Prettier how to format .svelte files
-  plugins: ["prettier-plugin-svelte"],
+  plugins: ['prettier-plugin-svelte'],
 
   // 🧹 Use single quotes instead of double quotes in JS/TS/HTML
   singleQuote: true,
@@ -14,7 +14,7 @@ module.exports = {
   printWidth: 100,
 
   // 🧩 Sort <script>, HTML markup, exported props, and <style> in this order
-  svelteSortOrder: "scripts-markup-options-styles",
+  svelteSortOrder: 'scripts-markup-options-styles',
 
   // 🚨 Enforce strict, consistent formatting for Svelte files
   svelteStrictMode: true,

@@ -5,19 +5,19 @@
   import { onMount } from 'svelte';
   import DbIcon from '../components/icons/DBIcon.svelte';
   import AddIcon from '../components/icons/AddIcon.svelte';
-    import { user } from './account/user';
-    import Icon from '@iconify/svelte';
-    import { blur, crossfade, fade, scale, slide } from 'svelte/transition';
-    import { get } from 'svelte/store';
+  import { user } from './account/user';
+  import Icon from '@iconify/svelte';
+  import { blur, crossfade, fade, scale, slide } from 'svelte/transition';
+  import { get } from 'svelte/store';
 
   let existingSession = $state(false);
   let existingID = $state('');
 
   onMount(async () => {
-    const userID = get(user)
-    if (userID){
+    const userID = get(user);
+    if (userID) {
       const prevSession = await checkActiveSession(userID);
-  
+
       if (prevSession != null) {
         existingSession = prevSession.active;
         console.log('exists', existingSession);
@@ -26,43 +26,46 @@
         }
       }
     }
-
   });
 </script>
+
 <img src="books.png" alt="a" class="books {existingSession}" />
 {#if $user}
+  <div class="body">
+    <h1 class="wid">Good evening <span class="toUpper">{$user}</span>.</h1>
 
-<div class="body">
-  <h1 class="wid">Good evening <span class="toUpper">{$user}</span>.</h1>
+    <hr />
 
-  <hr />
+    <div class="btn-container">
+      {#if existingSession}
+        <button
+          in:slide|global={{ duration: 600 }}
+          class="base-btn alt buttonClass"
+          onclick={() => goto(`/tracker/${existingID}`)}
+        >
+          <g>Continue session:</g>
+          <h4>{existingID}</h4>
+        </button>
+      {/if}
 
-  <div class="btn-container">
-    {#if existingSession}
-      <button in:slide|global={{ duration:600 }} class="base-btn alt buttonClass" onclick={() => goto(`/tracker/${existingID}`)}>
-        <g>Continue session:</g>
-        <h4>{existingID}</h4>
+      <button class="base-btn sesh buttonClass" onclick={() => goto('/tracker')}>
+        <g>Begin a workout</g>
+        <DbIcon />
       </button>
-    {/if}
 
-    <button class="base-btn sesh buttonClass" onclick={() => goto('/tracker')}>
-      <g>Begin a workout</g>
-      <DbIcon />
-    </button>
-
-    <button class="base-btn sesh buttonClass" onclick={() => goto('/create')}>
-      <g>Add new session</g>
-      <AddIcon />
-    </button>
+      <button class="base-btn sesh buttonClass" onclick={() => goto('/create')}>
+        <g>Add new session</g>
+        <AddIcon />
+      </button>
+    </div>
   </div>
-</div>
 {:else}
-<div class="body">
+  <div class="body">
     <h1 class="wid">The only tracker you need.</h1>
-  <hr />
+    <hr />
     <button class="base-btn sesh buttonClass" onclick={() => goto('/account')}>
       <g>Log in</g>
-      <Icon icon="material-symbols:login-rounded" width="35"/>
+      <Icon icon="material-symbols:login-rounded" width="35" />
     </button>
   </div>
 {/if}
@@ -80,7 +83,7 @@
     height: auto;
   }
 
-  .toUpper{
+  .toUpper {
     text-transform: capitalize;
   }
 
@@ -129,7 +132,7 @@
     justify-content: space-between;
     align-items: center;
     box-shadow: var(--shadow-dark);
-    width:90%;
+    width: 90%;
   }
 
   .base-btn.sesh {

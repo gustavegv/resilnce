@@ -70,6 +70,4 @@
     height: 6em;
     margin: 0.5rem auto;
   }
-
-
 </style>

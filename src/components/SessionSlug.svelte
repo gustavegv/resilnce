@@ -36,8 +36,8 @@
   }
 
   function timeAgo(date: Date): string {
-    date as Date
-    console.log("timeag", date)
+    date as Date;
+    console.log('timeag', date);
     const now = new Date();
     const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
