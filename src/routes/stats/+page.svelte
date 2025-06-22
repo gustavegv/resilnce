@@ -1,50 +1,32 @@
 <script lang="ts">
-  import ChartLineDefault from '$lib/components/ui/chart/chart-line-default.svelte';
+  import ChartLineDefault, {
+    type ChartData,
+  } from '$lib/components/ui/chart/chart-line-default.svelte';
   import * as Card from '$lib/components/ui/card/index.js';
+  import { calling, historicTo1RM, type Unformat } from './statistics';
+  import type { Historic } from '$lib/firebaseDataHandler';
+  import { onMount } from 'svelte';
+  import Input from '$lib/components/ui/input/input.svelte';
 
-  import type { ChartData } from '$lib/components/ui/chart/chart-line-default.svelte';
+  onMount(async () => {
+    formattedData = await calling();
+  });
 
-  interface Unformat {
-    day: Date;
-    reps: number;
-    weight: number;
-  }
-
-  const unformatted: Unformat[] = [
-    { day: new Date('2024-01-01'), reps: 7, weight: 80 },
-    { day: new Date('2024-01-02'), reps: 8, weight: 80 },
-    { day: new Date('2024-01-03'), reps: 8, weight: 80 },
-    { day: new Date('2024-01-04'), reps: 9, weight: 80 },
-    { day: new Date('2024-01-05'), reps: 12, weight: 80 },
-    { day: new Date('2024-01-06'), reps: 8, weight: 82.5 },
-    { day: new Date('2024-01-08'), reps: 9, weight: 82.5 },
-    { day: new Date('2024-01-10'), reps: 9, weight: 82.5 },
-    { day: new Date('2024-01-12'), reps: 10, weight: 82.5 },
-    { day: new Date('2024-01-13'), reps: 11, weight: 82.5 },
-    { day: new Date('2024-01-13'), reps: 8, weight: 85 },
+  const unformatted: Historic[] = [
+    { date: new Date('2024-01-01'), avgSet: 7, weightH: 80 },
+    { date: new Date('2024-01-02'), avgSet: 8, weightH: 80 },
+    { date: new Date('2024-01-03'), avgSet: 8, weightH: 80 },
+    { date: new Date('2024-01-04'), avgSet: 9, weightH: 80 },
+    { date: new Date('2024-01-05'), avgSet: 12, weightH: 80 },
+    { date: new Date('2024-01-06'), avgSet: 8, weightH: 82.5 },
+    { date: new Date('2024-01-08'), avgSet: 9, weightH: 82.5 },
+    { date: new Date('2024-01-10'), avgSet: 9, weightH: 82.5 },
+    { date: new Date('2024-01-12'), avgSet: 10, weightH: 82.5 },
+    { date: new Date('2024-01-13'), avgSet: 11, weightH: 82.5 },
+    { date: new Date('2024-01-13'), avgSet: 8, weightH: 85 },
   ];
 
-  function est1RM(weight: number, reps: number) {
-    if (reps < 1) throw new Error('Reps must be at least 1');
-    return weight * (1 + 0.0333 * reps);
-  }
-
-  function historicTo1RM(d: Unformat[]): ChartData[] {
-    let newA: ChartData[] = [];
-
-    for (var entry of d) {
-      const val = est1RM(entry.weight, entry.reps);
-      const n: ChartData = { date: entry.day, oneRM: val, second: entry.weight };
-      newA = [...newA, n];
-    }
-    let last = newA[newA.length - 1];
-    const date = last.date;
-    date.setDate(date.getDate() + 1);
-    last.date = date;
-    newA = [...newA, last];
-
-    return newA;
-  }
+  let formattedData: ChartData[] = $state([]);
 </script>
 
 <br />
@@ -52,12 +34,18 @@
 <br />
 <br />
 <br />
+
 <main class="flex flex-col items-center justify-center gap-4 px-4">
+  <div class="grid grid-cols-2 items-center">
+    <Input class="" placeholder="Session name" />
+    <button class="buttonClass m-4" onclick={calling}>Get session</button>
+  </div>
+
   <Card.Root class="w-full">
     <ChartLineDefault
       title="Latest session"
       desc="One Rep Max Progression layered with the current weight"
-      data={historicTo1RM(unformatted)}
+      data={formattedData}
     />
   </Card.Root>
   <div class="grid grid-cols-2 gap-4">

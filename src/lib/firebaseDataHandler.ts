@@ -12,6 +12,7 @@ import {
   WriteBatch,
   type DocumentData,
   Timestamp,
+  limit,
 } from 'firebase/firestore';
 
 import type { ExerciseInfo } from './firebaseCreation';
@@ -34,6 +35,7 @@ export interface Set {
 export interface Historic {
   avgSet: number;
   weightH: number;
+  date: Date;
 }
 
 export interface Exercise {
@@ -134,7 +136,7 @@ export async function checkActiveSession(
 }
 
 // samla och gör om inkommande data till en historiskt sesh
-function createHistoricData(blocks: number[], weight: number) {
+function createHistoricData(blocks: number[], weight: number): Historic {
   const totalReps = blocks.reduce((total, num) => total + num, 0);
   const avgSet = totalReps / blocks.length;
 
@@ -152,7 +154,9 @@ function createHistoricData(blocks: number[], weight: number) {
     ':' +
     String(now.getSeconds()).padStart(2, '0');
 
-  return { avgSet: avgSet, weightH: weight, date: formatted };
+  const date = new Date(formatted);
+
+  return { avgSet: avgSet, weightH: weight, date: date };
 }
 
 export async function saveRecordedLift(
@@ -241,4 +245,21 @@ export async function editExercise(eData: EditData) {
   if (Object.keys(updatedStats).length > 0) {
     await updateDoc(exRef, updatedStats);
   }
+}
+
+export async function fetchHistoricData(uID: string, sesID: string) {
+  const colRef = collection(db, 'users', uID, 'sessions', sesID, 'exercises');
+  const q = query(colRef, orderBy('order', 'asc'), limit(1));
+
+  const snapshot = await getDocs(q);
+
+  if (snapshot.empty) {
+    console.error('Empty snapshot');
+  }
+
+  const firstDoc = snapshot.docs[0];
+
+  const firstDocData = firstDoc?.data().history as Historic[];
+
+  return firstDocData;
 }

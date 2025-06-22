@@ -94,7 +94,7 @@
     }
   }
 
-  const trend: string | null = getTrend(data);
+  const trend: string | null = 'getTrend(data)';
 </script>
 
 <Card.Header>
@@ -135,7 +135,7 @@
     >
       {#snippet tooltip()}
         <Chart.Tooltip
-          labelFormatter={(v: Date) => v.toLocaleDateString('en-US', { month: 'long' })}
+          labelFormatter={(v: Date) => v.toLocaleDateString('en-US', { day: 'numeric' })}
           indicator="line"
         />
       {/snippet}
