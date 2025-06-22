@@ -26,14 +26,18 @@ export function historicTo1RM(d: Historic[]): ChartData[] {
   return newA;
 }
 
-export async function calling(): Promise<ChartData[]> {
+export async function calling(sesID: string): Promise<ChartData[]> {
   let uID = get(user);
   if (!uID) return [];
 
-  const data: Historic[] = await fetchHistoricData(uID, 'Link');
+  const data: Historic[] = await fetchHistoricData(uID, sesID);
+  if (!data.length) {
+  }
+  console.log(data);
 
   const chartData = historicTo1RM(data);
 
   console.log(chartData);
+
   return chartData;
 }

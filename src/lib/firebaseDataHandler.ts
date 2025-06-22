@@ -247,7 +247,7 @@ export async function editExercise(eData: EditData) {
   }
 }
 
-export async function fetchHistoricData(uID: string, sesID: string) {
+export async function fetchHistoricData(uID: string, sesID: string): Promise<Historic[]> {
   const colRef = collection(db, 'users', uID, 'sessions', sesID, 'exercises');
   const q = query(colRef, orderBy('order', 'asc'), limit(1));
 
@@ -255,9 +255,11 @@ export async function fetchHistoricData(uID: string, sesID: string) {
 
   if (snapshot.empty) {
     console.error('Empty snapshot');
+    return [];
   }
 
   const firstDoc = snapshot.docs[0];
+  console.log(firstDoc);
 
   const firstDocData = firstDoc?.data().history as Historic[];
 
