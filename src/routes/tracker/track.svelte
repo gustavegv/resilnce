@@ -1,15 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
-  import SetBlock from '../../components/SetBlock.svelte';
-  import ConfirmSelection from '../../components/ConfirmSelection.svelte';
-  import {
-    getAllSessionMeta,
-    getOrderedExercises,
-    saveRecordedLift,
-  } from '$lib/firebaseDataHandler';
+  import { getOrderedExercises, saveRecordedLift } from '$lib/firebaseDataHandler';
   import { setActivityStatus, loadFinishedExercises } from '$lib/firebaseCreation';
-  import type { Exercise } from '$lib/firebaseDataHandler';
   import type { ExerciseInfo } from '$lib/firebaseCreation';
 
   import '../../app.css';
@@ -19,6 +12,8 @@
   import LoadingSkeleton from './LoadingSkeleton.svelte';
   import { get } from 'svelte/store';
   import { user } from '../account/user';
+  import * as Card from '$lib/components/ui/card/';
+  import FinishBlob from '../../components/FinishBlob.svelte';
 
   // Exercise ID som blir tilldelad när man callar komponenten:
   //   Exempel:  <Track sesID="push" />
@@ -191,57 +186,24 @@
   function enterEditMode() {
     editMode = true;
   }
-
-  function checkPR(ar: number[]): boolean {
-    let repLimit = 12;
-    let count = 0;
-
-    ar.forEach((nu) => {
-      count += nu;
-    });
-
-    let avg = count / ar.length;
-    return avg > repLimit;
-  }
 </script>
 
-{#if loading || error}
-  {#if loading}
-    <main class="app-container">
-      <LoadingSkeleton />
-    </main>
-  {:else if error}
-    <p>Guen error: {error}</p>
-  {/if}
-{:else if allFinished}
-  <div class="container">
+{#if showOverlay}
+  <div class="overlay" transition:fade={{ duration: 150 }}></div>
+{/if}
+
+<main class="app-container">
+  {#if loading || error}
+    <LoadingSkeleton />
+    <h1 class="text-2xl">{error ?? ''}</h1>
+  {:else if allFinished}
     <h1 class="pb-8 text-2xl font-bold">Session finished!</h1>
-    <div class="box">
+    <Card.Root class="box m-4 w-full p-4">
       <h2 class="py-2 text-lg font-semibold">Session overview</h2>
-      {#each exercises as blob, index}
-        <div class="blob-cont relative">
-          <div class="blob-info">
-            <p class="lowkey">{index + 1}.</p>
-            <h3 class="capitalize">{blob.name}</h3>
-            <p>{blob.currentProgress.weightPerSet[0]} kg</p>
-          </div>
-          <div class="blob-inner pr-3">
-            {#each blob.currentProgress.repsPerSet as rep, index}
-              <p>{rep} reps</p>
-            {/each}
-          </div>
-          {#if checkPR(blob.currentProgress.repsPerSet)}
-            <div class="absolute right-1">
-              <Icon icon="ri:medal-line" width="35" color="gold" />
-            </div>
-          {/if}
-        </div>
-      {/each}
-    </div>
-    <button class="buttonClass but" onclick={() => goto('/')}>Return to homepage</button>
-  </div>
-{:else if editMode}
-  <main class="app-container edit-mode">
+      <FinishBlob {exercises} />
+    </Card.Root>
+    <button class="buttonClass w-full" onclick={() => goto('/')}>Return to homepage</button>
+  {:else if editMode}
     <ExerciseTrackScreen
       name={exName}
       weight={exWeight}
@@ -255,10 +217,8 @@
       edit={true}
       {sesID}
     />
-  </main>
-{:else}
-  <button onclick={() => quitSession()} class="abs buttonClass">Quit</button>
-  <main class="app-container">
+  {:else}
+    <button onclick={() => quitSession()} class="abs buttonClass">Quit</button>
     <div class="movement-cont">
       <button class="movement-b mini buttonClass" onclick={() => prevExercise()}>Prev</button>
       <p>{currentExerciseIndex + 1}/{exercises.length}</p>
@@ -275,16 +235,12 @@
       onSubmit={handleSubmit}
       {sesID}
     />
-  </main>
-{/if}
+  {/if}
+</main>
 
 <button class="floating-edit buttonClass {editMode}" onclick={enterEditMode}>
   <Icon icon={'material-symbols:edit-outline-rounded'} height={40} />
 </button>
-
-{#if showOverlay}
-  <div class="overlay" transition:fade={{ duration: 150 }}></div>
-{/if}
 
 <style>
   .but {
@@ -347,38 +303,6 @@
 
   .lowkey {
     color: grey;
-  }
-
-  h3 {
-    margin: 0;
-  }
-
-  .blob-cont {
-    display: flex;
-    box-sizing: border-box;
-    padding: 0 2rem;
-    flex-direction: row;
-    background-color: var(--color-background);
-    justify-content: space-between;
-    align-items: baseline;
-    width: 100%;
-    border-radius: 15px;
-    margin: 5px;
-
-    box-shadow: var(--shadow-dark);
-  }
-
-  .blob-info {
-    display: flex;
-    flex-direction: column;
-    align-items: baseline;
-    text-align: left;
-    width: 70%;
-    padding: 1rem 0;
-  }
-
-  .blob-inner {
-    color: gray;
   }
 
   .app-container {
