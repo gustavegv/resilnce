@@ -46,8 +46,6 @@ jobs:
         with:
           path: build
 
-      - name: Disable Jekyll
-        run: touch dist/.nojekyll
 
   deploy:
     needs: build_site
