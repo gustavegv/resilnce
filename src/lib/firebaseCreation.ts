@@ -411,7 +411,11 @@ export async function loadFinishedExercises(
   return { unfinished: fin, finishedIDXS: idxs };
 }
 
-export async function signInOrSignUp(username: string, password: string): Promise<boolean> {
+export async function signInOrSignUp(
+  username: string,
+  password: string,
+  signUpAvailible: boolean
+): Promise<boolean> {
   const nameKey = username.toLowerCase().trim();
   const userRef = doc(db, 'users', nameKey);
 
@@ -425,12 +429,14 @@ export async function signInOrSignUp(username: string, password: string): Promis
           return true;
         }
         return false;
-      } else {
+      } else if (signUpAvailible) {
         if (confirm(`Createa a new user with username: ${username}`)) {
           const d = simpleUserType(username, password);
           await addUser(username, password, d);
           return true;
         }
+        return false;
+      } else {
         return false;
       }
     });

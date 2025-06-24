@@ -11,8 +11,17 @@
   import type { ExerciseInfo } from '$lib/firebaseCreation';
   import { user } from '../account/user';
   import { get } from 'svelte/store';
+  import { goto } from '$app/navigation';
 
-  onMount(async () => {});
+  onMount(async () => {
+    if (!get(user)) {
+      goto('/account');
+    } else {
+      isAuth = true;
+    }
+  });
+
+  let isAuth = false;
 
   const unformatted: Historic[] = [
     { date: new Date('2024-01-01'), avgSet: 7, weightH: 80 },
@@ -45,29 +54,30 @@
 <br />
 <br />
 <br />
+{#if isAuth}
+  <main class="flex flex-col items-center justify-center gap-4 px-4">
+    <div class="grid grid-cols-2 items-center">
+      <Input bind:value={sessionInput} class="" placeholder="Session name" />
+      <button class="buttonClass m-4" onclick={() => as(uID, sessionInput)}>Get session</button>
+    </div>
 
-<main class="flex flex-col items-center justify-center gap-4 px-4">
-  <div class="grid grid-cols-2 items-center">
-    <Input bind:value={sessionInput} class="" placeholder="Session name" />
-    <button class="buttonClass m-4" onclick={() => as(uID, sessionInput)}>Get session</button>
-  </div>
-
-  <Tabs.Root value="account" class="w-[400px]">
-    <Tabs.List>
+    <Tabs.Root value="account" class="w-[400px]">
+      <Tabs.List>
+        {#each exDa as ex}
+          <Tabs.Trigger value={ex.name}>{ex.name}</Tabs.Trigger>
+        {/each}
+      </Tabs.List>
       {#each exDa as ex}
-        <Tabs.Trigger value={ex.name}>{ex.name}</Tabs.Trigger>
+        <Tabs.Content value={ex.name}>
+          <Card.Root class="w-full">
+            <ChartLineDefault
+              title="Latest session"
+              desc="One Rep Max Progression layered with the current weight"
+              data={formattedData}
+            />
+          </Card.Root>
+        </Tabs.Content>
       {/each}
-    </Tabs.List>
-    {#each exDa as ex}
-      <Tabs.Content value={ex.name}>
-        <Card.Root class="w-full">
-          <ChartLineDefault
-            title="Latest session"
-            desc="One Rep Max Progression layered with the current weight"
-            data={formattedData}
-          />
-        </Card.Root>
-      </Tabs.Content>
-    {/each}
-  </Tabs.Root>
-</main>
+    </Tabs.Root>
+  </main>
+{/if}

@@ -1,6 +1,12 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import '../../app.css';
   import Settings from './settings.svelte';
+  import { goto } from '$app/navigation';
+
+  onMount(() => {
+    goto('/account');
+  });
 </script>
 
 <div class="settings-frame">

@@ -13,9 +13,10 @@
 
   let username = '';
   let password = '';
+  let cooldown = false;
 
   export async function tempLogin(user: string, pass: string): Promise<boolean> {
-    const response = await signInOrSignUp(user, pass);
+    const response = await signInOrSignUp(user, pass, false);
     return response;
   }
 
@@ -25,11 +26,16 @@
     if (await tempLogin(username, password)) {
       handleLogin();
     } else {
+      cooldown = true;
       alert('Login error. (Wrong username/password perhaps?)');
+      setTimeout(() => {
+        cooldown = false;
+      }, 3000);
     }
   }
 
   function handleLogin() {
+    if (cooldown) return;
     if (!username) return;
     user.set(username);
     username = '';

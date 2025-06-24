@@ -25,6 +25,8 @@
           existingID = prevSession.session;
         }
       }
+    } else {
+      goto('/account');
     }
   });
 </script>
