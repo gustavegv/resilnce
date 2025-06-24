@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: 'main'
+    branches: ['main']
 
 jobs:
   build_site:
@@ -19,22 +19,21 @@ jobs:
 
       - name: Install Node.js
         uses: actions/setup-node@v4
-        with: 
- node-version: 20
- cache: npm
+        with:
+          node-version: 20
+          cache: npm
 
       - name: Install dependencies
         run: npm install
 
-      - name: build
+      - name: Build
         env:
- BASE_PATH: '/resilnce'
+          BASE_PATH: '/resilnce'
         run: |
- npm run build
+          npm run build
 
       - name: Upload Artifacts
         uses: actions/upload-pages-artifact@v3
-        with:
 
   deploy:
     needs: build_site
