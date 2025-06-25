@@ -22,10 +22,11 @@ const config = {
       hooks: path.resolve('src/lib/hooks'),
       ui: path.resolve('src/lib/components/ui'),
     },
+    paths: {
+      base: process.argv.includes('dev') ? '' : process.env.BASE_PATH,
+    },
   },
-  paths: {
-    base: process.argv.includes('dev') ? '' : process.env.BASE_PATH,
-  },
+  
 };
 
 export default config;
