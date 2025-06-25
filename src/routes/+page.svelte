@@ -31,7 +31,7 @@
   });
 </script>
 
-<img src="books.png" alt="a" class="books {existingSession}" />
+<img src="%sveltekit.assets%/books.png" alt="a" class="books {existingSession}" />
 {#if $user}
   <div class="body">
     <h1 class="wid">Good evening <span class="toUpper">{$user}</span>.</h1>
