@@ -14,6 +14,7 @@
   import { user } from '../account/user';
   import * as Card from '$lib/components/ui/card/';
   import FinishBlob from '../../components/FinishBlob.svelte';
+    import { base } from '$app/paths';
 
   // Exercise ID som blir tilldelad när man callar komponenten:
   //   Exempel:  <Track sesID="push" />
@@ -46,7 +47,7 @@
 
   onMount(async () => {
     if (!userID) {
-      goto('/account');
+      goto(`${base}/account`);
       return;
     }
     try {
@@ -173,7 +174,7 @@
   function quitSession() {
     if (confirm('Are you sure you want to quit the session?')) {
       setActivityStatus(userID ?? 'error', sesID, false);
-      goto('/');
+      goto(`${base}/`);
     } else {
       console.log('Quit adverted.');
     }
@@ -202,7 +203,7 @@
       <h2 class="py-2 text-lg font-semibold">Session overview</h2>
       <FinishBlob {exercises} />
     </Card.Root>
-    <button class="buttonClass w-full" onclick={() => goto('/')}>Return to homepage</button>
+    <button class="buttonClass w-full" onclick={() => goto(`${base}/`)}>Return to homepage</button>
   {:else if editMode}
     <ExerciseTrackScreen
       name={exName}

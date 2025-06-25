@@ -10,6 +10,7 @@
   import { onDestroy, onMount } from 'svelte';
   import { user } from '../account/user';
   import { get } from 'svelte/store';
+    import { base } from '$app/paths';
 
   type SessionInfo = {
     name: string;
@@ -33,7 +34,7 @@
   onMount(async () => {
     const us = get(user);
     if (!us) {
-      goto('/account');
+      goto(`${base}/account`);
     }
 
     console.log('bru', us);
@@ -79,7 +80,7 @@
     if (username) {
       betterAdd(username, seshName, currentlyAdded);
       alert('Session saved succesfully!');
-      goto('/');
+      goto(`${base}/`);
     } else {
       alert('Problem with log-in authentication');
     }

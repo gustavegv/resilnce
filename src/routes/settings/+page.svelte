@@ -3,9 +3,10 @@
   import '../../app.css';
   import Settings from './settings.svelte';
   import { goto } from '$app/navigation';
+    import { base } from '$app/paths';
 
   onMount(() => {
-    goto('/account');
+    goto(`${base}/account`);
   });
 </script>
 

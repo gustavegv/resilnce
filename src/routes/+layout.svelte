@@ -7,6 +7,7 @@
   import { addUserByForm } from '$lib/firebaseCreation';
   import Icon from '@iconify/svelte';
   import { goto } from '$app/navigation';
+    import { base } from '$app/paths';
 
   let { children } = $props();
   let isBlog = $derived(page.url.pathname.startsWith('/tracker/'));
@@ -21,7 +22,7 @@
   <div class="head">
     <p class="compl">a</p>
     <Logo />
-    <button class="compl seen" onclick={() => goto('/account')}>
+    <button class="compl seen" onclick={() => goto(`${base}/account`)}>
       <Icon icon={'si:user-fill'} fill={'#fff'} height={28}></Icon>
     </button>
   </div>

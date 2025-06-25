@@ -12,10 +12,11 @@
   import { user } from '../account/user';
   import { get } from 'svelte/store';
   import { goto } from '$app/navigation';
+    import { base } from '$app/paths';
 
   onMount(async () => {
     if (!get(user)) {
-      goto('/account');
+      goto(`${base}/account`);
     } else {
       isAuth = true;
     }

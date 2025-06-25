@@ -9,7 +9,8 @@
   import Icon from '@iconify/svelte';
   import { blur, crossfade, fade, scale, slide } from 'svelte/transition';
   import { get } from 'svelte/store';
-  const base = import.meta.env.BASE_URL;
+  import { base } from '$app/paths';
+  const linkBase = import.meta.env.BASE_URL;
 
   let existingSession = $state(false);
   let existingID = $state('');
@@ -27,12 +28,12 @@
         }
       }
     } else {
-      goto('/account');
+      goto(`${base}/account`);
     }
   });
 </script>
 
-<img src="{base}books.png" alt="a" class="books {existingSession}" />
+<img src="{linkBase}books.png" alt="a" class="books {existingSession}" />
 {#if $user}
   <div class="body">
     <h1 class="wid">Good evening <span class="toUpper">{$user}</span>.</h1>
@@ -51,12 +52,12 @@
         </button>
       {/if}
 
-      <button class="base-btn sesh buttonClass" onclick={() => goto('/tracker')}>
+      <button class="base-btn sesh buttonClass" onclick={() => goto(`${base}/tracker`)}>
         <g>Begin a workout</g>
         <DbIcon />
       </button>
 
-      <button class="base-btn sesh buttonClass" onclick={() => goto('/create')}>
+      <button class="base-btn sesh buttonClass" onclick={() => goto(`${base}/create`)}>
         <g>Add new session</g>
         <AddIcon />
       </button>
@@ -66,7 +67,7 @@
   <div class="body">
     <h1 class="wid">The only tracker you need.</h1>
     <hr />
-    <button class="base-btn sesh buttonClass" onclick={() => goto('/account')}>
+    <button class="base-btn sesh buttonClass" onclick={() => goto(`${base}/account`)}>
       <g>Log in</g>
       <Icon icon="material-symbols:login-rounded" width="35" />
     </button>

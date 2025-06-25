@@ -25,6 +25,10 @@ const config = {
     paths: {
       base: process.argv.includes('dev') ? '' : process.env.BASE_PATH,
     },
+    prerender: {
+      // onError 'continue' will skip over any 404s instead of crashing
+      handleHttpError: 'ignore'
+    }
   },
   
 };
