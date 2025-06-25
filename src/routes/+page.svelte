@@ -45,7 +45,7 @@
         <button
           in:slide|global={{ duration: 600 }}
           class="base-btn alt buttonClass"
-          onclick={() => goto(`/tracker/${existingID}`)}
+          onclick={() => goto(`${base}/tracker/${existingID}`)}
         >
           <g>Continue session:</g>
           <h4>{existingID}</h4>

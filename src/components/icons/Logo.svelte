@@ -1,5 +1,8 @@
 <script lang="ts">
     import { base } from "$app/paths";
+    import { link } from "d3-shape";
+  const linkBase = import.meta.env.BASE_URL;
+
 
   let { size }: { size?: number } = $props();
 
@@ -8,7 +11,7 @@
 
 <a class="cont" href="{base}/">
   <h1 style="font-size:{sz * 5}px">resilnce</h1>
-  <img style="width:{sz}rem" class="ba" src="/icons/logbottom.png" alt="log" />
+  <img style="width:{sz}rem" class="ba" src="{linkBase}/icons/logbottom.png" alt="log" />
 </a>
 
 <style>
