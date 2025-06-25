@@ -1,10 +1,12 @@
 <script lang="ts">
+    import { base } from "$app/paths";
+
   let { size }: { size?: number } = $props();
 
   let sz: number = size ?? 5;
 </script>
 
-<a class="cont" href="/">
+<a class="cont" href="{base}/">
   <h1 style="font-size:{sz * 5}px">resilnce</h1>
   <img style="width:{sz}rem" class="ba" src="/icons/logbottom.png" alt="log" />
 </a>

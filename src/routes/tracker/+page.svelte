@@ -79,12 +79,12 @@
       openPopup('active');
 
       if (confirm(`You have an unfinished exercise, do you really want to start a new one?`)) {
-        goto(`/tracker/${id}`);
+        goto(`${base}/tracker/${id}`);
       } else {
-        goto(`/`);
+        goto(`${base}/`);
       }
     } else {
-      goto(`/tracker/${id}`);
+      goto(`${base}/tracker/${id}`);
     }
   }
   function editSes(id: string) {
