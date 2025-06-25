@@ -1,10 +1,10 @@
 {
   "name": "resilnce",
-  "short_name": "res",
-  "start_url": "/",
+  "short_name": "resilnce",
+  "start_url": "/resilnce",
   "display": "standalone",
-  "background_color": "#151515",
-  "theme_color": "#151515",
+  "background_color": "#232323",
+  "theme_color": "#232323",
   "icons": [
     {
       "src": "/icons/icon-192.png",
