@@ -9,6 +9,7 @@
   import Icon from '@iconify/svelte';
   import { blur, crossfade, fade, scale, slide } from 'svelte/transition';
   import { get } from 'svelte/store';
+  const base = import.meta.env.BASE_URL;
 
   let existingSession = $state(false);
   let existingID = $state('');
@@ -31,7 +32,7 @@
   });
 </script>
 
-<img src="%sveltekit.assets%/books.png" alt="a" class="books {existingSession}" />
+<img src="{base}books.png" alt="a" class="books {existingSession}" />
 {#if $user}
   <div class="body">
     <h1 class="wid">Good evening <span class="toUpper">{$user}</span>.</h1>
