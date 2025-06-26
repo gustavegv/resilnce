@@ -1,8 +1,7 @@
 <script lang="ts">
-    import { base } from "$app/paths";
-    import { link } from "d3-shape";
+  import { base } from '$app/paths';
+  import { link } from 'd3-shape';
   const linkBase = import.meta.env.BASE_URL;
-
 
   let { size }: { size?: number } = $props();
 

@@ -28,7 +28,6 @@
         }
       }
     } else {
-      goto(`${base}/account`);
     }
   });
 </script>
@@ -116,6 +115,21 @@
     box-sizing: border-box;
     padding: 5rem 0;
     height: 100vh;
+  }
+
+  @media screen and (max-device-height: 667px) and (orientation: portrait) {
+    .body {
+      padding: 1rem 0;
+    }
+    .wid {
+      margin: 0;
+    }
+    .books {
+      top: 29%;
+      left: 50%;
+      width: 12rem; /* Adjust to taste */
+      height: auto;
+    }
   }
 
   h1 {

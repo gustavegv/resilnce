@@ -12,8 +12,8 @@ const config = {
     // adapter-auto only supports some environments, see https://svelte.dev/docs/kit/adapter-auto for a list.
     // If your environment is not supported, or you settled on a specific environment, switch out the adapter.
     // See https://svelte.dev/docs/kit/adapters for more information about adapters.
-     adapter: adapter({
-      fallback: 'index.html' // or 'index.html'
+    adapter: adapter({
+      fallback: 'index.html', // or 'index.html'
     }),
     alias: {
       $lib: path.resolve('src/lib'),
@@ -27,10 +27,9 @@ const config = {
     },
     prerender: {
       // onError 'continue' will skip over any 404s instead of crashing
-      handleHttpError: 'ignore'
-    }
+      handleHttpError: 'ignore',
+    },
   },
-  
 };
 
 export default config;

@@ -14,7 +14,7 @@
   import { user } from '../account/user';
   import * as Card from '$lib/components/ui/card/';
   import FinishBlob from '../../components/FinishBlob.svelte';
-    import { base } from '$app/paths';
+  import { base } from '$app/paths';
 
   // Exercise ID som blir tilldelad när man callar komponenten:
   //   Exempel:  <Track sesID="push" />

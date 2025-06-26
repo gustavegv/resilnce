@@ -12,7 +12,7 @@
   import { user } from '../account/user';
   import { get } from 'svelte/store';
   import { goto } from '$app/navigation';
-    import { base } from '$app/paths';
+  import { base } from '$app/paths';
 
   onMount(async () => {
     if (!get(user)) {

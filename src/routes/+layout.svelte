@@ -7,7 +7,7 @@
   import { addUserByForm } from '$lib/firebaseCreation';
   import Icon from '@iconify/svelte';
   import { goto } from '$app/navigation';
-    import { base } from '$app/paths';
+  import { base } from '$app/paths';
 
   let { children } = $props();
   let isBlog = $derived(page.url.pathname.startsWith('/tracker/'));

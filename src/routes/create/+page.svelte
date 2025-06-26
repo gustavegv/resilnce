@@ -10,7 +10,7 @@
   import { onDestroy, onMount } from 'svelte';
   import { user } from '../account/user';
   import { get } from 'svelte/store';
-    import { base } from '$app/paths';
+  import { base } from '$app/paths';
 
   type SessionInfo = {
     name: string;

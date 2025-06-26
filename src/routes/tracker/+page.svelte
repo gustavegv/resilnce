@@ -12,7 +12,7 @@
   import Icon from '@iconify/svelte';
   import { user } from '../account/user';
   import { get } from 'svelte/store';
-    import { base } from '$app/paths';
+  import { base } from '$app/paths';
 
   let slugs: SessionMetaData[] = $state([]);
   let activeSession: boolean = $state(false);
