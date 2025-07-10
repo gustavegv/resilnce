@@ -10,21 +10,20 @@
   import { base } from '$app/paths';
 
   let { children } = $props();
-  let isBlog = $derived(page.url.pathname.startsWith('/tracker/'));
-  let isCreate = $derived(page.url.pathname.startsWith('/create'));
+  let isTracker = $derived(page.url.pathname.startsWith(`${base}/tracker`));
+  let isCreate = $derived(page.url.pathname.startsWith(`${base}/create`));
 </script>
 
-{#if !isBlog && !isCreate}
+{#if isTracker}
   <div class="abs">
-    <CustomHeader />
+    <CustomHeader size={3} />
   </div>
 
   <div class="head">
-    <p class="compl">a</p>
-    <Logo />
-    <button class="compl seen" onclick={() => goto(`${base}/account`)}>
-      <Icon icon={'si:user-fill'} fill={'#fff'} height={28}></Icon>
-    </button>
+    <g class="compl">✖</g>
+
+    <Logo size={3} />
+    <r class="compl">✖</r>
   </div>
 {:else if isCreate}
   <div class="abs small">
@@ -38,15 +37,17 @@
     <r class="compl seen">☰</r>
   </div>
 {:else}
+
   <div class="abs">
-    <CustomHeader size={3} />
+    <CustomHeader />
   </div>
 
   <div class="head">
-    <g class="compl">✖</g>
-
-    <Logo size={3} />
-    <r class="compl">✖</r>
+    <p class="compl">a</p>
+    <Logo />
+    <button class="compl seen" onclick={() => goto(`${base}/account`)}>
+      <Icon icon={'si:user-fill'} fill={'#fff'} height={28}></Icon>
+    </button>
   </div>
 {/if}
 
