@@ -17,7 +17,7 @@
 <style>
   :root {
     --small: #b1ff4a;
-    --big: var(--color-secondary);
+    --big: var(--color-black);
     --action: #535353;
   }
 

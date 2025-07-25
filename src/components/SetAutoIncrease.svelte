@@ -55,7 +55,7 @@
 
 <style>
   .counter-container {
-    background-color: var(--color-secondary);
+    background-color: var(--color-black);
     text-align: left;
     padding: 1rem 0.5rem;
     border-radius: 0;

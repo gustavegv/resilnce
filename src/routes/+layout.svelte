@@ -37,7 +37,6 @@
     <r class="compl seen">☰</r>
   </div>
 {:else}
-
   <div class="abs">
     <CustomHeader />
   </div>

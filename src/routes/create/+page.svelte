@@ -1,7 +1,7 @@
 <script lang="ts">
   import '../../app.css';
   import Icon from '@iconify/svelte';
-  import type { ExInfoPackage } from '$lib/firebaseCreation';
+  import type { ExerciseInfo, ExInfoPackage } from '$lib/firebaseCreation';
   import { betterAdd } from '$lib/firebaseCreation';
   import InputField from '../../components/InputField.svelte';
   import { goto } from '$app/navigation';
@@ -11,6 +11,7 @@
   import { user } from '../account/user';
   import { get } from 'svelte/store';
   import { base } from '$app/paths';
+  import SortableList from './SortableList.svelte';
 
   type SessionInfo = {
     name: string;
@@ -22,8 +23,13 @@
     weight: 30,
     sets: 4,
   };
+  const dummy2: ExInfoPackage = {
+    name: 'Souvlaki',
+    weight: 30,
+    sets: 4,
+  };
 
-  let currentlyAdded: ExInfoPackage[] = $state([]);
+  let currentlyAdded: ExInfoPackage[] = $state([dummy1, dummy2]);
 
   let seshName = $state('');
   let newName = $state('');
@@ -68,14 +74,26 @@
 
     currentlyAdded = [...currentlyAdded, entry];
 
+    reorderableList.addToSortable(entry);
+
     newName = '';
     newSets = '';
     newWeight = '';
   }
 
+  let reorderableList: SortableList;
+
   function saveSession() {
+    currentlyAdded = reorderableList.extractData();
+
     // adds inputed exercise in case you forgot
     addExercise();
+
+    if (seshName == '') {
+      alert('No session name added!');
+      return;
+    }
+
     const username = get(user);
     if (username) {
       betterAdd(username, seshName, currentlyAdded);
@@ -92,6 +110,11 @@
 
   function autoIncreaseChange(count: number) {
     newAutoInc = count;
+  }
+
+  function getNames(exs: ExInfoPackage[]): string[] {
+    let newArray: string[] = exs.map((ex) => ex.name);
+    return newArray;
   }
 </script>
 
@@ -111,35 +134,15 @@
     <button class="add buttonClass" onclick={addExercise}>+</button>
   </div>
 
-  {#each currentlyAdded as blob, index}
-    <div class="blob-cont">
-      <div>
-        <p>{index + 1}.</p>
-        <h3>{blob.name}</h3>
-      </div>
-      <div class="blob-inner">
-        <p>{blob.sets} sets</p>
-        <p>{blob.weight} kg</p>
-      </div>
-      <div class="abs-icon" onclick={() => removeItem(index)}>
-        <Icon icon={'typcn:delete'} color={'red'} width="40"></Icon>
-      </div>
-    </div>
-  {/each}
+  <SortableList bind:this={reorderableList} items={currentlyAdded} />
 
   <button onclick={saveSession} class="finish buttonClass">Finish and save session</button>
 </div>
 
 <style>
   .add {
-    background-color: var(--color-alt);
+    background-color: var(--color-secondary);
     width: 92%;
-  }
-  .abs-icon {
-    position: absolute; /* Positioned relative to .container */
-    top: -12px;
-    right: -15px;
-    z-index: 1000; /* To sit on top of other things */
   }
 
   .container {
@@ -171,31 +174,11 @@
     padding: 1rem;
     width: 80%;
     height: fit-content;
-    background-color: var(--color-secondary);
+    background-color: var(--color-black);
     border-radius: 15px;
 
     box-shadow: var(--shadow-dark);
     margin-bottom: 1rem;
-  }
-
-  .blob-cont {
-    position: relative;
-    display: flex;
-    box-sizing: border-box;
-    padding: 1rem 2rem;
-    flex-direction: row;
-    background-color: var(--color-secondary);
-    justify-content: space-between;
-    align-items: center;
-    width: 80%;
-    border-radius: 15px;
-    margin: 5px;
-
-    box-shadow: var(--shadow-dark);
-  }
-
-  .blob-inner {
-    color: gray;
   }
 
   .finish {
