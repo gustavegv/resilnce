@@ -84,8 +84,7 @@
     user-select: none;
     width: 16rem; /* Adjust to taste */
     height: auto;
-    filter: 
-      drop-shadow(0px 19px 38px rgba(79, 89, 111, 0.187))
+    filter: drop-shadow(0px 19px 38px rgba(79, 89, 111, 0.187))
       drop-shadow(0px 15px 12px rgba(78, 78, 78, 0.13));
   }
 
@@ -155,7 +154,7 @@
     justify-content: space-between;
     align-items: center;
     box-shadow: var(--shadow-dark);
-    width: 85%;
+    width: 90%;
   }
 
   .base-btn.sesh {

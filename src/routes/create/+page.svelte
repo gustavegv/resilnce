@@ -29,7 +29,7 @@
     sets: 4,
   };
 
-  let currentlyAdded: ExInfoPackage[] = $state([dummy1, dummy2]);
+  let currentlyAdded: ExInfoPackage[] = $state([]);
 
   let seshName = $state('');
   let newName = $state('');
@@ -122,7 +122,7 @@
   <input maxlength="50" bind:value={seshName} placeholder="Untitled session" class="title" />
 
   <div class="add-box shadow">
-    <h3 class="pb-2 text-xl font-semibold">Add an exercise</h3>
+    <h3 class="w-full pb-2 text-xl font-semibold">Add an exercise</h3>
     <InputField label={'Exercise name'} bind:value={newName} type={'text'} />
 
     <InputField label={'Sets'} bind:value={newSets} type={'number'} />
@@ -131,7 +131,7 @@
 
     <SetAutoIncrease weight={2.5} onCountChange={(count: number) => autoIncreaseChange(count)} />
 
-    <button class="add buttonClass" onclick={addExercise}>+</button>
+    <button class="add buttonClass" onclick={addExercise}>Add to session</button>
   </div>
 
   <SortableList bind:this={reorderableList} items={currentlyAdded} />
@@ -142,7 +142,10 @@
 <style>
   .add {
     background-color: var(--color-secondary);
-    width: 92%;
+    width: 60%;
+    padding: 0.5rem;
+    font-weight: 400;
+    font-size: 16px;
   }
 
   .container {
@@ -176,6 +179,7 @@
     height: fit-content;
     background-color: var(--color-black);
     border-radius: 15px;
+    align-items: center;
 
     box-shadow: var(--shadow-dark);
     margin-bottom: 1rem;

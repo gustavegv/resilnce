@@ -35,7 +35,8 @@
     left: 12px;
     font-size: 16px;
     color: var(--dark);
-    font-weight: 500;
+    font-weight: 400;
+    opacity: 0.9;
     transform-origin: 0 0;
     transform: translate3d(0, 0, 0);
     transition: all 0.2s ease;

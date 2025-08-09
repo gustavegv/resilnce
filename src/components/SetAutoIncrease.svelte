@@ -41,40 +41,43 @@
 </script>
 
 <div class="counter-container mini">
-  <div>Increase</div>
+  <div class="ml-1">Weight increase intervals</div>
   <div class="controls mini">
     <button class="but mini buttonClass" onclick={decrement}>
-      <Icon icon={'gg:remove'} height={'30'} />
+      <Icon icon={'gg:remove'} height={'25'} />
     </button>
-    <gf class="mini-count">{curCount}</gf>
+    <gf class="mini-count">{curCount} kg</gf>
     <button class="but mini buttonClass" onclick={increment}>
-      <Icon icon={'gg:add'} height={'30'} />
+      <Icon icon={'gg:add'} height={'25'} />
     </button>
   </div>
 </div>
 
 <style>
   .counter-container {
+    display: flex;
+    justify-content: space-between;
     background-color: var(--color-black);
     text-align: left;
     padding: 1rem 0.5rem;
     border-radius: 0;
     margin: 0;
 
-    font-size: 12px;
-    font-weight: 500;
+    font-size: 16px;
+    font-weight: 400;
     pointer-events: none;
     box-shadow: none;
     margin: auto;
-    width: 87%;
+    width: 100%;
     max-width: 280px;
+    opacity: 0.9;
   }
 
   .controls {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 1rem;
+    gap: 0.7rem;
     font-size: 1rem;
   }
 
@@ -89,7 +92,8 @@
   }
 
   .mini-count {
-    width: 2rem;
+    width: 3rem;
     text-align: center;
+    font-size: 0.9rem;
   }
 </style>
