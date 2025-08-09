@@ -64,7 +64,7 @@
   </div>
 {:else}
   <div class="body">
-    <h1 class="wid">The only tracker you need.</h1>
+    <h1 class="wid">The only gym tracker you need.</h1>
     <hr />
     <button class="base-btn sesh buttonClass" onclick={() => goto(`${base}/account`)}>
       <g>Log in</g>
@@ -84,6 +84,9 @@
     user-select: none;
     width: 16rem; /* Adjust to taste */
     height: auto;
+    filter: 
+      drop-shadow(0px 19px 38px rgba(79, 89, 111, 0.187))
+      drop-shadow(0px 15px 12px rgba(78, 78, 78, 0.13));
   }
 
   .toUpper {
@@ -98,13 +101,14 @@
     height: 0.1px;
     background-color: #ffffff;
     margin: 20px 0;
-    width: 80%;
+    width: 85%;
   }
 
   .wid {
     width: 80%;
     font-size: 2.5rem;
-    margin: 1rem 0;
+    margin: 0.6rem 0;
+    line-height: 3.2rem;
   }
 
   .body {
@@ -115,6 +119,7 @@
     box-sizing: border-box;
     padding: 5rem 0;
     height: 100vh;
+    background: var(--gradient-prim-o);
   }
 
   @media screen and (max-device-height: 667px) and (orientation: portrait) {
@@ -150,7 +155,7 @@
     justify-content: space-between;
     align-items: center;
     box-shadow: var(--shadow-dark);
-    width: 90%;
+    width: 85%;
   }
 
   .base-btn.sesh {

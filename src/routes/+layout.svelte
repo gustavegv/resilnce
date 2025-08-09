@@ -45,7 +45,7 @@
     <p class="compl">a</p>
     <Logo />
     <button class="compl seen" onclick={() => goto(`${base}/account`)}>
-      <Icon icon={'si:user-fill'} fill={'#fff'} height={28}></Icon>
+      <Icon icon={'si:user-fill'} fill={'#fff'} height={24}></Icon>
     </button>
   </div>
 {/if}

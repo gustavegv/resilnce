@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Goudy+Bookletter+1911&display=swap');
 @import 'tailwindcss';
 
 @import 'tw-animate-css';
@@ -171,7 +172,7 @@ button.mini {
 
   --color-text: #ffffff;
 
-  --gradient-prim-o: linear-gradient(to right, #0f1f17 0%, #142d20 50%, #193b28 100%);
+  --gradient-prim-o: linear-gradient(to right, #1a1a1a 0%, #222222 50%, #2f2f2f 100%);
 
   --color-secondary: #3a59d1;
   --color-alt: #3d90d7;
@@ -206,6 +207,8 @@ button.mini {
 
   /* Typography */
   --font-family-sans: -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-serif:  "Goudy Bookletter 1911", serif;
+
   --font-size-base: 1rem;
   --font-size-lg: 1.25rem;
   --font-size-xl: 1.5rem;
@@ -227,7 +230,7 @@ html {
   height: 100vh;
   width: 100vw;
   overflow-x: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: var(--font-family-sans);
   background: var(--color-background);
   color: var(--color-contrast);
   height: 100%;
