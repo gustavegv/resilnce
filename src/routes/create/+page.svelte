@@ -14,9 +14,7 @@
     href: string;
   };
 
-  // ---------------------------
-  // State (Svelte 5 runes)
-  // ---------------------------
+
   const modes: Mode[] = $state([
     {
       id: 'manual',
@@ -40,7 +38,6 @@
   // Navigation helpers
   // ---------------------------
   function openRoute(href: string) {
-    // Use client-side nav for speed; <a> still included for semantics & fallback
     goto(href);
   }
 
@@ -53,12 +50,7 @@
   }
 </script>
 
-<!--
-  Layout notes:
-  - The screen is split into two equal, stacked regions.
-  - Each region is a large, tappable card (link + JS nav).
-  - Works great on tall, vertical displays.
--->
+
 <div class="page">
   <div class="stack">
     {#each modes as mode (mode.id)}
@@ -88,14 +80,8 @@
 
 <style>
   :global(:root) {
-    --bg: #0b0c10;
     --card: rgb(26, 26, 26);
     --card-hover: rgba(255, 255, 255, 0.09);
-    --border: rgba(255, 255, 255, 0.18);
-    --text: #e8edf3;
-    --muted: #b7c0cc;
-    --accent: var(--color-secondary); /* soft azure */
-    --accent-2: var(--color-gray-o); /* lavender */
     --ring: #9bb7ff;
     --shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
   }
@@ -114,7 +100,7 @@
     height: 96svh;
     margin-top: 4svh;
     display: grid;
-    grid-template-rows: 1fr 1fr; /* each box takes 50% */
+    grid-template-rows: 1fr 1fr; 
   }
 
   .mode-card {
