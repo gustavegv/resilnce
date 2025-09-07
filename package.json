@@ -29,11 +29,13 @@
     "bits-ui": "^2.8.8",
     "clsx": "^2.1.1",
     "layerchart": "^2.0.0-next.23",
+    "mode-watcher": "^1.1.0",
     "prettier": "^3.5.3",
     "prettier-plugin-svelte": "^3.4.0",
     "prettier-plugin-tailwindcss": "^0.6.11",
     "svelte": "^5.0.0",
     "svelte-check": "^4.0.0",
+    "svelte-sonner": "^1.0.5",
     "tailwind-merge": "^3.3.1",
     "tailwind-variants": "^1.0.0",
     "tailwindcss": "^4.0.0",
@@ -47,6 +49,7 @@
     "d3-scale": "^4.0.2",
     "d3-shape": "^3.2.0",
     "firebase": "^11.9.0",
+    "openai": "^5.19.1",
     "sortablejs": "^1.15.6"
   }
 }

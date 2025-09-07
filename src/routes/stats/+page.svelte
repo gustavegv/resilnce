@@ -14,15 +14,16 @@
   import { goto } from '$app/navigation';
   import { base } from '$app/paths';
 
+  let isAuth = $state(false);
+
   onMount(async () => {
     if (!get(user)) {
       goto(`${base}/account`);
     } else {
+      console.log('User auth');
       isAuth = true;
     }
   });
-
-  let isAuth = false;
 
   const unformatted: Historic[] = [
     { date: new Date('2024-01-01'), avgSet: 7, weightH: 80 },

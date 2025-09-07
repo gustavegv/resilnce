@@ -10,7 +10,24 @@
   import { blur, crossfade, fade, scale, slide } from 'svelte/transition';
   import { get } from 'svelte/store';
   import { base } from '$app/paths';
+  import { toast } from 'svelte-sonner';
+  import { afterNavigate } from '$app/navigation';
   const linkBase = import.meta.env.BASE_URL;
+
+  afterNavigate(({ to }) => {
+    if (to == null) return;
+    const sonner = to.url.searchParams.get('sonner');
+    if (!sonner) return;
+    switch (sonner) {
+      case 'saved':
+        toast.success(`Session saved successfully!`, { duration: 3000 });
+        break;
+
+      default:
+        toast.warning(`${sonner}`, { duration: 4000 });
+        break;
+    }
+  });
 
   let existingSession = $state(false);
   let existingID = $state('');

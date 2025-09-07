@@ -39,5 +39,6 @@
     width: inherit;
     height: inherit;
     filter: drop-shadow(4px 4px 10px rgba(0, 0, 0, 0.4));
+    z-index: 2;
   }
 </style>

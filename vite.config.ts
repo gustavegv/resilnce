@@ -17,6 +17,7 @@ export default defineConfig({
   server: { host: true },
   optimizeDeps: {
     include: ['layerchart'],
+    exclude: ['svelte-sonner'],
   },
 
   // 2. Ensure during SSR you don’t try to pull in uncompiled .svelte from node_modules

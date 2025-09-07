@@ -8,12 +8,14 @@
   import Icon from '@iconify/svelte';
   import { goto } from '$app/navigation';
   import { base } from '$app/paths';
+  import { Toaster } from '$lib/components/ui/sonner/index.js';
 
   let { children } = $props();
   let isTracker = $derived(page.url.pathname.startsWith(`${base}/tracker`));
-  let isCreate = $derived(page.url.pathname.startsWith(`${base}/create`));
+  let isCreate = $derived(page.url.pathname.startsWith(`${base}/create/manual`));
 </script>
 
+<Toaster />
 {#if isTracker}
   <div class="abs">
     <CustomHeader size={3} />
