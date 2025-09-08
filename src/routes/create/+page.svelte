@@ -14,7 +14,6 @@
     href: string;
   };
 
-
   const modes: Mode[] = $state([
     {
       id: 'manual',
@@ -50,7 +49,6 @@
   }
 </script>
 
-
 <div class="page">
   <div class="stack">
     {#each modes as mode (mode.id)}
@@ -65,7 +63,7 @@
       >
         <div class="card-surface">
           <div class="icon-wrap">
-            <Icon icon={mode.icon} class="icon" width="26" />
+            <Icon icon={mode.icon} class="icon" width="30" />
           </div>
 
           <div class="content">
@@ -80,10 +78,10 @@
 
 <style>
   :global(:root) {
-    --card: rgb(26, 26, 26);
+    --card: rgb(28, 28, 28);
     --card-hover: rgba(255, 255, 255, 0.09);
     --ring: #9bb7ff;
-    --shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+    --shadow: var(--shadow-dark);
   }
 
   .page {
@@ -98,18 +96,21 @@
 
   .stack {
     height: 96svh;
-    margin-top: 4svh;
+    padding-top: 6svh;
     display: grid;
-    grid-template-rows: 1fr 1fr; 
+    grid-template-rows: 1fr 1fr;
   }
 
   .mode-card {
     position: relative;
     display: grid;
+    grid-template-rows: 1fr;
+
     place-items: stretch;
     text-decoration: none;
     isolation: isolate;
     outline: none;
+    margin: 0.5rem 1rem;
   }
 
   .mode-card:focus-visible .card-surface,
@@ -121,8 +122,11 @@
     position: relative;
     inset: 0;
     display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: center;
+    grid-template-columns: auto;
+    border-radius: var(--radius-lg);
+
+    align-items: baseline;
+
     gap: clamp(1rem, 2.5vw, 2rem);
     padding: clamp(1.25rem, 4vw, 2.5rem);
     background: var(--card);
@@ -147,9 +151,9 @@
   .icon-wrap {
     display: grid;
     place-items: center;
-    width: clamp(64px, 12vw, 100px);
-    height: clamp(64px, 12vw, 100px);
-    border-radius: 18px;
+    width: clamp(64px, 20vw, 100px);
+    height: clamp(64px, 20vw, 100px);
+    border-radius: var(--radius-xl);
     background: linear-gradient(
       135deg,
       color-mix(in lab, var(--accent) 65%, #fff 0%),
