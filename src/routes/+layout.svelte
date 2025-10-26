@@ -10,6 +10,8 @@
   import { Toaster } from '$lib/components/ui/sonner/index.js';
     import Icon from '@iconify/svelte';
 
+  import { asset } from '$app/paths';
+
   let home = $derived(page.url.pathname === `${base}/`);
   
 
@@ -40,7 +42,7 @@
   <g class="function-button"></g>
 
   <div class="icon">
-    <img src="/FriendsWhite.svg" alt="" draggable="false" />
+    <img src={asset('/FriendsWhite.svg')} alt="" draggable="false" />
   </div>
   <r class="function-button"></r>
 </div>
