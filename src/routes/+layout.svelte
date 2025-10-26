@@ -2,59 +2,59 @@
   import '../app.css';
   import { page } from '$app/state';
   import Logo from '../components/icons/Logo.svelte';
+
   import CustomHeader from '../components/CustomHeader.svelte';
-  import quitSession from './tracker/track.svelte';
-  import { addUserByForm } from '$lib/firebaseCreation';
-  import Icon from '@iconify/svelte';
   import { goto } from '$app/navigation';
   import { base } from '$app/paths';
   import { Toaster } from '$lib/components/ui/sonner/index.js';
 
   let { children } = $props();
-  let isTracker = $derived(page.url.pathname.startsWith(`${base}/tracker`));
-  let isCreate = $derived(page.url.pathname.startsWith(`${base}/create/manual`));
+
+  function goHome(){
+    goto('/')
+  }
 </script>
 
 <Toaster />
-{#if isTracker}
-  <div class="abs">
-    <CustomHeader size={3} />
-  </div>
 
-  <div class="head">
-    <g class="compl">✖</g>
+<div class="abs">
+  <CustomHeader size={3} />
+</div>
 
-    <Logo size={3} />
-    <r class="compl">✖</r>
-  </div>
-{:else if isCreate}
-  <div class="abs small">
-    <CustomHeader size={3} />
-  </div>
+<div class="head">
+  <g class="compl">✖</g>
 
-  <div class="head view">
-    <g class="compl">✖</g>
+  <div
+    class="icon"
+    role="button"
+    tabindex="0"
+    aria-label="Account"
+    onclick={() => goto(`${base}/`)}
+    onkeydown={(e) => {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') goto(`${base}/`);
+    }}
+  >
+    <img src="/FriendsWhite.svg" alt="" draggable="false" />
+  </div>
+  <r class="compl">✖</r>
+</div>
 
-    <Logo size={3} />
-    <r class="compl seen">☰</r>
-  </div>
-{:else}
-  <div class="abs">
-    <CustomHeader />
-  </div>
 
-  <div class="head">
-    <p class="compl">a</p>
-    <Logo />
-    <button class="compl seen" onclick={() => goto(`${base}/account`)}>
-      <Icon icon={'si:user-fill'} fill={'#fff'} height={24}></Icon>
-    </button>
-  </div>
-{/if}
+
 
 {@render children()}
 
 <style>
+    .icon {
+    width: var(--size);
+    height: var(--size);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;   /* your desired size */
+    height: 45px;
+  }
+
   .compl {
     opacity: 0;
     margin: 0;
@@ -66,9 +66,6 @@
     height: 3rem;
   }
 
-  .compl.seen {
-    opacity: 1;
-  }
 
   .abs {
     position: absolute;
@@ -90,7 +87,4 @@
     overflow: visible;
   }
 
-  .head.view {
-    background-color: var(--color-background);
-  }
 </style>

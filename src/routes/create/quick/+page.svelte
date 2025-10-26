@@ -7,6 +7,7 @@
   import Icon from '@iconify/svelte';
   import { toast } from 'svelte-sonner';
   import { promptAutoChoose, promptRestart, promptSpell, promptStandard } from './prompt';
+    import { base } from '$app/paths';
 
   var sessionTitle = $state<string>('');
   var userText = $state<string>('');
@@ -90,7 +91,7 @@
   }
 
   function saveSession() {
-    goto('/?sonner=saved');
+    goto(`${base}/?sonner=saved`);
   }
 </script>
 
@@ -215,7 +216,6 @@
   /* Layout — vertical, comfortable spacing for phone-sized screens */
   :root {
     --page-max-width: 720px;
-
     --accent-contrast: #ffffff;
     --panel: #f9fafb;
     --panel-strong: #f3f4f6;
@@ -254,7 +254,7 @@
 
   .description {
     margin: 0;
-    color: var(--muted);
+    color: var(--muted-foreground);
     line-height: 1.6;
   }
 
@@ -272,7 +272,7 @@
 
   .help-text {
     margin: var(--spacing-sm) 0 0 0;
-    color: var(--muted);
+    color: var(--muted-foreground);
     font-size: 0.9rem;
   }
 
@@ -302,8 +302,8 @@
     padding: 0.9rem 1.25rem;
     border: none;
     border-radius: var(--radius);
-    background: var(--accent);
-    color: var(--accent-contrast);
+    background: var(--color-secondary);
+    color: var(--accent-foreground);
     font-weight: 600;
     cursor: pointer;
   }
