@@ -1,4 +1,5 @@
-<script>
+<script lang="ts">
+
   import '../app.css';
   import { page } from '$app/state';
   import Logo from '../components/icons/Logo.svelte';
@@ -7,38 +8,77 @@
   import { goto } from '$app/navigation';
   import { base } from '$app/paths';
   import { Toaster } from '$lib/components/ui/sonner/index.js';
+    import Icon from '@iconify/svelte';
+
+  let home = $derived(page.url.pathname === `${base}/`);
+  
 
   let { children } = $props();
 
-  function goHome(){
-    goto('/')
+  function go(destination: string){
+    if (destination == "home"){
+      goto('/')
+    } else {
+      const currentPath = page.url.pathname;
+      const newPath = currentPath.substring(0, currentPath.lastIndexOf('/'));
+      console.log(currentPath);
+      
+      goto(newPath || '/');
+    }
   }
 </script>
 
 <Toaster />
+
+{#if home}
 
 <div class="abs">
   <CustomHeader size={3} />
 </div>
 
 <div class="head">
-  <g class="compl">✖</g>
+  <g class="function-button"></g>
+
+  <div class="icon">
+    <img src="/FriendsWhite.svg" alt="" draggable="false" />
+  </div>
+  <r class="function-button"></r>
+</div>
+
+{:else}
+
+<div class="abs">
+  <CustomHeader size={3} />
+</div>
+
+<div class="head">
+  <g class="function-button"
+    role="button"
+    tabindex="0"
+    aria-label="Back"
+    onclick={() => go("back")}
+    onkeydown={(e) => {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') go("back");
+    }}
+  >
+    <Icon icon="entypo:back" color="grey"></Icon>
+  </g>
 
   <div
     class="icon"
     role="button"
     tabindex="0"
     aria-label="Account"
-    onclick={() => goto(`${base}/`)}
+    onclick={() => go("home")}
     onkeydown={(e) => {
-      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') goto(`${base}/`);
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') go("home");
     }}
   >
     <img src="/FriendsWhite.svg" alt="" draggable="false" />
   </div>
-  <r class="compl">✖</r>
+  <r class="function-button"></r>
 </div>
-
+{/if}
 
 
 
@@ -55,9 +95,9 @@
     height: 45px;
   }
 
-  .compl {
-    opacity: 0;
-    margin: 0;
+  .function-button {
+    opacity: 1;
+    margin: 0 0.5rem;
     width: 3rem;
     align-items: center;
     text-align: center;
@@ -65,6 +105,7 @@
     padding: 0;
     height: 3rem;
   }
+
 
 
   .abs {

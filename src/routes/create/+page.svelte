@@ -63,7 +63,7 @@
       >
         <div class="card-surface">
           <div class="icon-wrap">
-            <Icon icon={mode.icon} class="icon" width="30" />
+            <Icon icon={mode.icon} class="icon" width="28" />
           </div>
 
           <div class="content">
@@ -86,10 +86,7 @@
 
   .page {
     min-height: 100svh;
-    background:
-      radial-gradient(1200px 800px at 75% -10%, rgba(122, 162, 255, 0.18), transparent 60%),
-      radial-gradient(1000px 700px at 20% 110%, rgba(160, 119, 255, 0.18), transparent 55%),
-      linear-gradient(180deg, #0b0c10 0%, #0e1117 100%);
+  background-color: var(--color-background);
     display: grid;
     place-items: stretch;
   }
@@ -162,7 +159,7 @@
     border: 1px solid rgba(255, 255, 255, 0.24);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.28),
-      0 10px 30px rgba(122, 162, 255, 0.22);
+      0 5px 20px rgba(122, 162, 255, 0.12);
   }
 
   .content {
