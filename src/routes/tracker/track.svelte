@@ -172,7 +172,7 @@
   }
 
   function quitSession() {
-    if (confirm('Are you sure you want to quit the session?')) {
+    if (confirm('Are you sure you want to quit the session?\n(All confirmed sets are already saved)')) {
       setActivityStatus(userID ?? 'error', sesID, false);
       goto(`${base}/`);
     } else {
@@ -219,7 +219,9 @@
       {sesID}
     />
   {:else}
-    <button onclick={() => quitSession()} class="abs buttonClass">Quit</button>
+    <button onclick={() => quitSession()} class="abs buttonClass">
+      <Icon icon="entypo:log-out" color="grey" width={20}/>
+    </button>
     <div class="movement-cont">
       <button class="movement-b mini buttonClass" onclick={() => prevExercise()}>Prev</button>
       <p>{currentExerciseIndex + 1}/{exercises.length}</p>
@@ -267,13 +269,12 @@
 
   .abs {
     position: absolute;
-    font-weight: 900;
     width: fit-content;
     height: fit-content;
     background-color: rgba(240, 248, 255, 0);
     box-shadow: none;
-    right: -0rem;
-    top: -1rem;
+    right: -1.1rem;
+    top: -1.3rem;
     z-index: 4;
   }
   .container {

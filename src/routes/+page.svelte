@@ -64,18 +64,19 @@
           onclick={() => goto(`${base}/tracker/${existingID}`)}
         >
           <g>Continue session:</g>
-          <h4>{existingID}</h4>
+          <i class="font-light">{existingID}</i>
         </button>
       {/if}
 
       <button class="base-btn sesh buttonClass" onclick={() => goto(`${base}/tracker`)}>
         <g>Begin a workout</g>
         <DbIcon />
+
       </button>
 
       <button class="base-btn sesh buttonClass" onclick={() => goto(`${base}/create`)}>
         <g>Add new session</g>
-        <AddIcon />
+        <Icon icon="gridicons:create" width="32"/>
       </button>
     </div>
   </div>
