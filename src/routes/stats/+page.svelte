@@ -12,13 +12,13 @@
   import { user } from '../account/user';
   import { get } from 'svelte/store';
   import { goto } from '$app/navigation';
-  import { base } from '$app/paths';
+  import { resolve } from '$app/paths';
 
   let isAuth = $state(false);
 
   onMount(async () => {
     if (!get(user)) {
-      goto(`${base}/account`);
+      goto(resolve(`/account`));
     } else {
       console.log('User auth');
       isAuth = true;

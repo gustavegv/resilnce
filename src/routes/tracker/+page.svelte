@@ -12,7 +12,7 @@
   import Icon from '@iconify/svelte';
   import { user } from '../account/user';
   import { get } from 'svelte/store';
-  import { base } from '$app/paths';
+  import { resolve } from '$app/paths';
 
   let slugs: SessionMetaData[] = $state([]);
   let activeSession: boolean = $state(false);
@@ -26,7 +26,7 @@
 
   onMount(async () => {
     if (!userID) {
-      goto(`${base}/account`);
+      goto(resolve(`/account`));
       return;
     }
 
@@ -79,12 +79,12 @@
       openPopup('active');
 
       if (confirm(`You have an unfinished exercise, do you really want to start a new one?`)) {
-        goto(`${base}/tracker/${id}`);
+        goto(resolve(`/tracker/${id}`));
       } else {
-        goto(`${base}/`);
+        goto(resolve(`/`));
       }
     } else {
-      goto(`${base}/tracker/${id}`);
+      goto(resolve(`/tracker/${id}`));
     }
   }
   function editSes(id: string) {

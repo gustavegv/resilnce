@@ -9,7 +9,7 @@
   import Icon from '@iconify/svelte';
   import { blur, crossfade, fade, scale, slide } from 'svelte/transition';
   import { get } from 'svelte/store';
-  import { base } from '$app/paths';
+  import { resolve } from '$app/paths';
   import { toast } from 'svelte-sonner';
   import { afterNavigate } from '$app/navigation';
   const linkBase = import.meta.env.BASE_URL;
@@ -61,22 +61,21 @@
         <button
           in:slide|global={{ duration: 600 }}
           class="base-btn alt buttonClass"
-          onclick={() => goto(`${base}/tracker/${existingID}`)}
+          onclick={() => goto(resolve(`/tracker/${existingID}`))}
         >
           <g>Continue session:</g>
           <i class="font-light">{existingID}</i>
         </button>
       {/if}
 
-      <button class="base-btn sesh buttonClass" onclick={() => goto(`${base}/tracker`)}>
+      <button class="base-btn sesh buttonClass" onclick={() => goto(resolve(`/tracker`))}>
         <g>Begin a workout</g>
         <DbIcon />
-
       </button>
 
-      <button class="base-btn sesh buttonClass" onclick={() => goto(`${base}/create`)}>
+      <button class="base-btn sesh buttonClass" onclick={() => goto(resolve(`/create`))}>
         <g>Add new session</g>
-        <Icon icon="gridicons:create" width="32"/>
+        <Icon icon="gridicons:create" width="32" />
       </button>
     </div>
   </div>
@@ -84,7 +83,7 @@
   <div class="body">
     <h1 class="wid">The only gym tracker you need.</h1>
     <hr />
-    <button class="base-btn sesh buttonClass" onclick={() => goto(`${base}/account`)}>
+    <button class="base-btn sesh buttonClass" onclick={() => goto(resolve(`/account`))}>
       <g>Log in</g>
       <Icon icon="material-symbols:login-rounded" width="35" />
     </button>

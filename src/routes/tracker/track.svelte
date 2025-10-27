@@ -14,7 +14,7 @@
   import { user } from '../account/user';
   import * as Card from '$lib/components/ui/card/';
   import FinishBlob from '../../components/FinishBlob.svelte';
-  import { base } from '$app/paths';
+  import { resolve } from '$app/paths';
 
   // Exercise ID som blir tilldelad när man callar komponenten:
   //   Exempel:  <Track sesID="push" />
@@ -47,7 +47,7 @@
 
   onMount(async () => {
     if (!userID) {
-      goto(`${base}/account`);
+      goto(resolve(`/account`));
       return;
     }
     try {
@@ -172,9 +172,11 @@
   }
 
   function quitSession() {
-    if (confirm('Are you sure you want to quit the session?\n(All confirmed sets are already saved)')) {
+    if (
+      confirm('Are you sure you want to quit the session?\n(All confirmed sets are already saved)')
+    ) {
       setActivityStatus(userID ?? 'error', sesID, false);
-      goto(`${base}/`);
+      goto(resolve(`/`));
     } else {
       console.log('Quit adverted.');
     }
@@ -203,7 +205,8 @@
       <h2 class="py-2 text-lg font-semibold">Session overview</h2>
       <FinishBlob {exercises} />
     </Card.Root>
-    <button class="buttonClass w-full" onclick={() => goto(`${base}/`)}>Return to homepage</button>
+    <button class="buttonClass w-full" onclick={() => goto(resolve(`/`))}>Return to homepage</button
+    >
   {:else if editMode}
     <ExerciseTrackScreen
       name={exName}
@@ -220,7 +223,7 @@
     />
   {:else}
     <button onclick={() => quitSession()} class="abs buttonClass">
-      <Icon icon="entypo:log-out" color="grey" width={20}/>
+      <Icon icon="entypo:log-out" color="grey" width={20} />
     </button>
     <div class="movement-cont">
       <button class="movement-b mini buttonClass" onclick={() => prevExercise()}>Prev</button>

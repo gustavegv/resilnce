@@ -7,7 +7,7 @@
   import Icon from '@iconify/svelte';
   import { toast } from 'svelte-sonner';
   import { promptAutoChoose, promptRestart, promptSpell, promptStandard } from './prompt';
-    import { base } from '$app/paths';
+  import { base } from '$app/paths';
 
   var sessionTitle = $state<string>('');
   var userText = $state<string>('');

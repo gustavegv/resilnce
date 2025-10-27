@@ -86,7 +86,7 @@
 
   .page {
     min-height: 100svh;
-  background-color: var(--color-background);
+    background-color: var(--color-background);
     display: grid;
     place-items: stretch;
   }
