@@ -71,7 +71,7 @@
         if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') go('home');
       }}
     >
-      <img src="/FriendsWhite.svg" alt="" draggable="false" />
+      <img src="{asset('/FriendsWhite.svg')}" alt="" draggable="false" />
     </div>
     <r class="function-button"></r>
   </div>
