@@ -64,13 +64,13 @@
     return 'Just now';
   }
 
-  let sty = $state('90%');
+  let sty = $state('calc(100vw - 2rem);');
 
   function sideway() {
-    sty = '60%';
+    sty = '60vw';
 
     setTimeout(() => {
-      sty = '90%';
+      sty = 'calc(100vw - 2rem);';
     }, 3000);
   }
 </script>
@@ -86,8 +86,6 @@
       <Icon icon={'uiw:more'} fill={'#fff'} width={'20px'}></Icon>
     </button>
   </div>
-
-  <div class="under-cont"></div>
 
   <div class="under-cont">
     <div class="icon-under edit">
@@ -133,26 +131,25 @@
   }
 
   .icon-under {
-    padding: 2rem 1rem;
+    padding: 0 0.8rem;
   }
 
   .under-cont {
     display: flex;
     flex-direction: row;
-    width: 33%;
+    width: 90vw;
     height: 5rem;
     align-items: center;
-    justify-content: space-between;
+    justify-content: end;
   }
 
   .inner-cont {
     display: flex;
     flex-direction: row;
-    width: 97%;
+    width: 100%;
     align-items: center;
-    justify-content: space-between;
+    justify-content: cen;
     border-radius: 10px;
-    margin: 0.5rem;
     overflow: hidden;
   }
 
@@ -165,7 +162,6 @@
   .base-btn {
     text-transform: capitalize;
     box-shadow: var(--shadow-dark);
-
     display: flex;
     flex-direction: row;
 
@@ -184,6 +180,7 @@
     justify-content: space-between;
     padding: 0;
     transition: all 0.3s;
+    opacity: 1;
   }
 
   p {

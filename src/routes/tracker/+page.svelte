@@ -89,7 +89,7 @@
   }
   function editSes(id: string) {
     console.log(id, 'edited');
-
+    alert('Edit not yet implemented.');
     // popup edit?
   }
 
@@ -141,7 +141,7 @@
     <div class="btn-container">
       {#each slugs as slug, i}
         {#if !slug.deleted}
-          <div in:fade|global={{ delay: i * 50 }}>
+          <div style="width: inherit" in:fade|global={{ delay: i * 50 }}>
             <SessionSlug
               onPress={() => startSes(slug.id)}
               onEdit={() => editSes(slug.id)}
@@ -180,8 +180,10 @@
     display: flex;
     flex-direction: column;
     align-items: baseline;
+    justify-content: center;
     box-sizing: border-box;
     width: 100%;
     text-align: left;
+    gap: 0.5rem;
   }
 </style>
