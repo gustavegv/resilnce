@@ -34,7 +34,6 @@
   }
 
   .confirm-button.diabled {
-    background-color: #95a38c;
     color: rgb(255, 255, 255);
     pointer-events: none;
   }

@@ -112,8 +112,8 @@
   </header>
 {:else}
   <header>
-    <h1 class="text-4xl font-bold">{name}</h1>
-    <h2 class="text-2xl font-bold">{weight} kg</h2>
+    <h1 class="text-3xl font-bold">{name}</h1>
+    <h2 class="text-2xl">{weight} kg</h2>
   </header>
 {/if}
 

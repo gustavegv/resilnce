@@ -99,7 +99,7 @@
 <main class="page">
   <!-- Head -->
   <header class="head">
-    <h1 class="title">Quick Fill</h1>
+    <h1 class="mb-2 text-3xl leading-snug font-bold">Quick Fill</h1>
     <p class="description">
       This feature allows you to paste or upload your workout session notes in any
       format—messy,structured, or somewhere in between—and automatically transforms them into a

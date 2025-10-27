@@ -227,7 +227,7 @@
     </button>
     <div class="movement-cont">
       <button class="movement-b mini buttonClass" onclick={() => prevExercise()}>Prev</button>
-      <p>{currentExerciseIndex + 1}/{exercises.length}</p>
+      <p class="text-muted-foreground">{currentExerciseIndex + 1}/{exercises.length}</p>
       <button class="movement-b mini buttonClass" onclick={() => skipExercise()}>Skip</button>
     </div>
 

@@ -130,7 +130,7 @@
 </script>
 
 <div class="main">
-  <h2 style="width: 100%;" class="text-2xl font-bold">Sessions:</h2>
+  <h1 class="mb-2 text-3xl leading-snug font-bold">Sessions</h1>
   <ErrorPopup message={showError}></ErrorPopup>
   <Popup show={showPopup} onAccept={() => handlePop(true)} onDecline={() => handlePop(false)}
   ></Popup>
