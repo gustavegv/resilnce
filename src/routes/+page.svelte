@@ -29,8 +29,61 @@
     }
   });
 
+  const greetings = {
+    morning: ['Good morning.', 'Ready to move?', 'Are you ready?', 'Starting strong today!'],
+    day: ['Good day.', "Hope your day's going well!", 'Stay focused.', 'Stay strong.'],
+    evening: ['Good evening.', 'Hope your day was good.', 'Late night lift?'],
+    general: [
+      'Welcome back!',
+      'Hello.',
+      "Let's get moving!",
+      'Great to see you.',
+      "Glad you're here!",
+      'Ready to train?',
+      'Welcome!',
+      'Hi there.',
+      "Let's begin.",
+      "Let's get started.",
+    ],
+    continue: ['Keep going', "Let's go", 'Good work'],
+  };
+
   let existingSession = $state(false);
   let existingID = $state('');
+  let greetMessage = $state('');
+  let punctuation = $state('');
+  let titleSize = $state('2.5rem');
+
+  function greet(): void {
+    if (existingSession) {
+      let pool = greetings['continue'];
+      greetMessage = pool[Math.floor(Math.random() * pool.length)];
+      punctuation = '!';
+      return;
+    }
+    const hour = new Date().getHours();
+    let timeOfDay: 'morning' | 'day' | 'evening' | 'general' = 'general';
+
+    if (hour >= 5 && hour < 12) {
+      timeOfDay = 'morning';
+    } else if (hour >= 12 && hour < 18) {
+      timeOfDay = 'day';
+    } else {
+      timeOfDay = 'evening';
+    }
+
+    const pool = greetings[timeOfDay];
+    const odds = 1 / pool.length;
+    const chosenPool = Math.random() > odds ? greetings[timeOfDay] : greetings['general'];
+    const indexPicked = Math.floor(Math.random() * chosenPool.length);
+    const message = chosenPool[indexPicked];
+
+    greetMessage = message.slice(0, -1);
+    const len = message.length;
+    punctuation = message[len - 1];
+
+    console.log(`greet -> ${timeOfDay} (hour ${hour}): ${message}`);
+  }
 
   onMount(async () => {
     const userID = get(user);
@@ -40,10 +93,13 @@
       if (prevSession != null) {
         existingSession = prevSession.active;
         console.log('exists', existingSession);
+
         if (existingSession) {
+          titleSize = '2rem';
           existingID = prevSession.session;
         }
       }
+      greet();
     } else {
     }
   });
@@ -52,7 +108,9 @@
 <img src="{linkBase}books.png" alt="a" class="books {existingSession}" />
 {#if $user}
   <div class="body">
-    <h1 class="wid">Good evening <span class="toUpper">{$user}</span>.</h1>
+    <h1 in:fade={{ duration: 600, delay: 100 }} class="wid" style="font-size:{titleSize}">
+      {greetMessage} <span class="toUpper">{$user}</span>{punctuation}
+    </h1>
 
     <hr />
 
@@ -171,7 +229,7 @@
     justify-content: space-between;
     align-items: center;
     box-shadow: var(--shadow-dark);
-    width: 90%;
+    width: 95%;
   }
 
   .base-btn.sesh {
