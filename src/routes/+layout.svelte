@@ -15,14 +15,19 @@
   let { children } = $props();
 
   function go(destination: string) {
-    if (destination == 'home') {
-      goto(resolve('/'));
-    } else {
-      const currentPath = page.url.pathname;
-      const newPath = currentPath.substring(0, currentPath.lastIndexOf('/'));
-      console.log(currentPath);
-
-      goto(newPath || resolve('/'));
+    switch (destination) {
+      case 'home':
+        goto(resolve('/'));
+        break;
+      case 'account':
+        goto(resolve('/account'));
+        break;
+      default:
+        const currentPath = page.url.pathname;
+        const newPath = currentPath.substring(0, currentPath.lastIndexOf('/'));
+        console.log(currentPath);
+        goto(newPath || resolve('/'));
+        break;
     }
   }
 </script>
@@ -31,16 +36,29 @@
 
 {#if home}
   <div class="abs">
-    <CustomHeader size={2} />
+    <CustomHeader size={3} />
   </div>
 
   <div class="head">
-    <g class="function-button"></g>
+    <g class="function-button hide">
+      <Icon icon="mdi:user" />
+    </g>
 
     <div class="icon">
       <img src={asset('/FriendsWhite.svg')} alt="" draggable="false" />
     </div>
-    <r class="function-button"></r>
+    <r
+      class="function-button"
+      role="button"
+      tabindex="0"
+      aria-label="Account"
+      onclick={() => go('account')}
+      onkeydown={(e: any) => {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') go('back');
+      }}
+    >
+      <Icon icon="mdi:user" color="grey" />
+    </r>
   </div>
 {:else}
   <div class="abs">
@@ -73,7 +91,9 @@
     >
       <img src={asset('/FriendsWhite.svg')} alt="" draggable="false" />
     </div>
-    <r class="function-button"></r>
+    <r class="function-button hide">
+      <Icon icon="entypo:back" color="grey"></Icon>
+    </r>
   </div>
 {/if}
 
@@ -93,7 +113,6 @@
   .function-button {
     opacity: 1;
     margin: 0 0.5rem;
-    width: 3rem;
     align-items: center;
     text-align: center;
     font-size: 25px;
@@ -120,5 +139,9 @@
     justify-content: space-between;
     z-index: 5;
     overflow: visible;
+  }
+
+  .hide {
+    opacity: 0;
   }
 </style>

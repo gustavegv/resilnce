@@ -50,7 +50,7 @@
 
 {#if $user}
   <main class="main">
-    <Card.Root class="w-full max-w-sm rounded-2xl bg-neutral-900 px-2 shadow">
+    <Card.Root class="m-2 w-xs rounded-2xl bg-neutral-900 px-2 shadow">
       <Card.Header class="border-b border-neutral-700">
         <Card.Title class="text-lg font-semibold text-white">
           Logged in as <strong>{$user}</strong>
@@ -63,7 +63,7 @@
     </Card.Root>
 
     <!-- Settings Card -->
-    <Card.Root class="w-full max-w-sm rounded-2xl bg-neutral-900 px-2 shadow">
+    <Card.Root class="w-xs rounded-2xl bg-neutral-900 px-2 shadow">
       <Card.Header class="border-b border-neutral-700 pb-3">
         <Card.Title class="text-lg font-semibold text-white">Settings</Card.Title>
       </Card.Header>
@@ -71,20 +71,11 @@
       <Card.Content class="space-y-4">
         <div class="flex items-center space-x-3">
           <Checkbox id="cb1" />
-          <label for="cb1" class="text-neutral-300 select-none">
-            Automatically increase weight after reaching rep goal
-          </label>
+          <label for="cb1" class="text-neutral-300 select-none"> Checkbox 1 </label>
         </div>
 
         <div class="flex items-center space-x-3">
-          <Input
-            maxlength={2}
-            id="rep"
-            type="number"
-            placeholder="Rep limit (12 reps is standard)"
-            class=""
-            required
-          />
+          <Input maxlength={2} id="rep" type="number" placeholder="LeBron" class="" required />
         </div>
 
         <div class="flex items-center space-x-3">
