@@ -35,6 +35,9 @@ jobs:
       - name: Install dependencies
         working-directory: app/web
         run: npm ci
+        
+      - name: Print environment variables
+        run: printenv | sort
 
       - name: Build
         working-directory: app/web
