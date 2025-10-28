@@ -16,7 +16,7 @@
   let cooldown = false;
 
   export async function tempLogin(user: string, pass: string): Promise<boolean> {
-    const response = await signInOrSignUp(user, pass, true);
+    const response = await signInOrSignUp(user, pass, false);
     return response;
   }
 
