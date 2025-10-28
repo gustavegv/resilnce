@@ -1,4 +1,4 @@
-<script lang="ts" runes>
+<script lang="ts">
   import { onDestroy, tick } from 'svelte';
 
   let { message = '' } = $props();
