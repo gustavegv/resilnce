@@ -179,18 +179,22 @@ export async function saveRecordedLift(
 
   let updatedStats: DocumentData;
 
-  if (tryAutoIncrease(hisData)) {
-    let autoInc: number = 2.5; //standard 2.5
+  const docSnap = await getDoc(exRef);
+  const data = docSnap.data();
+  if (!data) {
+    return [0];
+  } // TODO: Bad
+  const repThreshold = data.repThreshold ?? 12;
 
-    const docSnap = await getDoc(exRef);
-    const data = docSnap.data();
+  if (tryAutoIncrease(hisData, repThreshold)) {
+    let autoInc: number = 2.5; //standard 2.5
 
     if (data) {
       autoInc = data.autoIncrease ?? 2.5; //standard 2.5
     }
 
     const wps = new Array(repArray.length).fill(weight + autoInc);
-    const rps = new Array(repArray.length).fill(7);
+    const rps = new Array(repArray.length).fill(Math.round(repThreshold / 1.6)); //TODO: Magic number
 
     updatedStats = {
       'currentProgress.repsPerSet': rps,
@@ -209,8 +213,8 @@ export async function saveRecordedLift(
   return repArray;
 }
 
-function tryAutoIncrease(history: any): boolean {
-  if (history.avgSet > 11) {
+function tryAutoIncrease(history: any, threshold: number): boolean {
+  if (history.avgSet >= threshold) {
     return true;
   } else {
     return false;

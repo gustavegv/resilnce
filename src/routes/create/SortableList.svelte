@@ -32,6 +32,8 @@
       const exName = child.querySelector('#info-name');
       const exWeight = child.querySelector('#info-weight');
       const exSets = child.querySelector('#info-sets');
+      const exAuto = child.querySelector('#info-auto');
+      const exThres = child.querySelector('#info-thres');
 
       if (!exName || !exWeight || !exSets) {
         console.error('SortableList info not found.');
@@ -42,6 +44,8 @@
         name: exName.textContent ?? 'Error',
         weight: Number(exWeight.textContent) ?? -1,
         sets: Number(exSets.textContent) ?? -1,
+        autoIncrease: Number(exAuto?.textContent) ?? 2.5,
+        repThreshold: Number(exThres?.textContent) ?? 12,
       };
 
       collectedInfo.push(packaged);
@@ -74,11 +78,11 @@
         <p>
           <span id="info-sets">{blob.sets}</span> sets
         </p>
-        <i class="additional-info"> {blob.repThreshold} rep max.</i>
+        <i class="additional-info"> <span id="info-thres">{blob.repThreshold}</span> rep max.</i>
         <p>
           <span id="info-weight">{blob.weight}</span> kg
         </p>
-        <i class="additional-info"> {blob.autoIncrease} kg inc.</i>
+        <i class="additional-info"> <span id="info-auto">{blob.autoIncrease}</span> kg inc.</i>
       </div>
       <div class="abs-icon">
         <Icon

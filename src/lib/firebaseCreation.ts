@@ -60,15 +60,18 @@ export interface ExerciseInfo {
   id?: string;
   finished?: boolean;
   autoIncrease?: number;
+  repThreshold?: number;
 }
 
 function simpleExerciseType(exif: ExInfoPackage): ExerciseInfo {
   const name: string = exif.name;
   const sets: number = exif.sets;
   const w: number = exif.weight;
-  const autoInc: number = exif.autoIncrease ?? 2.5; //standard 2.5
+  const autoInc: number = exif.autoIncrease ?? 2.5; //standard 2.5kg
+  const repThres: number = exif.repThreshold ?? 12; //standard 12reps
+  console.log('😃\n', exif.repThreshold, '\n'); //TODO: Remove log
 
-  const rps = new Array(sets).fill(7);
+  const rps = new Array(sets).fill(Math.round(repThres / 1.75));
   const wps = new Array(sets).fill(w);
 
   const prog = {
@@ -82,6 +85,7 @@ function simpleExerciseType(exif: ExInfoPackage): ExerciseInfo {
     name: name,
     currentProgress: prog,
     autoIncrease: autoInc,
+    repThreshold: repThres,
   };
   return simple;
 }
@@ -90,6 +94,7 @@ function simpleExerciseTypeBatch(pcA: ExInfoPackage[]): ExerciseInfo[] {
   let result: ExerciseInfo[] = [];
   pcA.forEach((pck) => {
     const next = simpleExerciseType(pck);
+    console.log('THIS:', next.repThreshold); //TODO: remove log
     result = [...result, next];
   });
   return result;
@@ -240,6 +245,7 @@ export async function addExercise(
         order: newCount,
         id: newExerciseRef.id,
         autoIncrease: info.autoIncrease,
+        repThreshold: info.repThreshold,
       },
       { merge: true }
     );
@@ -286,6 +292,7 @@ export async function batchAddExercises(
         order: index,
         id: exerciseRef.id,
         autoIncrease: info.autoIncrease,
+        repThreshold: info.repThreshold,
       },
       { merge: true }
     );
@@ -348,6 +355,8 @@ export async function betterAdd(uID: string, sessionName: string, exif: ExInfoPa
   const s: SessionInfo = {
     name: sessionName,
   };
+  console.log(exif);
+
   await addSessionByName(uID, s);
 
   const exinfo = simpleExerciseTypeBatch(exif);

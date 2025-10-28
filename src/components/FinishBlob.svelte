@@ -8,22 +8,23 @@
     exercises: ExerciseInfo[];
   } = $props();
 
-  function checkPR(ar: number[]): boolean {
-    let repLimit = 12;
-    let count = 0;
+  function checkPR(setList: number[], index: number): boolean {
+    const repThreshold = exercises[index].repThreshold ?? 12;
 
-    ar.forEach((nu) => {
-      count += nu;
+    let totalReps = 0;
+
+    setList.forEach((set) => {
+      totalReps += set;
     });
 
-    let avg = count / ar.length;
-    return avg > repLimit;
+    let avgRepsPerSet = totalReps / setList.length;
+    return avgRepsPerSet > repThreshold;
   }
 </script>
 
 {#each exercises as blob, index}
   <div class="blob-cont relative">
-    {#if checkPR(blob.currentProgress.repsPerSet)}
+    {#if checkPR(blob.currentProgress.repsPerSet, index)}
       <div class="absolute right-1">
         <Icon icon="ri:medal-line" width="35" color="gold" />
       </div>
@@ -34,7 +35,7 @@
       <p>
         {blob.currentProgress.weightPerSet[0]} kg
         <span class="text-lg font-bold text-green-400"
-          >{checkPR(blob.currentProgress.repsPerSet) ? '+' : ''}</span
+          >{checkPR(blob.currentProgress.repsPerSet, index) ? '+' : ''}</span
         >
       </p>
     </div>

@@ -76,6 +76,9 @@
 
     currentlyAdded = [...currentlyAdded, entry];
 
+    console.log('NEW THANG');
+    console.log(currentlyAdded);
+
     reorderableList.addToSortable(entry);
 
     newName = '';
@@ -86,6 +89,9 @@
   let reorderableList: SortableList;
 
   function saveSession() {
+    console.log('This is what we send pre');
+    console.log(currentlyAdded);
+
     currentlyAdded = reorderableList.extractData();
 
     // adds inputed exercise in case you forgot
@@ -100,6 +106,9 @@
       alert('No session name added!');
       return;
     }
+
+    console.log('This is what we send post');
+    console.log(currentlyAdded);
 
     const username = get(user);
     if (username) {
