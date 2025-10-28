@@ -235,6 +235,7 @@
     align-items: center;
     padding: var(--spacing-md);
     gap: var(--spacing-lg);
+    overflow: scroll;
   }
 
   .head,
@@ -243,13 +244,6 @@
   .footer {
     width: 100%;
     max-width: var(--page-max-width);
-  }
-
-  .title {
-    margin: 0 0 var(--spacing-sm) 0;
-    font-size: 1.75rem;
-    line-height: 1.2;
-    font-weight: 700;
   }
 
   .description {

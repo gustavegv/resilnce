@@ -117,19 +117,32 @@
   </header>
 {/if}
 
-{#each reps as block, index (uniqueKey(index, exIndex))}
-  <SetBlock id={index + 1} {finished} reps={block} onCountChange={onCount} />
-{/each}
+<cont class="cont">
+  {#each reps as block, index (uniqueKey(index, exIndex))}
+    <SetBlock id={index + 1} {finished} reps={block} onCountChange={onCount} />
+  {/each}
 
-{#if edit}
-  <button class="buttonClass" onclick={addSet}><h1>Add set</h1></button>
-{:else}
-  <ConfirmSelection {finished} onConfirm={onSubmit} />
-{/if}
+  {#if edit}
+    <button class="buttonClass" onclick={addSet}><h1>Add set</h1></button>
+  {:else}
+    <ConfirmSelection {finished} onConfirm={onSubmit} />
+  {/if}
+</cont>
 
 <style>
+  .cont {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    overflow-y: auto;
+    overflow-x: hidden;
+    touch-action: pan-y;
+  }
+
   .title {
-    font-size: 2em; /* Like an h1 */
+    font-size: 2em;
     font-weight: bold;
     border: none;
     outline: none;

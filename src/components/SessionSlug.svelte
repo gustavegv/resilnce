@@ -135,15 +135,18 @@
   }
 
   .under-cont {
+    position: absolute;
     display: flex;
     flex-direction: row;
     width: 90vw;
     height: 5rem;
     align-items: center;
     justify-content: end;
+    touch-action: pan-y;
   }
 
   .inner-cont {
+    position: relative;
     display: flex;
     flex-direction: row;
     width: 100%;

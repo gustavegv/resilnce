@@ -31,7 +31,7 @@
 
   const greetings = {
     morning: ['Good morning.', 'Ready to move?', 'Are you ready?', 'Starting strong today!'],
-    day: ['Good day.', "Hope your day's going well!", 'Stay focused.', 'Stay strong.'],
+    day: ['Good day.', "Hope your day's going well!", 'Stay focused.'],
     evening: ['Good evening.', 'Hope your day was good.', 'Late night lift?'],
     general: [
       'Welcome back!',
@@ -52,7 +52,6 @@
   let existingID = $state('');
   let greetMessage = $state('');
   let punctuation = $state('');
-  let titleSize = $state('2.5rem');
 
   function greet(): void {
     if (existingSession) {
@@ -95,7 +94,6 @@
         console.log('exists', existingSession);
 
         if (existingSession) {
-          titleSize = '2rem';
           existingID = prevSession.session;
         }
       }
@@ -105,37 +103,38 @@
   });
 </script>
 
-<img src="{linkBase}books.png" alt="a" class="books {existingSession}" />
+<img src="{linkBase}books.png" alt="a" class="books {existingSession} bob" />
 {#if $user}
   <div class="body">
-    <h1 in:fade={{ duration: 600, delay: 100 }} class="wid" style="font-size:{titleSize}">
-      {greetMessage} <span class="toUpper">{$user}</span>{punctuation}
-    </h1>
+    <cont class="cont">
+      <h1 in:fade={{ duration: 600, delay: 100 }} class="wid">
+        {greetMessage} <span class="toUpper">{$user}</span>{punctuation}
+      </h1>
 
-    <hr />
+      <hr />
+      <div class="btn-container">
+        {#if existingSession}
+          <button
+            in:slide|global={{ duration: 600 }}
+            class="base-btn alt buttonClass"
+            onclick={() => goto(resolve(`/tracker/${existingID}`))}
+          >
+            <g>Continue session:</g>
+            <i class="font-regular">{existingID}</i>
+          </button>
+        {/if}
 
-    <div class="btn-container">
-      {#if existingSession}
-        <button
-          in:slide|global={{ duration: 600 }}
-          class="base-btn alt buttonClass"
-          onclick={() => goto(resolve(`/tracker/${existingID}`))}
-        >
-          <g>Continue session:</g>
-          <i class="font-light">{existingID}</i>
+        <button class="base-btn sesh buttonClass" onclick={() => goto(resolve(`/tracker`))}>
+          <g>Begin a workout</g>
+          <DbIcon />
         </button>
-      {/if}
 
-      <button class="base-btn sesh buttonClass" onclick={() => goto(resolve(`/tracker`))}>
-        <g>Begin a workout</g>
-        <DbIcon />
-      </button>
-
-      <button class="base-btn sesh buttonClass" onclick={() => goto(resolve(`/create`))}>
-        <g>Add new session</g>
-        <Icon icon="gridicons:create" width="32" />
-      </button>
-    </div>
+        <button class="base-btn sesh buttonClass" onclick={() => goto(resolve(`/create`))}>
+          <g>Add new session</g>
+          <Icon icon="gridicons:create" width="32" />
+        </button>
+      </div>
+    </cont>
   </div>
 {:else}
   <div class="body">
@@ -149,15 +148,36 @@
 {/if}
 
 <style>
+  @keyframes tilt {
+    0%,
+    100% {
+      transform: translate(-50%, -50%) rotateX(0deg) rotateY(0deg);
+    }
+    25% {
+      transform: translate(-50%, -50%) rotateX(2deg) rotateY(-4deg);
+    }
+    50% {
+      transform: translate(-50%, -50%) rotateX(-1deg) rotateY(2deg);
+    }
+    75% {
+      transform: translate(-50%, -50%) rotateX(1deg) rotateY(-1deg);
+    }
+  }
+
+  .bob {
+    transform-style: preserve-3d;
+    animation: tilt 7s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+  }
+
   .books {
-    position: fixed; /* Stay fixed to the viewport */
-    top: 31%;
+    position: fixed;
+    top: 32%;
     left: 50%;
-    transform: translate(-50%, -50%); /* Adjust this to where you want it */
-    z-index: 0; /* Sit behind interactive content */
-    pointer-events: none; /* Let clicks pass through */
+    transform: translate(-50%, -50%);
+    z-index: 0;
+    pointer-events: none;
     user-select: none;
-    width: 16rem; /* Adjust to taste */
+    width: 15rem;
     height: auto;
     filter: drop-shadow(0px 19px 38px rgba(79, 89, 111, 0.187))
       drop-shadow(0px 15px 12px rgba(78, 78, 78, 0.13));
@@ -168,21 +188,22 @@
   }
 
   .books.true {
-    top: 27%;
+    top: 30%;
   }
 
   hr {
     height: 0.1px;
     background-color: #ffffff;
-    margin: 20px 0;
-    width: 85%;
+    margin: 1rem 0 1rem 0;
+    width: 100%;
   }
 
   .wid {
-    width: 80%;
-    font-size: 2.5rem;
-    margin: 0.6rem 0;
-    line-height: 3.2rem;
+    width: 100%;
+    font-size: 2rem;
+    margin-left: 0.5rem;
+    line-height: 3rem;
+    letter-spacing: -0.02em;
   }
 
   .body {
@@ -206,7 +227,7 @@
     .books {
       top: 29%;
       left: 50%;
-      width: 12rem; /* Adjust to taste */
+      width: 12rem;
       height: auto;
     }
   }
@@ -216,11 +237,19 @@
     color: var(--color-contrast);
   }
 
-  .btn-container {
+  .cont {
     display: flex;
     flex-direction: column;
     align-items: center;
     width: 90%;
+  }
+
+  .btn-container {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
   }
 
   .base-btn {
@@ -229,17 +258,21 @@
     justify-content: space-between;
     align-items: center;
     box-shadow: var(--shadow-dark);
-    width: 95%;
+    width: 100%;
+    margin: 0;
+    padding: 0.8rem 1.2rem;
+    border-radius: 6px;
+    height: 4rem;
   }
 
   .base-btn.sesh {
-    -webkit-text-stroke: 0.6px rgb(255, 255, 255);
+    font-weight: 600;
   }
 
   .base-btn.alt {
     background-color: var(--color-alt);
     color: var(--color-contrast);
     box-shadow: var(--color-alt) 0px 0px 20px 1px;
-    height: 5rem;
+    margin-bottom: 1rem;
   }
 </style>

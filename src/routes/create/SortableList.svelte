@@ -57,6 +57,11 @@
   export function addToSortable(newEx: ExInfoPackage) {
     items2x.push(newEx);
   }
+
+  function removeFromStack(name: string) {
+    const index = items2x.findIndex((item) => item.name === name);
+    if (index !== -1) items2x.splice(index, 1);
+  }
 </script>
 
 <ul bind:this={els} class="component">
@@ -70,7 +75,12 @@
         <p><span id="info-weight">{blob.weight}</span> kg</p>
       </div>
       <div class="abs-icon">
-        <Icon icon={'typcn:delete'} color={'red'} width="40"></Icon>
+        <Icon
+          icon={'typcn:delete'}
+          color={'red'}
+          width="40"
+          onclick={() => removeFromStack(blob.name)}
+        />
       </div>
     </li>
   {/each}
@@ -99,7 +109,7 @@
     box-sizing: border-box;
     padding: 1rem 2rem;
     flex-direction: row;
-    background-color: var(--color-black);
+    background-color: var(--color-background);
     justify-content: space-between;
     align-items: center;
     width: 80%;

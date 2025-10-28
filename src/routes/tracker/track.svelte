@@ -278,7 +278,7 @@
     box-shadow: none;
     right: -1.1rem;
     top: -1.3rem;
-    z-index: 4;
+    z-index: 6;
   }
   .container {
     height: 100%;
@@ -287,6 +287,7 @@
     justify-content: center;
     align-items: center;
     background: var(--color-background);
+    overflow-x: hidden;
   }
 
   .box {

@@ -71,7 +71,7 @@
         if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') go('home');
       }}
     >
-      <img src="{asset('/FriendsWhite.svg')}" alt="" draggable="false" />
+      <img src={asset('/FriendsWhite.svg')} alt="" draggable="false" />
     </div>
     <r class="function-button"></r>
   </div>
@@ -102,13 +102,14 @@
   }
 
   .abs {
-    position: absolute;
+    position: fixed;
     display: flex;
     flex-direction: column;
     justify-content: baseline;
     top: -20px;
     left: 0px;
     width: 100%;
+    z-index: 3;
   }
 
   .head {
@@ -117,7 +118,7 @@
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    z-index: 2;
+    z-index: 5;
     overflow: visible;
   }
 </style>

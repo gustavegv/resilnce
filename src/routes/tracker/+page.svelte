@@ -167,6 +167,7 @@
     align-items: center;
     text-align: left;
     padding: 5rem 1rem;
+    overflow: scroll;
   }
 
   hr {
@@ -185,5 +186,6 @@
     width: 100%;
     text-align: left;
     gap: 0.5rem;
+    overflow: hidden;
   }
 </style>

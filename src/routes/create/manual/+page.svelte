@@ -177,7 +177,7 @@
     padding: 1rem;
     width: 80%;
     height: fit-content;
-    background-color: var(--color-black);
+    background-color: var(--color-background);
     border-radius: 15px;
     align-items: center;
 

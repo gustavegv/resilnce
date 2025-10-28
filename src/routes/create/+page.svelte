@@ -78,7 +78,7 @@
 
 <style>
   :global(:root) {
-    --card: rgb(28, 28, 28);
+    --card: rgb(43, 43, 43);
     --card-hover: rgba(255, 255, 255, 0.09);
     --ring: #9bb7ff;
     --shadow: var(--shadow-dark);
@@ -89,10 +89,11 @@
     background-color: var(--color-background);
     display: grid;
     place-items: stretch;
+    padding-top: 1rem;
   }
 
   .stack {
-    height: 96svh;
+    height: 75svh;
     padding-top: 6svh;
     display: grid;
     grid-template-rows: 1fr 1fr;
@@ -135,12 +136,6 @@
     box-shadow: var(--shadow);
   }
 
-  .mode-card:hover .card-surface {
-    background: var(--card-hover);
-    transform: translateY(-3px);
-    border-color: color-mix(in lab, var(--border) 60%, var(--accent) 40%);
-  }
-
   .mode-card:active .card-surface {
     transform: translateY(0);
   }
@@ -148,9 +143,9 @@
   .icon-wrap {
     display: grid;
     place-items: center;
-    width: clamp(64px, 20vw, 100px);
-    height: clamp(64px, 20vw, 100px);
-    border-radius: var(--radius-xl);
+    width: clamp(64px, 16vw, 100px);
+    height: clamp(64px, 16vw, 100px);
+    border-radius: var(--radius-lg);
     background: linear-gradient(
       135deg,
       color-mix(in lab, var(--accent) 65%, #fff 0%),
@@ -158,7 +153,7 @@
     );
     border: 1px solid rgba(255, 255, 255, 0.24);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.28),
+      inset 0 1px 0 rgba(163, 163, 163, 0.28),
       0 5px 20px rgba(122, 162, 255, 0.12);
   }
 
