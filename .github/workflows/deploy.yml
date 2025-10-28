@@ -6,8 +6,6 @@ on:
 jobs:
   build_site:
     runs-on: ubuntu-latest
-
-    # Secrets available to the build
     env:
       PUBLIC_FIREBASE_API_KEY: ${{ secrets.PUBLIC_FIREBASE_API_KEY }}
       PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.PUBLIC_FIREBASE_AUTH_DOMAIN }}
@@ -18,42 +16,35 @@ jobs:
       NODE_ENV: production
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            apps/web/package-lock.json   # 👈 fix to apps/
+            apps/web/package-lock.json
 
-      - name: Install deps (root)
+      # Install only the web app’s deps (guarantees vite is present)
+      - name: Install deps (web)
+        working-directory: apps/web
         run: npm ci
 
-      # Optional debug — helpful the first time you run this manually
       - name: Check Firebase env vars exist
         run: |
-          for v in \
-            PUBLIC_FIREBASE_API_KEY \
-            PUBLIC_FIREBASE_AUTH_DOMAIN \
-            PUBLIC_FIREBASE_PROJECT_ID \
-            PUBLIC_FIREBASE_STORAGE_BUCKET \
-            PUBLIC_FIREBASE_MESSAGING_SENDER_ID \
-            PUBLIC_FIREBASE_APP_ID
-          do
+          for v in PUBLIC_FIREBASE_API_KEY PUBLIC_FIREBASE_AUTH_DOMAIN PUBLIC_FIREBASE_PROJECT_ID PUBLIC_FIREBASE_STORAGE_BUCKET PUBLIC_FIREBASE_MESSAGING_SENDER_ID PUBLIC_FIREBASE_APP_ID; do
             echo "$v=${!v:+__SET__}"
           done
 
-      - name: Build web workspace
-        run: npm run build --workspace web   # 👈 same command as your passing CI
+      - name: Build web
+        working-directory: apps/web
+        run: npm run build
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: apps/web/build              # 👈 fix to apps/
+          path: apps/web/build
 
   deploy:
     needs: build_site
