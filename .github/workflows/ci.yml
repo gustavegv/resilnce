@@ -1,0 +1,33 @@
+# .github/workflows/ci.yml  (or whatever is failing your PR)
+on:
+  push:
+    branches: ['main']
+  workflow_dispatch: {}  
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Write CI .env for web (dummy public vars)
+        working-directory: apps/web
+        run: |
+          cat > .env <<'EOF'
+          PUBLIC_FIREBASE_API_KEY=ci_dummy
+          PUBLIC_FIREBASE_AUTH_DOMAIN=ci_dummy
+          PUBLIC_FIREBASE_PROJECT_ID=ci_dummy
+          PUBLIC_FIREBASE_STORAGE_BUCKET=ci_dummy
+          PUBLIC_FIREBASE_MESSAGING_SENDER_ID=ci_dummy
+          PUBLIC_FIREBASE_APP_ID=ci_dummy
+          EOF
+
+      - name: Build web
+        run: npm run build --workspace web
