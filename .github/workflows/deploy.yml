@@ -30,19 +30,24 @@ jobs:
       - name: Create env file for web workspace
         run: |
           mkdir -p apps/web
-          cat > apps/web/.env <<'EOF'
-          PUBLIC_FIREBASE_API_KEY=${{ secrets.PUBLIC_FIREBASE_API_KEY }}
-          PUBLIC_FIREBASE_AUTH_DOMAIN=${{ secrets.PUBLIC_FIREBASE_AUTH_DOMAIN }}
-          PUBLIC_FIREBASE_PROJECT_ID=${{ secrets.PUBLIC_FIREBASE_PROJECT_ID }}
-          PUBLIC_FIREBASE_STORAGE_BUCKET=${{ secrets.PUBLIC_FIREBASE_STORAGE_BUCKET }}
-          PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-          PUBLIC_FIREBASE_APP_ID=${{ secrets.PUBLIC_FIREBASE_APP_ID }}
-          BASE_PATH=/resilnce
-          EOF
+          : > apps/web/.env
+          echo "PUBLIC_FIREBASE_API_KEY=${{ secrets.PUBLIC_FIREBASE_API_KEY }}" >> apps/web/.env
+          echo "PUBLIC_FIREBASE_AUTH_DOMAIN=${{ secrets.PUBLIC_FIREBASE_AUTH_DOMAIN }}" >> apps/web/.env
+          echo "PUBLIC_FIREBASE_PROJECT_ID=${{ secrets.PUBLIC_FIREBASE_PROJECT_ID }}" >> apps/web/.env
+          echo "PUBLIC_FIREBASE_STORAGE_BUCKET=${{ secrets.PUBLIC_FIREBASE_STORAGE_BUCKET }}" >> apps/web/.env
+          echo "PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}" >> apps/web/.env
+          echo "PUBLIC_FIREBASE_APP_ID=${{ secrets.PUBLIC_FIREBASE_APP_ID }}" >> apps/web/.env
+          echo "BASE_PATH=/resilnce" >> apps/web/.env
+
 
       # (one-off) show which PUBLIC_* names exist (values hidden)
       - name: Debug PUBLIC_* present
         run: env | sort | sed -n 's/^PUBLIC_.*/&/p'
+
+      - name: Show .env (escaped) to verify keys (values redacted)
+        run: |
+          sed -E 's/=(.*)/=***REDACTED***/' apps/web/.env | sed -n 's/^PUBLIC_.*/&/p' | cat -A
+
 
       - name: Build (run in apps/web so .env is picked up)
         working-directory: apps/web
