@@ -52,6 +52,7 @@
   let existingID = $state('');
   let greetMessage = $state('');
   let punctuation = $state('');
+  let loading = $state(true);
 
   function greet(): void {
     if (existingSession) {
@@ -98,20 +99,23 @@
         }
       }
       greet();
+      loading = false;
     } else {
     }
   });
 </script>
 
-<img src="{linkBase}books.png" alt="a" class="books {existingSession} bob" />
-{#if $user}
-  <div class="body">
+{#if loading}{:else if $user}
+  <div in:fade={{ duration: 400, delay: 50 }} class="body">
     <cont class="cont">
-      <h1 in:fade={{ duration: 600, delay: 100 }} class="wid">
-        {greetMessage} <span class="toUpper">{$user}</span>{punctuation}
+      <h1 in:fade={{ duration: 400, delay: 100 }} class="wid">
+        {greetMessage.trim()} <span class="toUpper">{$user}</span>{punctuation &&
+          punctuation.trim()}
+        <!-- For some reason, in these lines above a space is added between the word and punctuation-->
+        <!-- Expected result "Hey Name." Current result: "Hey Name ." -->
       </h1>
 
-      <hr />
+      <hr in:fade={{ duration: 400, delay: 150 }} />
       <div class="btn-container">
         {#if existingSession}
           <button
@@ -124,12 +128,20 @@
           </button>
         {/if}
 
-        <button class="base-btn sesh buttonClass" onclick={() => goto(resolve(`/tracker`))}>
+        <button
+          in:fade={{ duration: 400, delay: 200 }}
+          class="base-btn sesh buttonClass"
+          onclick={() => goto(resolve(`/tracker`))}
+        >
           <g>Begin a workout</g>
           <DbIcon />
         </button>
 
-        <button class="base-btn sesh buttonClass" onclick={() => goto(resolve(`/create`))}>
+        <button
+          in:fade={{ duration: 400, delay: 300 }}
+          class="base-btn sesh buttonClass"
+          onclick={() => goto(resolve(`/create`))}
+        >
           <g>Add new session</g>
           <Icon icon="gridicons:create" width="32" />
         </button>
@@ -139,14 +151,27 @@
 {:else}
   <div class="body">
     <cont class="cont">
-      <h1 class="wid">The only gym tracker you need.</h1>
-      <hr />
-      <button class="base-btn sesh buttonClass" onclick={() => goto(resolve(`/account`))}>
+      <h1 in:fade={{ duration: 400, delay: 50 }} class="wid">The only gym tracker you need.</h1>
+      <hr in:fade={{ duration: 400, delay: 100 }} />
+      <button
+        in:fade={{ duration: 400, delay: 150 }}
+        class="base-btn sesh buttonClass"
+        onclick={() => goto(resolve(`/account`))}
+      >
         <g>Log in</g>
         <Icon icon="material-symbols:login-rounded" width="32" />
       </button>
     </cont>
   </div>
+{/if}
+
+{#if !loading}
+  <img
+    in:fade={{ duration: 400, delay: 0 }}
+    src="{linkBase}books.png"
+    alt="a"
+    class="books {existingSession} bob"
+  />
 {/if}
 
 <style>
@@ -204,7 +229,7 @@
     width: 100%;
     font-size: 2rem;
     margin-left: 0.5rem;
-    line-height: 3rem;
+    line-height: 2.5rem;
     letter-spacing: -0.02em;
   }
 
