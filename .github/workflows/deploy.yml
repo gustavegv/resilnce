@@ -4,21 +4,8 @@ on:
   push:
     branches: ['main']
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-
-
-
-  
 jobs:
   build_site:
-    # If your secrets are scoped to an Environment, uncomment:
-    # environment: github-pages
-
-    runs-on: ubuntu-latest
     env:
       PUBLIC_FIREBASE_API_KEY: ${{ secrets.PUBLIC_FIREBASE_API_KEY }}
       PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.PUBLIC_FIREBASE_AUTH_DOMAIN }}
@@ -27,39 +14,52 @@ jobs:
       PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
       PUBLIC_FIREBASE_APP_ID: ${{ secrets.PUBLIC_FIREBASE_APP_ID }}
 
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # If you're using pnpm, add this step then change commands and cache below to pnpm
+      # - name: Install pnpm
+      #   uses: pnpm/action-setup@v3
+      #   with:
+      #     version: 8
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - name: Install (root)
+          cache-dependency-path: app/web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: app/web
         run: npm ci
 
-      # Sanity: prove PUBLIC_* are visible to the process before the build
-      - name: Sanity PUBLIC_ keys
-        run: node -e 'console.log(Object.keys(process.env).filter(k=>k.startsWith("PUBLIC_")))'
-
-      - name: Build (apps/web)
-        working-directory: apps/web
+      - name: Build
+        working-directory: app/web
         env:
-          NODE_ENV: production
-          BASE_PATH: /resilnce
-          # PUBLIC_* inherited from job env
-        run: npm run build   # or: npx svelte-kit build
+          BASE_PATH: '/resilnce'
+        run: npm run build
 
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - name: Upload Artifacts
+        uses: actions/upload-pages-artifact@v3
         with:
-          path: apps/web/build
+          path: app/web/build   # change if your build output folder is different (e.g. dist)
 
   deploy:
     needs: build_site
     runs-on: ubuntu-latest
-    permissions: { pages: write, id-token: write }
+
+    permissions:
+      pages: write
+      id-token: write
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
-      - id: deployment
+      - name: Deploy
+        id: deployment
         uses: actions/deploy-pages@v4
