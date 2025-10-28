@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "name": "my-monorepo",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "npm run dev --workspace web",
+    "build": "npm run build --workspace web",
+    "preview": "npm run preview --workspace web"
+  }
+}
