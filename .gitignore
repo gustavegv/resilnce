@@ -21,3 +21,7 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# SvelteKit builds in monorepo
+apps/web/.svelte-kit/
+apps/web/build/
