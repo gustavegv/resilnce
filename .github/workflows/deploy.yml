@@ -36,8 +36,36 @@ jobs:
         working-directory: app/web
         run: npm ci
         
-      - name: Print environment variables
+      - name: Print environment variables (debug)
         run: printenv | sort
+        
+
+      - name: Check Firebase env vars (existence only)
+        run: |
+          for v in \
+            PUBLIC_FIREBASE_API_KEY \
+            PUBLIC_FIREBASE_AUTH_DOMAIN \
+            PUBLIC_FIREBASE_PROJECT_ID \
+            PUBLIC_FIREBASE_STORAGE_BUCKET \
+            PUBLIC_FIREBASE_MESSAGING_SENDER_ID \
+            PUBLIC_FIREBASE_APP_ID
+          do
+            if [ -z "${!v}" ]; then
+              echo "$v=__MISSING__"
+            else
+              echo "$v=__SET__"
+            fi
+          done
+
+      - name: Echo Firebase env vars (masked)
+        run: |
+          echo "PUBLIC_FIREBASE_API_KEY=${PUBLIC_FIREBASE_API_KEY}"
+          echo "PUBLIC_FIREBASE_AUTH_DOMAIN=${PUBLIC_FIREBASE_AUTH_DOMAIN}"
+          echo "PUBLIC_FIREBASE_PROJECT_ID=${PUBLIC_FIREBASE_PROJECT_ID}"
+          echo "PUBLIC_FIREBASE_STORAGE_BUCKET=${PUBLIC_FIREBASE_STORAGE_BUCKET}"
+          echo "PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${PUBLIC_FIREBASE_MESSAGING_SENDER_ID}"
+          echo "PUBLIC_FIREBASE_APP_ID=${PUBLIC_FIREBASE_APP_ID}"
+
 
       - name: Build
         working-directory: app/web
