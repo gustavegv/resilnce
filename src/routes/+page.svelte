@@ -138,12 +138,14 @@
   </div>
 {:else}
   <div class="body">
-    <h1 class="wid">The only gym tracker you need.</h1>
-    <hr />
-    <button class="base-btn sesh buttonClass" onclick={() => goto(resolve(`/account`))}>
-      <g>Log in</g>
-      <Icon icon="material-symbols:login-rounded" width="35" />
-    </button>
+    <cont class="cont">
+      <h1 class="wid">The only gym tracker you need.</h1>
+      <hr />
+      <button class="base-btn sesh buttonClass" onclick={() => goto(resolve(`/account`))}>
+        <g>Log in</g>
+        <Icon icon="material-symbols:login-rounded" width="32" />
+      </button>
+    </cont>
   </div>
 {/if}
 
