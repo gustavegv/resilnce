@@ -1,6 +1,8 @@
 # .github/workflows/ci.yml  (or whatever is failing your PR)
 on:
-  pull_request:
+  push:
+    branches: ['main']
+  workflow_dispatch: {}  
 
 jobs:
   build:
