@@ -67,12 +67,18 @@
 <ul bind:this={els} class="component">
   {#each items2x as blob, i (blob)}
     <li class="blob-cont sortable-item">
-      <div>
+      <div class="name-cont">
         <h3 id="info-name">{blob.name}</h3>
       </div>
       <div class="blob-inner">
-        <p><span id="info-sets">{blob.sets}</span> sets</p>
-        <p><span id="info-weight">{blob.weight}</span> kg</p>
+        <p>
+          <span id="info-sets">{blob.sets}</span> sets
+        </p>
+        <i class="additional-info"> {blob.repThreshold} rep max.</i>
+        <p>
+          <span id="info-weight">{blob.weight}</span> kg
+        </p>
+        <i class="additional-info"> {blob.autoIncrease} kg inc.</i>
       </div>
       <div class="abs-icon">
         <Icon
@@ -119,7 +125,18 @@
     box-shadow: var(--shadow-dark);
   }
 
+  .name-cont {
+    width: 70%;
+    margin-right: 1rem;
+  }
+
   .blob-inner {
+    font-size: 12px;
+    color: var(--color-secondary);
+    width: 30%;
+  }
+  .additional-info {
+    font-size: 12px;
     color: gray;
   }
 </style>

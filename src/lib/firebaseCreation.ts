@@ -18,6 +18,7 @@ export interface ExInfoPackage {
   weight: number;
   sets: number;
   autoIncrease?: number;
+  repThreshold?: number;
 }
 
 /**

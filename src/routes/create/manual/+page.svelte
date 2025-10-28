@@ -36,6 +36,7 @@
   let newSets: string = $state('');
   let newWeight: string = $state('');
   let newAutoInc: number = $state(2.5);
+  let newRepThreshold: number = $state(12);
 
   onMount(async () => {
     const us = get(user);
@@ -70,6 +71,7 @@
       sets: Number(newSets),
       weight: Number(newWeight),
       autoIncrease: newAutoInc,
+      repThreshold: newRepThreshold,
     };
 
     currentlyAdded = [...currentlyAdded, entry];
@@ -89,6 +91,11 @@
     // adds inputed exercise in case you forgot
     addExercise();
 
+    if (currentlyAdded.length == 0) {
+      alert('No exercises added!');
+      return;
+    }
+
     if (seshName == '') {
       alert('No session name added!');
       return;
@@ -106,6 +113,10 @@
 
   function removeItem(index: number) {
     currentlyAdded.splice(index, 1);
+  }
+
+  function repThresholdChange(count: number) {
+    newRepThreshold = count;
   }
 
   function autoIncreaseChange(count: number) {
@@ -129,7 +140,19 @@
 
     <InputField label={'Weight'} bind:value={newWeight} type={'number'} />
 
-    <SetAutoIncrease weight={2.5} onCountChange={(count: number) => autoIncreaseChange(count)} />
+    <SetAutoIncrease
+      title={'Auto-increase threshold'}
+      unit={'reps'}
+      weight={12}
+      limit={2}
+      interval={1}
+      onCountChange={(count: number) => repThresholdChange(count)}
+    />
+    <SetAutoIncrease
+      title={'Weight increase intervals'}
+      weight={2.5}
+      onCountChange={(count: number) => autoIncreaseChange(count)}
+    />
 
     <button class="add buttonClass" onclick={addExercise}>Add to session</button>
   </div>

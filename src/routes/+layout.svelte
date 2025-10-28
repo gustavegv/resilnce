@@ -31,7 +31,7 @@
 
 {#if home}
   <div class="abs">
-    <CustomHeader size={3} />
+    <CustomHeader size={2} />
   </div>
 
   <div class="head">
