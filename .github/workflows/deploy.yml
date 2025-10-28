@@ -9,15 +9,16 @@ permissions:
   pages: write
   id-token: write
 
+
+
+
+  
 jobs:
   build_site:
-    # If your secrets are scoped to an Environment (Settings → Environments),
-    # uncomment the next line so the build job can access them:
+    # If your secrets are scoped to an Environment, uncomment:
     # environment: github-pages
 
     runs-on: ubuntu-latest
-
-    # Make PUBLIC_* available to all steps in this job
     env:
       PUBLIC_FIREBASE_API_KEY: ${{ secrets.PUBLIC_FIREBASE_API_KEY }}
       PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.PUBLIC_FIREBASE_AUTH_DOMAIN }}
@@ -27,56 +28,38 @@ jobs:
       PUBLIC_FIREBASE_APP_ID: ${{ secrets.PUBLIC_FIREBASE_APP_ID }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-
-      # Install once at the repo root (npm workspaces will install for apps/* and packages/*)
-      - name: Install dependencies (root)
+      - name: Install (root)
         run: npm ci
 
-      # Optional: prove PUBLIC_* are visible to Node (values not printed)
-      - name: Sanity check PUBLIC_* visibility
-        run: node -e "console.log(Object.keys(process.env).filter(k=>k.startsWith('PUBLIC_')))"
+      # Sanity: prove PUBLIC_* are visible to the process before the build
+      - name: Sanity PUBLIC_ keys
+        run: node -e 'console.log(Object.keys(process.env).filter(k=>k.startsWith("PUBLIC_")))'
 
-      # Build the web app inside the monorepo
       - name: Build (apps/web)
         working-directory: apps/web
         env:
           NODE_ENV: production
           BASE_PATH: /resilnce
-          # PUBLIC_* are inherited from the job-level env above
-        run: npm run build
-        # If you change apps/web/package.json to use SvelteKit's canonical build:
-        # run: npx svelte-kit build
+          # PUBLIC_* inherited from job env
+        run: npm run build   # or: npx svelte-kit build
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: apps/web/build
 
   deploy:
     needs: build_site
     runs-on: ubuntu-latest
-
-    permissions:
-      pages: write
-      id-token: write
-
-    # If you use the github-pages Environment for protection rules/URL, keep this:
+    permissions: { pages: write, id-token: write }
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
+      - id: deployment
         uses: actions/deploy-pages@v4

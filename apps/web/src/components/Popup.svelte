@@ -72,9 +72,4 @@
     cursor: pointer;
     background: black;
   }
-
-  p {
-    color: black;
-    z-index: 1099;
-  }
 </style>
