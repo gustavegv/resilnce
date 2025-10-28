@@ -9,10 +9,11 @@ permissions:
   pages: write
   id-token: write
 
+# .github/workflows/deploy.yml  (only the changed bits shown)
+
 jobs:
   build_site:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,7 +27,6 @@ jobs:
       - name: Install dependencies (root)
         run: npm ci
 
-      # write .env INSIDE apps/web so SvelteKit can load it
       - name: Create env file for web workspace
         run: |
           mkdir -p apps/web
@@ -40,7 +40,11 @@ jobs:
           BASE_PATH=/resilnce
           EOF
 
-      - name: Build (run in apps/web)
+      # (one-off) show which PUBLIC_* names exist (values hidden)
+      - name: Debug PUBLIC_* present
+        run: env | sort | sed -n 's/^PUBLIC_.*/&/p'
+
+      - name: Build (run in apps/web so .env is picked up)
         working-directory: apps/web
         env:
           NODE_ENV: production
@@ -53,6 +57,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: apps/web/build
+
 
   deploy:
     needs: build_site
