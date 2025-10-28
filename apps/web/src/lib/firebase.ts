@@ -1,22 +1,30 @@
-import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import {
-  PUBLIC_FIREBASE_API_KEY,
-  PUBLIC_FIREBASE_AUTH_DOMAIN,
-  PUBLIC_FIREBASE_PROJECT_ID,
-  PUBLIC_FIREBASE_STORAGE_BUCKET,
-  PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  PUBLIC_FIREBASE_APP_ID,
-} from '$env/static/public';
+import { browser } from '$app/environment';
+import { env as pub } from '$env/dynamic/public';
 
-const firebaseConfig = {
-  apiKey: PUBLIC_FIREBASE_API_KEY,
-  authDomain: PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: PUBLIC_FIREBASE_APP_ID,
-};
+let _db: import('firebase/firestore').Firestore | undefined;
 
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+export async function getDb() {
+  if (!browser) return undefined; 
+
+  if (_db) return _db;
+
+  const [{ initializeApp, getApps }, { getFirestore }] = await Promise.all([
+    import('firebase/app'),
+    import('firebase/firestore')
+  ]);
+
+  const app =
+    getApps().length > 0
+      ? getApps()[0]
+      : initializeApp({
+          apiKey: pub.PUBLIC_FIREBASE_API_KEY,
+          authDomain: pub.PUBLIC_FIREBASE_AUTH_DOMAIN,
+          projectId: pub.PUBLIC_FIREBASE_PROJECT_ID,
+          storageBucket: pub.PUBLIC_FIREBASE_STORAGE_BUCKET,
+          messagingSenderId: pub.PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+          appId: pub.PUBLIC_FIREBASE_APP_ID
+        });
+
+  _db = getFirestore(app);
+  return _db;
+}
