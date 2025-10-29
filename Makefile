@@ -1,6 +1,6 @@
 APP_NAME ?= apps-server
 WORKDIR  ?= apps/server
-PORT     ?= 7979
+PORT     ?= 8080
 
 IMAGE     ?= $(APP_NAME):dev
 CONTAINER ?= $(APP_NAME)-dev
@@ -42,7 +42,17 @@ logs:
 	docker logs -f $(CONTAINER)
 
 curl:
-	curl -i http://localhost:$(PORT)/healthz
+	curl -i http://localhost:$(PORT)/resilnce
 
 clean:
 	-@docker rmi $(IMAGE) >/dev/null 2>&1 || true
+
+cookie: 
+	curl -i --cookie "sess=IdP_info" http://localhost:$(PORT)/cookie
+
+# make get CKI=""
+get:
+	curl -i --cookie "sess=$(CKI)" http://localhost:$(PORT)/get
+
+
+	

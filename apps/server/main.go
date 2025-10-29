@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -13,16 +12,26 @@ import (
 func main() {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		fmt.Fprintf(w, "hello from cloud run: %s %s\n", r.Method, r.URL.Path)
-	})
+	mux.HandleFunc("/cookie", CookieReq)
+	mux.HandleFunc("/get", ValidateCookieReq)
+	mux.HandleFunc("/", BaseReq)
 
 	addr := ":" + getenv("PORT", "8080")
+
+	srv := startServer(mux, addr)
+
+	shutdownServer(srv)
+
+}
+
+func getenv(k, d string) string {
+	if v := os.Getenv(k); v != "" {
+		return v
+	}
+	return d
+}
+
+func startServer(mux *http.ServeMux, addr string) *http.Server {
 	srv := &http.Server{
 		Addr:         addr,
 		Handler:      mux,
@@ -38,7 +47,10 @@ func main() {
 			log.Fatalf("server error: %v", err)
 		}
 	}()
+	return srv
+}
 
+func shutdownServer(srv *http.Server) {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 	<-stop
@@ -46,11 +58,4 @@ func main() {
 	defer cancel()
 	_ = srv.Shutdown(ctx)
 	log.Println("shutdown complete")
-}
-
-func getenv(k, d string) string {
-	if v := os.Getenv(k); v != "" {
-		return v
-	}
-	return d
 }
