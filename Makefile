@@ -46,13 +46,3 @@ curl:
 
 clean:
 	-@docker rmi $(IMAGE) >/dev/null 2>&1 || true
-
-cookie: 
-	curl -i --cookie "sess=IdP_info" http://localhost:$(PORT)/cookie
-
-# make get CKI=""
-get:
-	curl -i --cookie "sess=$(CKI)" http://localhost:$(PORT)/get
-
-
-	

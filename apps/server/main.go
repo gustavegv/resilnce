@@ -7,40 +7,42 @@ import (
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/gustavegv/resilnce/apps/server/api"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	mux := http.NewServeMux()
+	godotenv.Load()
 
-	mux.HandleFunc("/cookie", CookieReq)
-	mux.HandleFunc("/get", ValidateCookieReq)
-	mux.HandleFunc("/", BaseReq)
-
+	httpHandler := api.RoutingCreation()
 	addr := ":" + getenv("PORT", "8080")
-
-	srv := startServer(mux, addr)
+	srv := startServer(httpHandler, addr)
 
 	shutdownServer(srv)
-
 }
 
-func getenv(k, d string) string {
-	if v := os.Getenv(k); v != "" {
+func getenv(key, def string) string {
+	if v := os.Getenv(key); v != "" {
 		return v
 	}
-	return d
+	return def
 }
 
-func startServer(mux *http.ServeMux, addr string) *http.Server {
+func startServer(hh http.Handler, addr string) *http.Server {
+	// seconds
+	const readTO = 10
+	const writeTO = 60
+	const idleTO = 60
+
 	srv := &http.Server{
 		Addr:         addr,
-		Handler:      mux,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 60 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		Handler:      hh,
+		ReadTimeout:  readTO * time.Second,
+		WriteTimeout: writeTO * time.Second,
+		IdleTimeout:  idleTO * time.Second,
 	}
 
-	// Start server
 	go func() {
 		log.Printf("listening on %s", addr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {

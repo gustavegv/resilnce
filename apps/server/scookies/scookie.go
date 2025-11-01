@@ -1,14 +1,16 @@
-package main
+package scookie
 
 import (
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"log"
+	"os"
+	"strings"
 	"time"
 )
-
-// ---- COOKIE PAYLOAD + HELPERS ----
 
 type payload struct {
 	UID string `json:"uid"`
@@ -16,23 +18,19 @@ type payload struct {
 	Exp int64  `json:"exp"`
 }
 
-func FakeIncomingPayload() payload {
-	const incomingUID = "user-123"
-	const incomingSID = "sid-demo-abc"
+func BuildPayload(uID string) payload {
+	var pl payload
+	pl.UID = uID
+	pl.SID = ""
 
 	const expiryTime time.Duration = 120 * 24
 	var incomingExp = time.Now().Add(expiryTime * time.Hour).Unix()
-
-	pl := payload{
-		UID: incomingUID, // demo value; normally from your DB
-		SID: incomingSID, // 16 random bytes -> base64url
-		Exp: incomingExp, // expires in 30 min (demo)
-	}
+	pl.Exp = incomingExp
 
 	return pl
 }
 
-func MakeCookie(p payload, secret []byte) (string, error) {
+func Create(p payload, secret []byte) (string, error) {
 	raw, err := json.Marshal(p)
 	if err != nil {
 		return "", err
@@ -44,7 +42,7 @@ func MakeCookie(p payload, secret []byte) (string, error) {
 	return cookie, nil
 }
 
-func VerifyCookie(cookie string, secret []byte) (payload, bool) {
+func Verify(cookie string, secret []byte) (payload, bool) {
 	var out payload
 
 	dotPos := -1
@@ -90,4 +88,38 @@ func computeHMAC(data, key []byte) []byte {
 	h := hmac.New(sha256.New, key)
 	h.Write(data)
 	return h.Sum(nil)
+}
+
+func GetSecret() []byte {
+	sec64 := os.Getenv("SIGNED_COOKIE_SECRET")
+	if sec64 == "" {
+		log.Fatal("Signed cookie secret not found")
+	}
+	secret, err := base64.RawURLEncoding.DecodeString(sec64)
+
+	if err != nil {
+		log.Fatalf("invalid base64 secret: %v", err)
+	}
+	if len(secret) < 32 {
+		log.Fatal("secret too short; need >=32 bytes. current length:", len(secret))
+	}
+	return secret
+}
+
+func CreateNewSecret(nChars int) (string, error) {
+	if nChars <= 0 {
+		return "", nil
+	}
+	bytesNeeded := (nChars*3 + 3) / 4
+
+	var sb strings.Builder
+	for sb.Len() < nChars {
+		b := make([]byte, bytesNeeded)
+		if _, err := rand.Read(b); err != nil {
+			return "", err
+		}
+		sb.WriteString(base64.RawURLEncoding.EncodeToString(b))
+	}
+	s := sb.String()
+	return s[:nChars], nil
 }

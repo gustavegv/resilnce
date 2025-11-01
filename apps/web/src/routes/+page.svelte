@@ -22,12 +22,18 @@
       case 'saved':
         toast.success(`Session saved successfully!`, { duration: 3000 });
         break;
+      case 'loggedin':
+        SaveUserInfoCookies();
+        toast.success('Log in successul!', { duration: 3000 });
 
+        break;
       default:
         toast.warning(`${sonner}`, { duration: 4000 });
         break;
     }
   });
+
+  function SaveUserInfoCookies() {}
 
   const greetings = {
     morning: ['Good morning.', 'Ready to move?', 'Are you ready?', 'Starting strong today!'],
