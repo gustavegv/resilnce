@@ -29,9 +29,12 @@ func RoutingCreation() http.Handler {
 	originURL := trimURLSlash(siteDirectory)
 
 	corsHandler := cors.New(cors.Options{
-		AllowedOrigins:   []string{originURL},
+		AllowedOrigins: []string{
+			originURL,
+			"http://localhost:5173",
+		},
 		AllowCredentials: true,
-		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
+		AllowedMethods:   []string{"GET", "POST", "OPTIONS", "PUT"},
 		AllowedHeaders:   []string{"Authorization", "Content-Type"},
 	}).Handler(mux)
 

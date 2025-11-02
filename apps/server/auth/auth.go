@@ -58,7 +58,7 @@ func (s *service) IssueSignedCookie(w http.ResponseWriter, r *http.Request, user
 		Value:    cookie,
 		Path:     "/",
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteNoneMode,
 		Secure:   true,
 		MaxAge:   ttl,
 	})
@@ -146,8 +146,8 @@ func New(ctx context.Context, cfg Config) (*service, error) {
 		appleTokenURL:    appleTokenURL,
 		appleVerifier:    appleVerifier,
 		appleOAuth:       appleOAuth,
-		stateCookieAttrs: cookieAttrs{Path: "/", HTTPOnly: true, SameSite: http.SameSiteLaxMode, Secure: cfg.SecureCookies, MaxAge: cfg.StateTTLSeconds},
-		pkceCookieAttrs:  cookieAttrs{Path: "/", HTTPOnly: true, SameSite: http.SameSiteLaxMode, Secure: cfg.SecureCookies, MaxAge: cfg.PKCETTLSeconds},
+		stateCookieAttrs: cookieAttrs{Path: "/", HTTPOnly: true, SameSite: http.SameSiteNoneMode, Secure: cfg.SecureCookies, MaxAge: cfg.StateTTLSeconds},
+		pkceCookieAttrs:  cookieAttrs{Path: "/", HTTPOnly: true, SameSite: http.SameSiteNoneMode, Secure: cfg.SecureCookies, MaxAge: cfg.PKCETTLSeconds},
 	}
 	return s, nil
 }
@@ -171,7 +171,7 @@ func (s *service) clearCookie(w http.ResponseWriter, name string) {
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteNoneMode,
 		Secure:   s.cfg.SecureCookies,
 	})
 }
@@ -196,19 +196,44 @@ func pkceS256(verifier string) string {
 }
 
 func ConfigFromEnv(baseURL string) Config {
-	return Config{
-		BaseURL:            baseURL,
-		GoogleClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-		GoogleClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-
-		AppleClientID: os.Getenv("APPLE_CLIENT_ID"),
-		AppleTeamID:   os.Getenv("APPLE_TEAM_ID"),
-		AppleKeyID:    os.Getenv("APPLE_KEY_ID"),
-		AppleKeyPEM:   os.Getenv("APPLE_PRIVATE_KEY_PEM"),
-
+	var cfg Config = Config{
+		BaseURL:         baseURL,
 		StateCookieName: "oauth_state",
 		PKCECookieName:  "oauth_pkce",
 		SecureCookies:   true,
+	}
+
+	getOAuthEnvByVendor("google", &cfg)
+
+	return cfg
+}
+
+func getOAuthEnvByVendor(vendor string, c *Config) {
+	v := strings.ToLower(vendor)
+
+	switch v {
+	case "google":
+		gCliID := os.Getenv("GOOGLE_CLIENT_ID")
+		gCliSec := os.Getenv("GOOGLE_CLIENT_SECRET")
+		if gCliID == "" || gCliSec == "" {
+			log.Fatal("Failed to get Google ENV variables")
+		}
+		c.GoogleClientID = gCliID
+		c.GoogleClientSecret = gCliSec
+
+	case "apple":
+		aCliID := os.Getenv("APPLE_CLIENT_ID")
+		aTeamID := os.Getenv("APPLE_TEAM_ID")
+		aKeyID := os.Getenv("APPLE_KEY_ID")
+		aKeyPEM := os.Getenv("APPLE_PRIVATE_KEY_PEM")
+
+		if aCliID == "" || aTeamID == "" || aKeyID == "" || aKeyPEM == "" {
+			log.Fatal("Failed to get Apple ENV variables")
+		}
+		c.AppleClientID = aCliID
+		c.AppleTeamID = aTeamID
+		c.AppleKeyID = aKeyID
+		c.AppleKeyPEM = aKeyPEM
 	}
 }
 
