@@ -10,9 +10,11 @@
   import Popup from '../../components/Popup.svelte';
   import { fade } from 'svelte/transition';
   import Icon from '@iconify/svelte';
-  import { user } from '../account/user';
-  import { get } from 'svelte/store';
   import { resolve } from '$app/paths';
+
+  import { user } from '$lib/stores/appState';
+  import { get } from 'svelte/store';
+  import { updateDoc } from 'firebase/firestore';
 
   let slugs: SessionMetaData[] = $state([]);
   let activeSession: boolean = $state(false);
@@ -22,15 +24,15 @@
 
   let showError: string = $state('');
 
-  const userID = $derived(get(user));
-
   onMount(async () => {
-    if (!userID) {
-      goto(resolve(`/account`));
+    const uData = get(user);
+
+    if (!uData || !uData.id) {
+      goto(resolve(`/`));
       return;
     }
 
-    const data = await getAllSessionMeta(userID);
+    const data = await getAllSessionMeta(uData.id);
     slugs = data.slugs;
 
     slugs = sortByDateSafe(slugs, 'desc');
@@ -93,14 +95,15 @@
     // popup edit?
   }
 
-  async function delSes(id: string) {
+  async function delSes(SessionTitle: string) {
     openPopup('delete');
-    if (!userID) return;
+    const uData = get(user);
+    if (!uData || !uData.id) return;
 
-    if (confirm(`Are you sure you want to delete ${id}?`)) {
-      await fakeDeleteSession(userID, id);
-      deleteLocalSlug(id);
-      console.log(id, 'deleted.');
+    if (confirm(`Are you sure you want to delete ${SessionTitle}?`)) {
+      await fakeDeleteSession(uData.id, SessionTitle);
+      deleteLocalSlug(SessionTitle);
+      console.log(SessionTitle, 'deleted.');
     } else {
       console.log('Delete cancelled.');
     }

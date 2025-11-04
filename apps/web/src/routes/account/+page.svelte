@@ -8,64 +8,117 @@
 
   import * as Card from '$lib/components/ui/card';
 
-  import { user } from './user';
-  import { signInOrSignUp } from '$lib/firebaseCreation';
+  import { user } from '$lib/stores/appState';
+  import { get } from 'svelte/store';
 
-  let username = '';
-  let password = '';
+  import { signInOrSignUp } from '$lib/firebaseCreation';
+  import Icon from '@iconify/svelte';
+  import { PUBLIC_BACKEND_BASE_URL } from '$env/static/public';
+  import { onMount } from 'svelte';
+
+  let username = $state('');
   let cooldown = false;
 
-  export async function tempLogin(user: string, pass: string): Promise<boolean> {
-    const response = await signInOrSignUp(user, pass, false);
-    return response;
+  async function handleSubmit(event: Event) {
+    cooldown = true;
+    alert('Login error. (Wrong username/password perhaps?)');
+    setTimeout(() => {
+      cooldown = false;
+    }, 3000);
   }
 
-  async function handleSubmit(event: Event) {
-    console.log('d');
+  onMount(async () => {
+    const value = get(user);
 
-    if (await tempLogin(username, password)) {
-      handleLogin();
+    if (value?.name || (await getMe())) {
+      username = value?.name ?? get(user)?.name ?? 'error';
     } else {
-      cooldown = true;
-      alert('Login error. (Wrong username/password perhaps?)');
-      setTimeout(() => {
-        cooldown = false;
-      }, 3000);
+      username = '';
+    }
+  });
+
+  function backendAdress(dir: string): string {
+    const baseURL: string = PUBLIC_BACKEND_BASE_URL;
+    return baseURL + dir;
+  }
+
+  async function getMe(): Promise<boolean> {
+    const res = await fetch(backendAdress('/api/me'), {
+      method: 'GET',
+      credentials: 'include',
+    });
+    if (res.ok) {
+      const data = await res.json();
+      console.log(data);
+      user.set(data);
+      return true;
+    } else {
+      user.set(null);
+      console.error('User not logged in.');
+      return false;
     }
   }
 
-  function handleLogin() {
-    if (cooldown) return;
-    if (!username) return;
-    user.set(username);
-    username = '';
+  function loginRequest() {
+    window.location.href = backendAdress('/login/google');
   }
 
-  function handleLogout() {
-    user.set(null);
+  async function logOut() {
+    const res = await fetch(backendAdress('/api/logout'), {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (res.ok) {
+      user.set(null);
+      username = '';
+      console.log('Successfully logged out.');
+    } else {
+      console.error('Log out failed');
+    }
   }
-
-  let loggedIn = false;
 </script>
 
-{#if $user}
-  <main class="main">
-    <Card.Root class="m-2 w-xs rounded-2xl bg-neutral-900 px-2 shadow">
+<main class="main">
+  <h1 class="mb-4 w-80 text-3xl leading-none font-bold tracking-tight text-white">Account</h1>
+  {#if username}
+    <Card.Root class="m-2 w-xs px-2">
       <Card.Header class="border-b border-neutral-700">
-        <Card.Title class="text-lg font-semibold text-white">
-          Logged in as <strong>{$user}</strong>
+        <Card.Title>
+          Logged in as <strong>{username}</strong>
         </Card.Title>
       </Card.Header>
 
       <Card.Footer class="flex justify-start">
-        <Button variant="destructive" onclick={handleLogout}>Logout</Button>
+        <Button
+          variant="destructive"
+          class="w-20 py-5 text-lg backdrop-blur-md [&_svg:not([class*='size-'])]:size-8"
+          onclick={logOut}
+        >
+          <Icon icon="mdi:user-arrow-right-outline" width={45} />
+        </Button>
       </Card.Footer>
     </Card.Root>
+  {:else}
+    <Card.Root class="m-2 w-xs px-2">
+      <Card.Header>
+        <Card.Title>Login to your account</Card.Title>
+        <Card.Description>Sign up / in with any of the providers below</Card.Description>
+      </Card.Header>
 
-    <!-- Settings Card -->
-    <Card.Root class="w-xs rounded-2xl bg-neutral-900 px-2 shadow">
-      <Card.Header class="border-b border-neutral-700 pb-3">
-        <Card.Title class="text-lg font-semibold text-white">Settings</Card.Title>
+      <Button
+        variant="outline"
+        class="m-8 mt-4 py-5 text-lg backdrop-blur-md [&_svg:not([class*='size-'])]:size-5"
+        onclick={loginRequest}
+      >
+        <Icon icon="ri:google-fill" />
+      </Button>
+    </Card.Root>
+  {/if}
+
+  {#if username}
+    <Card.Root class="w-xs px-2">
+      <Card.Header class="border-b border-neutral-700">
+        <Card.Title>Settings</Card.Title>
       </Card.Header>
 
       <Card.Content class="space-y-4">
@@ -84,47 +137,12 @@
         </div>
       </Card.Content>
     </Card.Root>
-  </main>
-{:else}
-  <main class="main">
-    <Card.Root class="w-full max-w-sm">
-      <Card.Header>
-        <Card.Title>Login to your account</Card.Title>
-        <Card.Description>Enter your email below to login to your account</Card.Description>
-      </Card.Header>
-
-      <form onsubmit={handleSubmit}>
-        <Card.Content>
-          <div class="flex flex-col gap-6">
-            <div class="grid gap-2">
-              <Label for="text">Username</Label>
-              <Input
-                maxlength={20}
-                id="text"
-                type="text"
-                placeholder="username"
-                bind:value={username}
-                required
-              />
-            </div>
-            <div class="grid gap-2">
-              <Label for="password">Password</Label>
-              <Input maxlength={20} id="password" type="password" bind:value={password} required />
-            </div>
-          </div>
-        </Card.Content>
-
-        <Card.Footer class="mar flex-col gap-2">
-          <Button type="submit" class="w-full gap-4">Login</Button>
-        </Card.Footer>
-      </form>
-    </Card.Root>
-  </main>
-{/if}
+  {/if}
+</main>
 
 <style>
   .main {
-    margin-top: 8rem;
+    margin-top: 4rem;
     display: flex;
     justify-content: baseline;
     align-items: center;

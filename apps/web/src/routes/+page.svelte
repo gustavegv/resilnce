@@ -4,26 +4,32 @@
   import { checkActiveSession } from '$lib/firebaseDataHandler';
   import { onMount } from 'svelte';
   import DbIcon from '../components/icons/DBIcon.svelte';
-  import AddIcon from '../components/icons/AddIcon.svelte';
-  import { user } from './account/user';
-  import Icon from '@iconify/svelte';
-  import { blur, crossfade, fade, scale, slide } from 'svelte/transition';
+  import { user } from '$lib/stores/appState';
   import { get } from 'svelte/store';
+
+  import Icon from '@iconify/svelte';
+  import { blur, fade, slide } from 'svelte/transition';
   import { resolve } from '$app/paths';
   import { toast } from 'svelte-sonner';
   import { afterNavigate } from '$app/navigation';
+  import { PUBLIC_BACKEND_BASE_URL } from '$env/static/public';
+  import { greet } from './greeting';
+
   const linkBase = import.meta.env.BASE_URL;
 
   afterNavigate(({ to }) => {
     if (to == null) return;
-    const sonner = to.url.searchParams.get('sonner');
+    const sonner: string = to.url.searchParams.get('sonner') || '';
+    toastPopup(sonner);
+  });
+
+  function toastPopup(sonner: string) {
     if (!sonner) return;
     switch (sonner) {
       case 'saved':
         toast.success(`Session saved successfully!`, { duration: 3000 });
         break;
       case 'loggedin':
-        SaveUserInfoCookies();
         toast.success('Log in successul!', { duration: 3000 });
 
         break;
@@ -31,147 +37,129 @@
         toast.warning(`${sonner}`, { duration: 4000 });
         break;
     }
-  });
-
-  function SaveUserInfoCookies() {}
-
-  const greetings = {
-    morning: ['Good morning.', 'Ready to move?', 'Are you ready?', 'Starting strong today!'],
-    day: ['Good day.', "Hope your day's going well!", 'Stay focused.'],
-    evening: ['Good evening.', 'Hope your day was good.', 'Late night lift?'],
-    general: [
-      'Welcome back!',
-      'Hello.',
-      "Let's get moving!",
-      'Great to see you.',
-      "Glad you're here!",
-      'Ready to train?',
-      'Welcome!',
-      'Hi there.',
-      "Let's begin.",
-      "Let's get started.",
-    ],
-    continue: ['Keep going', "Let's go", 'Good work'],
-  };
+  }
 
   let existingSession = $state(false);
   let existingID = $state('');
   let greetMessage = $state('');
-  let punctuation = $state('');
   let loading = $state(true);
 
-  function greet(): void {
-    if (existingSession) {
-      let pool = greetings['continue'];
-      greetMessage = pool[Math.floor(Math.random() * pool.length)];
-      punctuation = '!';
-      return;
-    }
-    const hour = new Date().getHours();
-    let timeOfDay: 'morning' | 'day' | 'evening' | 'general' = 'general';
+  function backendAdress(dir: string): string {
+    const baseURL: string = PUBLIC_BACKEND_BASE_URL;
+    return baseURL + dir;
+  }
 
-    if (hour >= 5 && hour < 12) {
-      timeOfDay = 'morning';
-    } else if (hour >= 12 && hour < 18) {
-      timeOfDay = 'day';
+  async function getMe(): Promise<boolean> {
+    const res = await fetch(backendAdress('/api/me'), {
+      method: 'GET',
+      credentials: 'include',
+    });
+    if (res.ok) {
+      const data = await res.json();
+      console.log(data);
+      user.set(data);
+      return true;
     } else {
-      timeOfDay = 'evening';
+      user.set(null);
+      console.error('User not logged in.');
+      return false;
     }
-
-    const pool = greetings[timeOfDay];
-    const odds = 1 / pool.length;
-    const chosenPool = Math.random() > odds ? greetings[timeOfDay] : greetings['general'];
-    const indexPicked = Math.floor(Math.random() * chosenPool.length);
-    const message = chosenPool[indexPicked];
-
-    greetMessage = message.slice(0, -1);
-    const len = message.length;
-    punctuation = message[len - 1];
-
-    console.log(`greet -> ${timeOfDay} (hour ${hour}): ${message}`);
   }
 
   onMount(async () => {
-    const userID = get(user);
-    if (userID) {
-      const prevSession = await checkActiveSession(userID);
+    const value = get(user);
 
-      if (prevSession != null) {
-        existingSession = prevSession.active;
-        console.log('exists', existingSession);
-
-        if (existingSession) {
-          existingID = prevSession.session;
-        }
-      }
-      greet();
-      loading = false;
+    if (value?.name || (await getMe())) {
+      loadUserHomepage(value);
     } else {
+      greetMessage = 'The only gym tracker you need.';
     }
+
+    loading = false;
   });
+
+  async function loadUserHomepage(uData: { name: string; id: string } | null) {
+    var name: string = uData?.name ?? '';
+    var id: string = uData?.id ?? '';
+    if (uData == null) {
+      name = get(user)?.name ?? '';
+      id = get(user)?.id ?? '';
+    }
+    if (!name || !id) {
+      console.error('No username/ID');
+      window.location.reload();
+      return;
+    }
+
+    const activeSession = await checkActiveSession(id);
+
+    if (activeSession != null) {
+      existingSession = activeSession.active;
+      console.log('exists', existingSession);
+
+      if (existingSession) {
+        existingID = activeSession.session;
+      }
+    }
+    greetMessage = greet(name, existingSession);
+  }
 </script>
 
-{#if loading}{:else if $user}
+{#if loading}
+  <p>loading</p>
+{:else}
   <div in:fade={{ duration: 400, delay: 50 }} class="body">
     <cont class="cont">
       <h1 in:fade={{ duration: 400, delay: 100 }} class="wid">
-        {greetMessage.trim()} <span class="toUpper">{$user}</span>{punctuation &&
-          punctuation.trim()}
-        <!-- For some reason, in these lines above a space is added between the word and punctuation-->
-        <!-- Expected result "Hey Name." Current result: "Hey Name ." -->
+        {greetMessage}
       </h1>
 
       <hr in:fade={{ duration: 400, delay: 150 }} />
+
       <div class="btn-container">
-        {#if existingSession}
+        {#if $user?.name}
+          {#if existingSession}
+            <button
+              in:slide|global={{ duration: 600 }}
+              class="base-btn alt buttonClass"
+              onclick={() => goto(resolve(`/tracker/${existingID}`))}
+            >
+              <g>Continue session:</g>
+              <i class="font-regular">{existingID}</i>
+            </button>
+          {/if}
+
           <button
-            in:slide|global={{ duration: 600 }}
-            class="base-btn alt buttonClass"
-            onclick={() => goto(resolve(`/tracker/${existingID}`))}
+            in:fade={{ duration: 400, delay: 200 }}
+            class="base-btn sesh buttonClass"
+            onclick={() => goto(resolve(`/tracker`))}
           >
-            <g>Continue session:</g>
-            <i class="font-regular">{existingID}</i>
+            <g>Begin a workout</g>
+            <DbIcon />
+          </button>
+
+          <button
+            in:fade={{ duration: 400, delay: 300 }}
+            class="base-btn sesh buttonClass"
+            onclick={() => goto(resolve(`/create`))}
+          >
+            <g>Add new session</g>
+            <Icon icon="gridicons:create" width="32" />
+          </button>
+        {:else}
+          <button
+            in:fade={{ duration: 400, delay: 150 }}
+            class="base-btn sesh buttonClass"
+            onclick={() => goto(resolve(`/account`))}
+          >
+            <g>Log in</g>
+            <Icon icon="material-symbols:login-rounded" width="32" />
           </button>
         {/if}
-
-        <button
-          in:fade={{ duration: 400, delay: 200 }}
-          class="base-btn sesh buttonClass"
-          onclick={() => goto(resolve(`/tracker`))}
-        >
-          <g>Begin a workout</g>
-          <DbIcon />
-        </button>
-
-        <button
-          in:fade={{ duration: 400, delay: 300 }}
-          class="base-btn sesh buttonClass"
-          onclick={() => goto(resolve(`/create`))}
-        >
-          <g>Add new session</g>
-          <Icon icon="gridicons:create" width="32" />
-        </button>
       </div>
     </cont>
   </div>
-{:else}
-  <div class="body">
-    <cont class="cont">
-      <h1 in:fade={{ duration: 400, delay: 50 }} class="wid">The only gym tracker you need.</h1>
-      <hr in:fade={{ duration: 400, delay: 100 }} />
-      <button
-        in:fade={{ duration: 400, delay: 150 }}
-        class="base-btn sesh buttonClass"
-        onclick={() => goto(resolve(`/account`))}
-      >
-        <g>Log in</g>
-        <Icon icon="material-symbols:login-rounded" width="32" />
-      </button>
-    </cont>
-  </div>
-{/if}
 
-{#if !loading}
   <img
     in:fade={{ duration: 400, delay: 0 }}
     src="{linkBase}books.png"

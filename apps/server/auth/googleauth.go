@@ -37,6 +37,7 @@ func (s *Service) CallbackGoogle(w http.ResponseWriter, r *http.Request) {
 	if state == "" || storedState == "" || state != storedState {
 		fmt.Println("Invalid state. \nCurrent state", state, " \nStored state:", storedState)
 		http.Error(w, "Invalid state", http.StatusBadRequest)
+
 		return
 	}
 	s.clearCookie(w, s.cfg.StateCookieName)
@@ -106,7 +107,7 @@ func redirectTo(loc string, w http.ResponseWriter, r *http.Request) {
 	var directory string
 	switch loc {
 	case "home":
-		directory = "/oauth"
+		directory = "/?sonner=loggedin"
 		// TODO: Switch back: "/?sonner=loggedin"
 
 	case "login":
@@ -116,6 +117,8 @@ func redirectTo(loc string, w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unknown redirect location (googleauth.go)", http.StatusInternalServerError)
 		return
 	}
+	base := GetBaseURL()
+	directory = base + directory
 	http.Redirect(w, r, directory, http.StatusSeeOther)
 }
 
@@ -155,7 +158,8 @@ func (s *Service) GetUserInfoOld(w http.ResponseWriter, r *http.Request) {
 func (s *Service) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	_, mail, name, success := validateSignedCookie(r)
 	if !success {
-		redirectTo("login", w, r)
+		http.Error(w, "unknown redirect location (googleauth.go)", http.StatusInternalServerError)
+
 		return
 	}
 

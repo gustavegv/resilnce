@@ -5,6 +5,7 @@
   import { fade, blur, slide, draw } from 'svelte/transition';
   import { user } from '$lib/stores/appState';
   import { PUBLIC_BACKEND_BASE_URL } from '$env/static/public';
+  import { get } from 'svelte/store';
 
   var loggedIn: boolean = $state(false);
 
@@ -15,7 +16,15 @@
   }
 
   onMount(async () => {
-    // todo: put GET api/me here
+    const uN = get(user);
+
+    if (uN == null) {
+      console.log('Fetching info');
+      getMe();
+    } else {
+      console.log('Info already stored');
+      loggedIn = true;
+    }
   });
 
   async function getMe() {
