@@ -14,10 +14,6 @@ IMAGE_REMOTE ?= gcr.io/$(PROJECT_ID)/$(APP_NAME)
 # Container name for local runs
 CONTAINER ?= $(APP_NAME)-dev
 
-export GOOGLE_CLIENT_ID
-export GOOGLE_CLIENT_SECRET
-export FRONTEND_BASE_URL
-export SIGNED_COOKIE_SECRET
 
 .PHONY: help dev server docker-build docker-run stop logs curl tidy clean \
         docker-tag docker-push gcloud-auth deploy release
@@ -88,7 +84,7 @@ deploy:
 	  --image $(IMAGE_REMOTE) \
 	  --region $(REGION) \
 	  --allow-unauthenticated \
-	  --set-env-vars "FRONTEND_BASE_URL=$$FRONTEND_BASE_URL,SIGNED_COOKIE_SECRET=$$SIGNED_COOKIE_SECRET,GOOGLE_CLIENT_ID=$$GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET=$$GOOGLE_CLIENT_SECRET"
+	  --set-env-vars "FRONTEND_BASE_URL=$$FRONTEND_BASE_URL,SIGNED_COOKIE_SECRET=$$SIGNED_COOKIE_SECRET,GOOGLE_CLIENT_ID=$$GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET=$$GOOGLE_CLIENT_SECRET,REDIS_ADDR=$$REDIS_ADDR,REDIS_PASSWORD=$$REDIS_PASSWORD"
 
 # One-shot: build -> push -> deploy
 release: docker-build docker-push deploy

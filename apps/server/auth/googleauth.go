@@ -1,13 +1,15 @@
 package auth
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
+	scookie "github.com/gustavegv/resilnce/apps/server/scookies"
 	"golang.org/x/oauth2"
 )
 
-func (s *service) LoginGoogle(w http.ResponseWriter, r *http.Request) {
+func (s *Service) LoginGoogle(w http.ResponseWriter, r *http.Request) {
 	state := randB64(32)
 	verifier := randB64(64) // PKCE code_verifier
 	challenge := pkceS256(verifier)
@@ -26,7 +28,7 @@ func (s *service) LoginGoogle(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, authURL, http.StatusFound)
 }
 
-func (s *service) CallbackGoogle(w http.ResponseWriter, r *http.Request) {
+func (s *Service) CallbackGoogle(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// validate state
@@ -82,23 +84,104 @@ func (s *service) CallbackGoogle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// save / update session in db
-	userID, err := UpsertUser("google", claims.Sub, claims.Email, claims.Name)
+	email, err := s.UpsertUser(ctx, "google", claims.Sub, claims.Email, claims.Name)
 	if err != nil {
 		http.Error(w, "user upsert failed", http.StatusInternalServerError)
 		return
 	}
 
-	err = s.IssueSignedCookie(w, r, userID)
+	err = s.IssueSignedCookie(w, r, email, claims.Sub, claims.Name)
 
 	if err != nil {
 		http.Error(w, "signed cookie issue failed", http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Println("Succesful sign in. User:", userID, "\n Named:", claims.Name)
+	fmt.Println("Succesful sign in. User:", email, "\n Named:", claims.Name)
 
-	var redirectURL string = GetBaseURL() + "/oauth"
-	// TODO: Switch back: "/?sonner=loggedin"
+	redirectTo("home", w, r)
+}
 
-	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+func redirectTo(loc string, w http.ResponseWriter, r *http.Request) {
+	var directory string
+	switch loc {
+	case "home":
+		directory = "/oauth"
+		// TODO: Switch back: "/?sonner=loggedin"
+
+	case "login":
+		directory = "/account"
+
+	default:
+		http.Error(w, "unknown redirect location (googleauth.go)", http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, directory, http.StatusSeeOther)
+}
+
+func (s *Service) GetUserInfoOld(w http.ResponseWriter, r *http.Request) {
+	SID, _, _, success := validateSignedCookie(r)
+	if !success {
+		redirectTo("login", w, r)
+		return
+	}
+
+	ctx := r.Context()
+	data, err := s.store().GetSession(ctx, SID)
+	if err != nil {
+		print("getSession error")
+		http.Error(w, "fail to get session from redis store", http.StatusInternalServerError)
+		return
+	}
+
+	if data == nil {
+		print("redis fetched data empty (googleauth.go)")
+		http.Error(w, "redis data empty", http.StatusNotFound)
+		return
+	}
+	println("redis data sent (googleauth.go):", data)
+	firstName := data.Name
+	mail := data.Email
+
+	resp := map[string]any{
+		"name": firstName,
+		"id":   mail,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
+func (s *Service) GetUserInfo(w http.ResponseWriter, r *http.Request) {
+	_, mail, name, success := validateSignedCookie(r)
+	if !success {
+		redirectTo("login", w, r)
+		return
+	}
+
+	resp := map[string]any{
+		"name": name,
+		"id":   mail,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
+func validateSignedCookie(r *http.Request) (string, string, string, bool) {
+	cookie, err := r.Cookie("SignedCookie")
+	if err != nil || cookie.Value == "" {
+		return "No cookie value", "", "", false
+	}
+	secret := scookie.GetSecret()
+	pl, success := scookie.Verify(cookie.Value, secret)
+	if !success {
+		return "SCookie Verification failed", "", "", false
+	}
+
+	if pl.SID == "" {
+		return "SID not found", "", "", false
+	}
+
+	return pl.SID, pl.UID, pl.Name, true
 }

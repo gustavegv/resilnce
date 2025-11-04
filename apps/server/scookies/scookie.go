@@ -13,15 +13,17 @@ import (
 )
 
 type payload struct {
-	UID string `json:"uid"`
-	SID string `json:"sid"`
-	Exp int64  `json:"exp"`
+	UID  string `json:"uid"`
+	SID  string `json:"sid"`
+	Name string `json:"name"`
+	Exp  int64  `json:"exp"`
 }
 
-func BuildPayload(uID string) payload {
+func BuildPayload(uID, SID, name string) payload {
 	var pl payload
 	pl.UID = uID
-	pl.SID = ""
+	pl.SID = SID
+	pl.Name = name
 
 	const expiryTime time.Duration = 120 * 24
 	var incomingExp = time.Now().Add(expiryTime * time.Hour).Unix()

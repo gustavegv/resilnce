@@ -15,13 +15,14 @@ func RoutingCreation() http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", BaseReq)
-	mux.HandleFunc("/api/me", GetUserInfo)
 	mux.HandleFunc("/api/logout", LogOutUser)
 
 	// Auth
 	cfg := auth.ConfigFromEnv(siteDirectory)
 	ctx := context.Background()
 	service, _ := auth.New(ctx, cfg)
+
+	mux.HandleFunc("/api/me", service.GetUserInfo)
 
 	mux.HandleFunc("/login/google", service.LoginGoogle)
 	mux.HandleFunc("/oauth/google/callback", service.CallbackGoogle)

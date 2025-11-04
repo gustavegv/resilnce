@@ -11,8 +11,10 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	sessions "github.com/gustavegv/resilnce/apps/server/redis"
 	scookie "github.com/gustavegv/resilnce/apps/server/scookies"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -37,13 +39,25 @@ type Config struct {
 	PKCETTLSeconds  int // default 600
 }
 
-func UpsertUser(provider, providerID, email, name string) (userID string, err error) {
-	// TODO: save data in redis
+func (s *Service) UpsertUser(ctx context.Context, provider, providerID, email, name string) (userID string, err error) {
+
+	var data = sessions.SessionData{
+		Email: email,
+		Name:  name,
+	}
+
+	err = s.store().SaveSession(ctx, providerID, data, 120*24*time.Hour)
+
+	if err != nil {
+		log.Println("Redis SaveSession failed (auth.go)", err)
+		return "", err
+	}
+
 	return email, nil
 }
 
-func (s *service) IssueSignedCookie(w http.ResponseWriter, r *http.Request, userID string) error {
-	pl := scookie.BuildPayload(userID)
+func (s *Service) IssueSignedCookie(w http.ResponseWriter, r *http.Request, userID, sub, name string) error {
+	pl := scookie.BuildPayload(userID, sub, name)
 
 	sec := scookie.GetSecret()
 
@@ -66,7 +80,7 @@ func (s *service) IssueSignedCookie(w http.ResponseWriter, r *http.Request, user
 	return nil
 }
 
-type service struct {
+type Service struct {
 	cfg            Config
 	googleOAuth    *oauth2.Config
 	googleVerifier *oidc.IDTokenVerifier
@@ -75,6 +89,8 @@ type service struct {
 	appleAuthURL   string
 	appleVerifier  *oidc.IDTokenVerifier
 	appleOAuth     *oauth2.Config
+
+	redisStore *sessions.Store
 
 	stateCookieAttrs cookieAttrs
 	pkceCookieAttrs  cookieAttrs
@@ -89,7 +105,12 @@ type cookieAttrs struct {
 }
 
 // New constructs the service with provider configs and OIDC verifiers.
-func New(ctx context.Context, cfg Config) (*service, error) {
+func New(ctx context.Context, cfg Config) (*Service, error) {
+	redisStore, err := sessions.NewStore()
+	if err != nil {
+		return nil, err
+	}
+
 	if cfg.StateCookieName == "" {
 		cfg.StateCookieName = "oauth_state"
 	}
@@ -137,7 +158,7 @@ func New(ctx context.Context, cfg Config) (*service, error) {
 		Scopes:      []string{"openid", "email", "name"},
 	}
 
-	s := &service{
+	s := &Service{
 		cfg:              cfg,
 		googleOAuth:      googleOAuth,
 		googleVerifier:   googleVerifier,
@@ -148,11 +169,12 @@ func New(ctx context.Context, cfg Config) (*service, error) {
 		appleOAuth:       appleOAuth,
 		stateCookieAttrs: cookieAttrs{Path: "/", HTTPOnly: true, SameSite: http.SameSiteNoneMode, Secure: cfg.SecureCookies, MaxAge: cfg.StateTTLSeconds},
 		pkceCookieAttrs:  cookieAttrs{Path: "/", HTTPOnly: true, SameSite: http.SameSiteNoneMode, Secure: cfg.SecureCookies, MaxAge: cfg.PKCETTLSeconds},
+		redisStore:       redisStore,
 	}
 	return s, nil
 }
 
-func (s *service) setCookie(w http.ResponseWriter, name, value string, a cookieAttrs) {
+func (s *Service) setCookie(w http.ResponseWriter, name, value string, a cookieAttrs) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     name,
 		Value:    value,
@@ -164,7 +186,7 @@ func (s *service) setCookie(w http.ResponseWriter, name, value string, a cookieA
 	})
 }
 
-func (s *service) clearCookie(w http.ResponseWriter, name string) {
+func (s *Service) clearCookie(w http.ResponseWriter, name string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     name,
 		Value:    "",
@@ -176,7 +198,7 @@ func (s *service) clearCookie(w http.ResponseWriter, name string) {
 	})
 }
 
-func (s *service) getCookie(r *http.Request, name string) (string, error) {
+func (s *Service) getCookie(r *http.Request, name string) (string, error) {
 	c, err := r.Cookie(name)
 	if err != nil {
 		return "", err
@@ -216,7 +238,7 @@ func getOAuthEnvByVendor(vendor string, c *Config) {
 		gCliID := os.Getenv("GOOGLE_CLIENT_ID")
 		gCliSec := os.Getenv("GOOGLE_CLIENT_SECRET")
 		if gCliID == "" || gCliSec == "" {
-			log.Fatal("Failed to get Google ENV variables")
+			log.Fatal("Failed to get Google ENV variables (auth.go)")
 		}
 		c.GoogleClientID = gCliID
 		c.GoogleClientSecret = gCliSec
@@ -228,7 +250,7 @@ func getOAuthEnvByVendor(vendor string, c *Config) {
 		aKeyPEM := os.Getenv("APPLE_PRIVATE_KEY_PEM")
 
 		if aCliID == "" || aTeamID == "" || aKeyID == "" || aKeyPEM == "" {
-			log.Fatal("Failed to get Apple ENV variables")
+			log.Fatal("Failed to get Apple ENV variables (auth.go)")
 		}
 		c.AppleClientID = aCliID
 		c.AppleTeamID = aTeamID
@@ -240,7 +262,14 @@ func getOAuthEnvByVendor(vendor string, c *Config) {
 func GetBaseURL() string {
 	base := os.Getenv("FRONTEND_BASE_URL")
 	if base == "" {
-		log.Fatal("No base URL found in .env")
+		log.Fatal("No base URL found in .env (auth.go)")
 	}
 	return base
+}
+
+func (s *Service) store() *sessions.Store {
+	if s == nil || s.redisStore == nil {
+		panic("auth.Service.redisStore is nil; construct Service via auth.New")
+	}
+	return s.redisStore
 }
