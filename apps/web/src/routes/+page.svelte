@@ -99,9 +99,9 @@
         }
       }
       greet();
-      loading = false;
     } else {
     }
+    loading = false;
   });
 </script>
 
