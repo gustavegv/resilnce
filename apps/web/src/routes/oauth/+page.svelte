@@ -59,6 +59,19 @@
     }
   }
 
+  async function getDataBru() {
+    const res = await fetch(address('/db/mySessions'), {
+      method: 'GET',
+      credentials: 'include',
+    });
+    if (res.ok) {
+      const names: string[] = await res.json();
+      console.log(names);
+    } else {
+      console.error('Fetch data failed');
+    }
+  }
+
   function loginRequest() {
     window.location.href = address('/login/google');
   }
@@ -106,6 +119,14 @@
       border border-white/20 bg-white/10 p-6 backdrop-blur-md transition duration-150 hover:bg-white/20"
     >
       <Icon icon="mdi:user-arrow-right-outline" width={45} />
+    </button>
+    <button
+      in:slide={{ delay: 0 }}
+      onclick={() => getDataBru()}
+      class="group flex h-full items-center justify-center rounded-xl
+      border border-white/20 bg-white/10 p-6 backdrop-blur-md transition duration-150 hover:bg-white/20"
+    >
+      <Icon icon="streamline-ultimate:data-file-search-bold" width={45} />
     </button>
   {/if}
 </div>

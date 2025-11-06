@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gustavegv/resilnce/apps/server/auth"
+	"github.com/gustavegv/resilnce/apps/server/db"
 	"github.com/rs/cors"
 )
 
@@ -23,9 +24,17 @@ func RoutingCreation() http.Handler {
 	service, _ := auth.New(ctx, cfg)
 
 	mux.HandleFunc("/api/me", service.GetUserInfo)
-
 	mux.HandleFunc("/login/google", service.LoginGoogle)
 	mux.HandleFunc("/oauth/google/callback", service.CallbackGoogle)
+
+	// DB (supabase)
+	// TODO: flytta till pool.go?
+	pool := db.NewPool()
+
+	supaCFG := &db.SupabaseCFG{DB: pool}
+	mux.HandleFunc("/db/mySessions", supaCFG.GetUserSessions)
+
+	// -
 
 	originURL := trimURLSlash(siteDirectory)
 
