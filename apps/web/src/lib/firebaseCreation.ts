@@ -57,7 +57,7 @@ export interface ExerciseInfo {
     restSeconds: number;
   };
   order?: number;
-  id?: string;
+  id?: number;
   finished?: boolean;
   autoIncrease?: number;
   repThreshold?: number;

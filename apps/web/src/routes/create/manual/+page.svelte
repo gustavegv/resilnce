@@ -12,6 +12,7 @@
   import { get } from 'svelte/store';
   import { base } from '$app/paths';
   import SortableList from '../SortableList.svelte';
+  import { CreateSession } from '../dbWrite';
 
   type SessionInfo = {
     name: string;
@@ -56,6 +57,7 @@
     //todo add auto inc here
     console.log('autothing added:', newAutoInc);
 
+    // todo add serverside checking
     if (
       Number(newSets) > 20 ||
       Number(newWeight) > 9999 ||
@@ -88,7 +90,7 @@
 
   let reorderableList: SortableList;
 
-  function saveSession() {
+  async function saveSession() {
     console.log('This is what we send pre');
     console.log(currentlyAdded);
 
@@ -108,13 +110,19 @@
     }
 
     console.log('This is what we send post');
-    console.log(currentlyAdded);
+    // console.log(currentlyAdded);
 
-    const username = get(user);
-    if (username) {
-      betterAdd(username, seshName, currentlyAdded);
-      alert('Session saved succesfully!');
-      goto(`${base}/`);
+    const username = get(user); // todo: är det här den gamla user logiken?
+    if (username || true) {
+      // todo: ta bort or true
+      const okResponse = await CreateSession(seshName, currentlyAdded);
+      if (okResponse) {
+        alert('Session saved succesfully!');
+        goto(`${base}/`); // todo goto deprecated?
+      } else {
+        alert('Error saving');
+      }
+      // betterAdd(username, seshName, currentlyAdded);
     } else {
       alert('Problem with log-in authentication');
     }

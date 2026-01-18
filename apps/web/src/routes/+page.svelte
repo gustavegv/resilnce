@@ -3,7 +3,6 @@
   import { goto } from '$app/navigation';
   import { checkActiveSession } from '$lib/firebaseDataHandler';
   import { onMount } from 'svelte';
-  import DbIcon from '../components/icons/DBIcon.svelte';
   import { user } from '$lib/stores/appState';
   import { get } from 'svelte/store';
 
@@ -14,6 +13,7 @@
   import { afterNavigate } from '$app/navigation';
   import { PUBLIC_BACKEND_BASE_URL } from '$env/static/public';
   import { greet } from './greeting';
+  import { CheckActiveSession } from './tracker/dbFetches';
 
   const linkBase = import.meta.env.BASE_URL;
 
@@ -91,14 +91,16 @@
       return;
     }
 
-    const activeSession = await checkActiveSession(id);
+    const res = await CheckActiveSession();
+    console.log('Active session:', res);
+    var actv = res != '';
 
-    if (activeSession != null) {
-      existingSession = activeSession.active;
+    if (actv != null) {
+      existingSession = actv;
       console.log('exists', existingSession);
 
       if (existingSession) {
-        existingID = activeSession.session;
+        existingID = res;
       }
     }
     greetMessage = greet(name, existingSession);
@@ -135,7 +137,7 @@
             onclick={() => goto(resolve(`/tracker`))}
           >
             <g>Begin a workout</g>
-            <DbIcon />
+            <Icon icon="mdi:arm-flex" width="32" />
           </button>
 
           <button

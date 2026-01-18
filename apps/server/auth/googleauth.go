@@ -123,7 +123,7 @@ func redirectTo(loc string, w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) GetUserInfoOld(w http.ResponseWriter, r *http.Request) {
-	SID, _, _, success := ValidateSignedCookie(r)
+	SID, _, _, success := scookie.ValidateSignedCookie(r)
 	if !success {
 		redirectTo("login", w, r)
 		return
@@ -156,7 +156,7 @@ func (s *Service) GetUserInfoOld(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) GetUserInfo(w http.ResponseWriter, r *http.Request) {
-	_, mail, name, success := ValidateSignedCookie(r)
+	_, mail, name, success := scookie.ValidateSignedCookie(r)
 	if !success {
 		http.Error(w, "unknown redirect location (googleauth.go)", http.StatusInternalServerError)
 
@@ -173,20 +173,3 @@ func (s *Service) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 // TODO: Move function. Make it return only payload. Make it return err not bool
-func ValidateSignedCookie(r *http.Request) (string, string, string, bool) {
-	cookie, err := r.Cookie("SignedCookie")
-	if err != nil || cookie.Value == "" {
-		return "No cookie value", "", "", false
-	}
-	secret := scookie.GetSecret()
-	pl, success := scookie.Verify(cookie.Value, secret)
-	if !success {
-		return "SCookie Verification failed", "", "", false
-	}
-
-	if pl.SID == "" {
-		return "SID not found", "", "", false
-	}
-
-	return pl.SID, pl.UID, pl.Name, true
-}

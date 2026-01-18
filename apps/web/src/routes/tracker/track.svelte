@@ -1,20 +1,24 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
-  import { getOrderedExercises, saveRecordedLift } from '$lib/firebaseDataHandler';
-  import { setActivityStatus, loadFinishedExercises } from '$lib/firebaseCreation';
-  import type { ExerciseInfo } from '$lib/firebaseCreation';
 
   import '../../app.css';
   import { goto } from '$app/navigation';
   import Icon from '@iconify/svelte';
   import ExerciseTrackScreen from './ExerciseTrackScreen.svelte';
   import LoadingSkeleton from './LoadingSkeleton.svelte';
-  import { get } from 'svelte/store';
-  import { user } from '../account/user';
   import * as Card from '$lib/components/ui/card/';
   import FinishBlob from '../../components/FinishBlob.svelte';
   import { resolve } from '$app/paths';
+
+  import {
+    CompleteSession,
+    GetFinishedExercises,
+    GetSessionExercises,
+    SendUpdate,
+    SetActiveSession,
+    type ExerciseInfo,
+  } from './dbFetches';
 
   // Exercise ID som blir tilldelad när man callar komponenten:
   //   Exempel:  <Track sesID="push" />
@@ -38,25 +42,29 @@
   );
 
   const exName: string = $derived(currentExercise?.name ?? '');
-  const exID: string = $derived(currentExercise?.id ?? '');
+  const exID: number = $derived(currentExercise?.id ?? -1);
   const repArray: number[] = $derived(currentExercise?.currentProgress.repsPerSet ?? []);
   const exWeight: number = $derived(currentExercise?.currentProgress.weightPerSet[0] ?? 0);
   const finished: boolean = $derived(currentExercise?.finished ?? false);
 
-  const userID = $derived(get(user));
+  const userID = 'gustavengvall@yahoo.se';
+
+  /**
+   * dbFetches bör returna rätt typer.
+   * Plug and play?
+   *
+   */
 
   onMount(async () => {
-    if (!userID) {
-      goto(resolve(`/account`));
-      return;
-    }
     try {
-      exercises = await getOrderedExercises(userID, sesID);
+      exercises = await GetSessionExercises(parseInt(sesID));
       console.log('\n\nSesID:', sesID);
+      console.log(exercises);
 
-      await loadUnfinishedSession();
+      SetActiveSession(sesID);
     } catch (e) {
       error = (e as Error).message;
+      console.error(error);
     } finally {
       loading = false;
     }
@@ -89,16 +97,46 @@
     }
   }
 
+  function isIncreased(r: number[], threshold: number): boolean {
+    if (r.length === 0) return false;
+    const t = r.reduce((acc, c) => acc + c, 0) / r.length;
+    return t > threshold ? true : false;
+  }
+
   async function handleSubmit() {
     if (currentExercise) {
-      const finalReps = currentExercise.currentProgress.repsPerSet;
-      await saveRecordedLift(
+      var finalReps = currentExercise.currentProgress.repsPerSet;
+      var packagedReps: number[] = finalReps.slice(); // kopiera array
+
+      var finalWeight: number = exWeight;
+      const threshold = currentExercise.repThreshold ?? 12;
+
+      if (isIncreased(finalReps, threshold)) {
+        const baseRep = Math.floor(threshold / 1.7);
+        packagedReps.fill(baseRep, 0, finalReps.length);
+        finalWeight += currentExercise.autoIncrease ?? 2.5;
+      }
+
+      var packagedWeight: number[] = new Array(packagedReps.length);
+      packagedWeight.fill(finalWeight, 0, packagedReps.length);
+
+      const updateInfo = {
+        reps: packagedReps,
+        weights: packagedWeight,
+        id: String(currentExercise.id ?? -1),
+      };
+
+      SendUpdate(updateInfo, sesID);
+
+      /**
+       * await saveRecordedLift(
         userID ?? 'error',
         sesID,
         finalReps,
         exWeight,
-        currentExercise.id ?? 'error'
+        String(currentExercise.id ?? -1)
       );
+      */
     }
 
     exercises[currentExerciseIndex].finished = true;
@@ -107,34 +145,27 @@
 
     if (checkAllFinished()) {
       allFinished = true;
-      await setActivityStatus(userID ?? 'error', sesID, false, []);
+      await CompleteSession(sesID);
+
       console.log('Workout finished, active set to false');
     } else {
-      setUnfinishedSession();
       setTimeout(loadNextExercise, 100);
     }
   }
 
-  async function setUnfinishedSession() {
-    const fin = getFinished();
-    console.log('Finished so far:', fin);
-    await setActivityStatus(userID ?? 'error', sesID, true, fin);
+  function getFins(): number[] {
+    let fins: number[] = [];
+    exercises.forEach((element) => {
+      if (element.finished && element.id) {
+        fins.push(element.id);
+      }
+    });
+    return fins;
   }
-
+  // TODO: Rewrite
   async function loadUnfinishedSession() {
-    const info = await loadFinishedExercises(userID ?? 'error', sesID);
-    let arrFin: number[] = [];
-    if (info.unfinished) {
-      const fins = info.finishedIDXS;
-
-      fins.forEach((fin) => {
-        exercises[fin].finished = true;
-        console.log(fin, 'is finished already!');
-      });
-      arrFin = fins;
-    }
-
-    await setActivityStatus(userID ?? 'error', sesID, true, arrFin);
+    // todo: replace
+    // await setActivityStatus(userID ?? 'error', sesID, true, arrFin);
   }
 
   function checkAllFinished(): boolean {
@@ -175,7 +206,9 @@
     if (
       confirm('Are you sure you want to quit the session?\n(All confirmed sets are already saved)')
     ) {
-      setActivityStatus(userID ?? 'error', sesID, false);
+      // setActivityStatus(userID ?? 'error', sesID, false);
+      SetActiveSession('-1');
+
       goto(resolve(`/`));
     } else {
       console.log('Quit adverted.');
@@ -213,7 +246,6 @@
       weight={exWeight}
       reps={repArray}
       finished={true}
-      {exID}
       exIndex={currentExerciseIndex}
       onCount={handleCountChange}
       onSubmit={handleSubmit}

@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from '@iconify/svelte';
-  import type { SessionMetaData } from '$lib/firebaseDataHandler';
+  import type { SessionMetaData } from '../routes/tracker/dbFetches';
   import { fade, fly, slide } from 'svelte/transition';
 
   let {
@@ -78,7 +78,7 @@
 <div class="inner-cont alt">
   <div class="base-btn alt" style="width:{sty}">
     <button class="start-side buttonClass" onclick={prs}>
-      <p>{slug.id}</p>
+      <p>{slug.name}</p>
       <p class="date">{timeAgo(slug.date ?? grd(3))}</p>
     </button>
 

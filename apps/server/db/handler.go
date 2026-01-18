@@ -1,10 +1,14 @@
 package db
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strconv"
+	"time"
 
-	"github.com/gustavegv/resilnce/apps/server/auth"
+	scookie "github.com/gustavegv/resilnce/apps/server/scookies"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -12,26 +16,241 @@ type SupabaseCFG struct {
 	DB *pgxpool.Pool
 }
 
-func (supa *SupabaseCFG) GetUserSessions(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func getValidatedMail(w http.ResponseWriter, r *http.Request) string {
 	userMail := r.URL.Query().Get("mail")
-	_, userMail, _, success := auth.ValidateSignedCookie(r)
+	_, userMail, _, success := scookie.ValidateSignedCookie(r)
 	if !success {
 		println("Verification failed")
 		http.Error(w, "verification failed", http.StatusBadRequest)
+		return ""
 	}
 
 	if userMail == "" {
 		println("No mail")
 		http.Error(w, "missing mail", http.StatusBadRequest)
+		return ""
+	}
+	return userMail
+}
+
+func getSesID(w http.ResponseWriter, r *http.Request) int {
+	idStr := r.URL.Query().Get("sesID")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return -1
+	}
+	return id
+}
+
+func getExID(w http.ResponseWriter, r *http.Request) int {
+	idStr := r.URL.Query().Get("exID")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid ExID", http.StatusBadRequest)
+		return -1
+	}
+	return id
+}
+
+func (supa *SupabaseCFG) GetUserSessions(w http.ResponseWriter, r *http.Request) {
+	userMail := getValidatedMail(w, r)
+	if userMail == "" {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
 
-	names, err := supa.UserSessions(userMail, ctx)
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+
+	sesMetaData, err := supa.UserSessions(userMail, ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(names)
+	json.NewEncoder(w).Encode(sesMetaData)
+}
+
+func (supa *SupabaseCFG) GetSessionExercises(w http.ResponseWriter, r *http.Request) {
+	sesID := getSesID(w, r)
+	userMail := getValidatedMail(w, r)
+	if userMail == "" || sesID == -1 {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+
+	exInfo, err := supa.SessionExercises(userMail, sesID, ctx)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(exInfo)
+}
+
+func (supa *SupabaseCFG) GetActiveSession(w http.ResponseWriter, r *http.Request) {
+	userMail := getValidatedMail(w, r)
+	if userMail == "" {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+
+	active, err := supa.CheckIfActive(userMail, ctx)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonPayload := struct {
+		ActiveSession string
+	}{
+		ActiveSession: active,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(jsonPayload)
+}
+
+func (supa *SupabaseCFG) GetFinishedExercises(w http.ResponseWriter, r *http.Request) {
+	sesID := getSesID(w, r)
+	userMail := getValidatedMail(w, r)
+	if userMail == "" || sesID == -1 {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+
+	finishedExIDs, err := supa.CheckFinishedExercises(userMail, sesID, ctx)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonPayload := struct {
+		Finished []int
+	}{
+		Finished: finishedExIDs,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(jsonPayload)
+}
+
+type CompactExercise struct {
+	Reps    []int     `json:"reps"`
+	Weights []float64 `json:"weights"`
+	ExID    string    `json:"id"`
+}
+
+func (supa *SupabaseCFG) CallUpdateExercise(w http.ResponseWriter, r *http.Request) {
+	var exercise CompactExercise
+
+	sesID := getSesID(w, r)
+	userMail := getValidatedMail(w, r)
+	if userMail == "" || sesID == -1 {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&exercise); err != nil {
+		http.Error(w, "Invalid JSON: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+
+	err := supa.UpdateExercise(userMail, sesID, exercise, r.Context())
+	if err != nil {
+		http.Error(w, "Update failed: "+err.Error(), http.StatusExpectationFailed)
+		return
+	}
+
+	err = supa.SaveHistory(userMail, sesID, exercise, r.Context())
+	if err != nil {
+		http.Error(w, "Save history failed: "+err.Error(), http.StatusExpectationFailed)
+		return
+	}
+
+	err = supa.UpdateLastRan(userMail, sesID, r.Context())
+	if err != nil {
+		http.Error(w, "Update last ran failed: "+err.Error(), http.StatusExpectationFailed)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Update received successfully"))
+}
+
+func (supa *SupabaseCFG) CallCompleteExercise(w http.ResponseWriter, r *http.Request) {
+	sesID := getSesID(w, r)
+	userMail := getValidatedMail(w, r)
+	if userMail == "" || sesID == -1 {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	supa.CompleteSession(userMail, sesID, r.Context())
+}
+
+func getURLParam(r *http.Request, param string) string {
+	varContent := r.URL.Query().Get(param)
+
+	return varContent
+}
+
+func (supa *SupabaseCFG) CallSetActiveSession(w http.ResponseWriter, r *http.Request) {
+	sesID := getSesID(w, r)
+	userMail := getValidatedMail(w, r)
+	if userMail == "" {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	supa.SetActiveSession(userMail, sesID, r.Context())
+}
+
+func (supa *SupabaseCFG) MakeNewSession(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		SesID string   `json:"sesID"`
+		ExI   []ExInfo `json:"exI"`
+	}
+
+	// todo check so sesname doesnt already exist
+
+	userMail := getValidatedMail(w, r)
+	if userMail == "" {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&data); err != nil {
+		http.Error(w, "Invalid JSON: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if data.ExI == nil || data.SesID == "" {
+		http.Error(w, "Passed data to create session null.", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Println("\n\nHandler data-struct:")
+	fmt.Printf("data = %#v\n", data)
+
+	err := supa.NewSession(userMail, data.SesID, data.ExI, r.Context())
+	if err != nil {
+		http.Error(w, "NewSession add error: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
 }

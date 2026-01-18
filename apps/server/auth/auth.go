@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/gustavegv/resilnce/apps/server/db"
 	sessions "github.com/gustavegv/resilnce/apps/server/redis"
 	scookie "github.com/gustavegv/resilnce/apps/server/scookies"
 	"golang.org/x/oauth2"
@@ -47,9 +48,14 @@ func (s *Service) UpsertUser(ctx context.Context, provider, providerID, email, n
 	}
 
 	err = s.store().SaveSession(ctx, providerID, data, 120*24*time.Hour)
-
 	if err != nil {
 		log.Println("Redis SaveSession failed (auth.go)", err)
+		return "", err
+	}
+
+	err = s.SBDB.AddUser(email, name, ctx)
+	if err != nil {
+		log.Println("SBDB SaveSession failed (auth.go)", err)
 		return "", err
 	}
 
@@ -91,6 +97,8 @@ type Service struct {
 	appleOAuth     *oauth2.Config
 
 	redisStore *sessions.Store
+
+	SBDB db.SupabaseCFG
 
 	stateCookieAttrs cookieAttrs
 	pkceCookieAttrs  cookieAttrs

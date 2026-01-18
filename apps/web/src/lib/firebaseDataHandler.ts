@@ -173,7 +173,7 @@ export async function saveRecordedLift(
   const hisData = createHistoricData(repArray, weight);
 
   // push historic data and update sets
-  const exRef = doc(db, 'users', uID, 'sessions', sesID, 'exercises', exTag);
+  const exRef = doc(db, 'users', uID, 'sessions', sesID, 'exercises', String(exTag));
 
   let curProg;
 

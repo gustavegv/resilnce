@@ -14,7 +14,7 @@ const greetings = {
     "Let's begin.",
     "Let's get started.",
   ],
-  continue: ['Keep going', "Let's go", 'Good work'],
+  continue: ['Keep going!', "Let's go!", 'Good work!'],
 };
 
 export function greet(name: string, existingSession: boolean): string {

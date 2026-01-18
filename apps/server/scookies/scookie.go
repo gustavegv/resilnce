@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -124,4 +125,22 @@ func CreateNewSecret(nChars int) (string, error) {
 	}
 	s := sb.String()
 	return s[:nChars], nil
+}
+
+func ValidateSignedCookie(r *http.Request) (string, string, string, bool) {
+	cookie, err := r.Cookie("SignedCookie")
+	if err != nil || cookie.Value == "" {
+		return "No cookie value", "", "", false
+	}
+	secret := GetSecret()
+	pl, success := Verify(cookie.Value, secret)
+	if !success {
+		return "SCookie Verification failed", "", "", false
+	}
+
+	if pl.SID == "" {
+		return "SID not found", "", "", false
+	}
+
+	return pl.SID, pl.UID, pl.Name, true
 }
