@@ -13,7 +13,7 @@ import {
 
 import { db } from './firebase';
 
-export interface ExInfoPackage {
+interface ExInfoPackage {
   name: string;
   weight: number;
   sets: number;

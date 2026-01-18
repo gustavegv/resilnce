@@ -25,7 +25,7 @@
 
     const res = await CheckActiveSession();
     console.log('Active session:', res);
-    activeSession = res != null;
+    activeSession = res != '';
 
     loaded = true;
   });
@@ -40,7 +40,7 @@
   }
 
   function startSes(id: number) {
-    console.log(id, 'started');
+    console.log('Exercise ID: (' + id, +') called for start.');
 
     if (activeSession) {
       openPopup('active');
@@ -50,12 +50,13 @@
         SetActiveSession(String(id));
         goto(resolve(`/tracker/${id}`));
       } else {
-        goto(resolve(`/`));
+        //goto(resolve(`/tracker`));
       }
     } else {
       goto(resolve(`/tracker/${id}`));
     }
   }
+
   function editSes(id: number) {
     console.log(id, 'edited');
     alert('Edit not yet implemented.');

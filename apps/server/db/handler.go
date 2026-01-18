@@ -66,6 +66,7 @@ func (supa *SupabaseCFG) GetUserSessions(w http.ResponseWriter, r *http.Request)
 	sesMetaData, err := supa.UserSessions(userMail, ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")

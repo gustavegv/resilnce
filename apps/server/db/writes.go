@@ -43,10 +43,20 @@ func avg(arr []int) float64 {
 	return rounded
 }
 
+func avgF(arr []float64) float64 {
+	var sum float64 = 0
+	for i := 0; i < len(arr); i++ {
+		sum += arr[i]
+	}
+	var avg float64 = float64(sum) / float64(len(arr))
+	rounded := math.Round(avg*10) / 10
+	return rounded
+}
+
 func (supa *SupabaseCFG) SaveHistory(userMail string, sesID int, ex CompactExercise, ctx context.Context) error {
 
 	var avgR float64 = avg(ex.Reps)
-	var avgW float64 = avg(ex.Reps) // todo: chek reasoning
+	var avgW float64 = avgF(ex.Weights)
 	var sets int = len(ex.Reps)
 
 	const query = `
@@ -100,9 +110,14 @@ func (supa *SupabaseCFG) CompleteSession(userMail string, sesID int, ctx context
 	`
 
 	_, err := supa.DB.Exec(ctx, query, userMail, sesID)
-
 	if err != nil {
 		println("DB query fail (Write: Complete session)")
+		println(err.Error())
+		return err
+	}
+
+	err = supa.SetActiveSession(userMail, -1, ctx)
+	if err != nil {
 		println(err.Error())
 		return err
 	}
@@ -225,11 +240,9 @@ func (supa *SupabaseCFG) AddMultipleExercises(userMail string, info []ExInfo, ct
 		println(err.Error())
 		return []ExInfo{}, err
 	}
+	defer rows.Close()
 
 	i := 0
-	fmt.Println("\nBefore struct:")
-	fmt.Printf("data = %#v\n", info)
-
 	for rows.Next() {
 
 		err := rows.Scan(&info[i].ExID)
@@ -239,11 +252,7 @@ func (supa *SupabaseCFG) AddMultipleExercises(userMail string, info []ExInfo, ct
 		i++
 	}
 
-	fmt.Println("\nAfter struct:")
-	fmt.Printf("data = %#v\n", info)
-
 	return info, nil
-
 }
 
 func (supa *SupabaseCFG) AddSession(userMail string, sesName string, ctx context.Context) (int, error) {

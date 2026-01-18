@@ -33,6 +33,8 @@ func (supa *SupabaseCFG) UserSessions(userMail string, ctx context.Context) ([]S
     `
 	rows, err := supa.DB.Query(ctx, query, userMail)
 
+	defer rows.Close()
+
 	sessions := []SessionMetaData{}
 
 	for rows.Next() {
@@ -50,7 +52,6 @@ func (supa *SupabaseCFG) UserSessions(userMail string, ctx context.Context) ([]S
 		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 
-	defer rows.Close()
 	return sessions, nil
 }
 
@@ -63,16 +64,15 @@ func (supa *SupabaseCFG) SessionExercises(userMail string, sesID int, ctx contex
 		order by "order"
 	`
 
-	exs := []ExInfo{}
-
 	rows, err := supa.DB.Query(ctx, query, sesID, userMail)
-
 	if err != nil {
 		println("DB Query fail (Read session exercises)")
-		println(err.Error())
-		return exs, err
 
+		return nil, fmt.Errorf("UserSessions query: %w", err)
 	}
+	defer rows.Close()
+	exs := []ExInfo{}
+
 	for rows.Next() {
 		var ex ExInfo
 
@@ -95,7 +95,6 @@ func (supa *SupabaseCFG) SessionExercises(userMail string, sesID int, ctx contex
 		}
 		exs = append(exs, ex)
 	}
-	defer rows.Close()
 	return exs, nil
 }
 
@@ -104,27 +103,14 @@ func (supa *SupabaseCFG) CheckIfActive(userMail string, ctx context.Context) (st
 	select active_session from "User"
 	where mail = $1
 `
-	rows, err := supa.DB.Query(ctx, query, userMail)
-	if err != nil {
-		println("DB Query fail (Read active session)")
-		println(err.Error())
-		return "", err
-
-	}
 	var activeSession sql.NullString
-	rows.Next()
-	err = rows.Scan(&activeSession)
-	if err != nil {
-		println("Err row scan (CheckActive)")
-		println(err.Error())
-
-		return "", err
+	if err := supa.DB.QueryRow(ctx, query, userMail).Scan(&activeSession); err != nil {
+		return "", fmt.Errorf("CheckIfActive scan: %w", err)
 	}
 	if activeSession.Valid {
 		return activeSession.String, nil
-	} else {
-		return "", nil
 	}
+	return "", nil
 }
 
 func (supa *SupabaseCFG) CheckFinishedExercises(userMail string, sesID int, ctx context.Context) ([]int, error) {
@@ -133,22 +119,8 @@ func (supa *SupabaseCFG) CheckFinishedExercises(userMail string, sesID int, ctx 
 	where mail = $1 and ses_id = $2
 `
 	var arr []int
-
-	rows, err := supa.DB.Query(ctx, query, userMail, sesID)
-	if err != nil {
-		println("DB Query fail (Read finished exercises)")
-		println(err.Error())
-		return arr, err
+	if err := supa.DB.QueryRow(ctx, query, userMail, sesID).Scan(&arr); err != nil {
+		return nil, fmt.Errorf("CheckFinishedExercises scan: %w", err)
 	}
-
-	rows.Next()
-	err = rows.Scan(&arr)
-	if err != nil {
-		println("Err row scan (CheckFinished)")
-		println(err.Error())
-
-		return arr, err
-	}
-
 	return arr, nil
 }
