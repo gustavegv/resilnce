@@ -5,9 +5,10 @@
   import { goto } from '$app/navigation';
   import SetAutoIncrease from '../../../components/SetAutoIncrease.svelte';
   import { onMount } from 'svelte';
-  import { user } from '../../account/user';
+  import { user } from '$lib/stores/appState';
+
   import { get } from 'svelte/store';
-  import { base } from '$app/paths';
+  import { base, resolve } from '$app/paths';
   import SortableList from '../SortableList.svelte';
   import { CreateSession } from '../dbWrite';
 
@@ -21,9 +22,9 @@
   let sessionExercisesList: SortableList;
 
   onMount(async () => {
-    const username = get(user);
-    if (!username) {
-      goto(`${base}/account`); // todo: detta är det gammla sättet? skapar problem, blir ivägkastad första gången man går in
+    const value = get(user);
+    if (!value?.name) {
+      goto(resolve(`/`));
     }
   });
   /*  
@@ -102,10 +103,11 @@
   }
 
   function clientSideAuthorizationCheck(): boolean {
-    // todo: utvärdera om detta ska existera ens
-
-    //   const username = get(user);
-    //  alert('Problem with log-in authentication');
+    const userStatus = get(user);
+    if (!userStatus?.name) {
+      console.error('Not logged in. Please update authorization store.');
+      return false;
+    }
     return true;
   }
 
@@ -145,7 +147,7 @@
     const responseStatus: boolean = await CreateSession(sessionName, addedExercisesList);
     if (responseStatus) {
       alert('Session saved succesfully!'); // add sonner after redirect instead of alert
-      goto(`${base}/`); // todo goto deprecated?
+      goto(resolve(`/`));
     } else {
       alert('Error saving');
     }
