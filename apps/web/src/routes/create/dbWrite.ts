@@ -1,5 +1,4 @@
 import { PUBLIC_BACKEND_BASE_URL } from '$env/static/public';
-import type { ExInfoPackage } from '$lib/firebaseCreation';
 
 const baseURL: string = PUBLIC_BACKEND_BASE_URL;
 
@@ -26,7 +25,7 @@ async function postDB(dir: string, data: any): Promise<boolean> {
   }
 }
 
-export interface ExI {
+export interface ExpandedExerciseData {
   id: string;
   ex_name: string;
   rep_threshold: string;
@@ -38,8 +37,20 @@ export interface ExI {
   finished: boolean;
 }
 
+export interface ExerciseDataPackaged {
+  name: string;
+  weight: number;
+  sets: number;
+  autoIncrease?: number;
+  repThreshold?: number;
+}
+
 // A -> B
-function exInfoToExI(a: ExInfoPackage, order: number, id = ''): ExI {
+function exercisePackageToExpanded(
+  a: ExerciseDataPackaged,
+  order: number,
+  id = ''
+): ExpandedExerciseData {
   const repThreshold = a.repThreshold ?? 0;
   const autoIncrease = a.autoIncrease ?? 0;
 
@@ -59,17 +70,19 @@ function exInfoToExI(a: ExInfoPackage, order: number, id = ''): ExI {
   };
 }
 
-function exInfoListToExIList(list: ExInfoPackage[]): ExI[] {
-  return list.map((a, idx) => exInfoToExI(a, idx + 1));
+function expandExerciseData(list: ExerciseDataPackaged[]): ExpandedExerciseData[] {
+  return list.map((a, idx) => exercisePackageToExpanded(a, idx + 1));
 }
 
-export async function CreateSession(sesID: string, exInfo: ExInfoPackage[]): Promise<boolean> {
-  // todo: move this conversion logic so ExInfoPackage is never even used to begin with
-  const exI = exInfoListToExIList(exInfo);
+export async function CreateSession(
+  sesID: string,
+  exInfoPack: ExerciseDataPackaged[]
+): Promise<boolean> {
+  const ExpandedExInfo = expandExerciseData(exInfoPack);
 
-  const payload: { sesID: string; exI: ExI[] } = {
+  const payload: { sesID: string; exI: ExpandedExerciseData[] } = {
     sesID: sesID,
-    exI: exI,
+    exI: ExpandedExInfo,
   };
 
   return await postDB(`newSession`, payload);

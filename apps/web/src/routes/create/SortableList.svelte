@@ -1,20 +1,16 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Sortable from 'sortablejs';
-  import type { SortableEvent } from 'sortablejs';
-  import type { ExInfoPackage } from '$lib/firebaseCreation';
+  import type { ExerciseDataPackaged } from './dbWrite';
   import Icon from '@iconify/svelte';
-  import { error } from '@sveltejs/kit';
 
   let {
     onConfirm,
-    items,
   }: {
     onConfirm?: () => void;
-    items: ExInfoPackage[];
   } = $props();
 
-  let items2x = items;
+  let exerciseList: ExerciseDataPackaged[] = $state([]);
   let els: HTMLElement;
 
   onMount(() => {
@@ -25,8 +21,8 @@
     });
   });
 
-  function getListTexts(container: HTMLElement): ExInfoPackage[] {
-    const collectedInfo: ExInfoPackage[] = [];
+  function gatherSessionListFromDOM(container: HTMLElement): ExerciseDataPackaged[] {
+    const collectedInfo: ExerciseDataPackaged[] = [];
 
     for (const child of Array.from(container.children) as HTMLElement[]) {
       const exName = child.querySelector('#info-name');
@@ -40,7 +36,7 @@
         return [];
       }
 
-      let packaged: ExInfoPackage = {
+      let packaged: ExerciseDataPackaged = {
         name: exName.textContent ?? 'Error',
         weight: Number(exWeight.textContent) ?? -1,
         sets: Number(exSets.textContent) ?? -1,
@@ -55,21 +51,21 @@
   }
 
   export function extractData() {
-    return getListTexts(els);
+    return gatherSessionListFromDOM(els);
   }
 
-  export function addToSortable(newEx: ExInfoPackage) {
-    items2x.push(newEx);
+  export function pushItemToList(newEx: ExerciseDataPackaged) {
+    exerciseList.push(newEx);
   }
 
   function removeFromStack(name: string) {
-    const index = items2x.findIndex((item) => item.name === name);
-    if (index !== -1) items2x.splice(index, 1);
+    const index = exerciseList.findIndex((item) => item.name === name);
+    if (index !== -1) exerciseList.splice(index, 1);
   }
 </script>
 
 <ul bind:this={els} class="component">
-  {#each items2x as blob, i (blob)}
+  {#each exerciseList as blob, i (blob)}
     <li class="blob-cont sortable-item">
       <div class="name-cont">
         <h3 id="info-name">{blob.name}</h3>

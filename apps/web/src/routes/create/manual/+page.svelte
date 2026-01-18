@@ -1,161 +1,175 @@
 <script lang="ts">
   import '../../../app.css';
-  import Icon from '@iconify/svelte';
-  import type { ExerciseInfo, ExInfoPackage } from '$lib/firebaseCreation';
-  import { betterAdd } from '$lib/firebaseCreation';
+  import type { ExerciseDataPackaged } from '../dbWrite';
   import InputField from '../../../components/InputField.svelte';
   import { goto } from '$app/navigation';
-  import SetBlock from '../../../components/SetBlock.svelte';
   import SetAutoIncrease from '../../../components/SetAutoIncrease.svelte';
-  import { onDestroy, onMount } from 'svelte';
+  import { onMount } from 'svelte';
   import { user } from '../../account/user';
   import { get } from 'svelte/store';
   import { base } from '$app/paths';
   import SortableList from '../SortableList.svelte';
   import { CreateSession } from '../dbWrite';
 
-  type SessionInfo = {
-    name: string;
-    exercises: ExInfoPackage[];
-  };
+  let sessionName = $state('');
+  let newExName = $state('');
+  let newExSetCount: string = $state('');
+  let newExWeight: string = $state('');
+  let newExAutoIncAmount: number = $state(2.5);
+  let newExRepThreshold: number = $state(12);
 
-  const dummy1: ExInfoPackage = {
-    name: 'Freelake',
-    weight: 30,
-    sets: 4,
-  };
-  const dummy2: ExInfoPackage = {
-    name: 'Souvlaki',
-    weight: 30,
-    sets: 4,
-  };
-
-  let currentlyAdded: ExInfoPackage[] = $state([]);
-
-  let seshName = $state('');
-  let newName = $state('');
-  let newSets: string = $state('');
-  let newWeight: string = $state('');
-  let newAutoInc: number = $state(2.5);
-  let newRepThreshold: number = $state(12);
+  let sessionExercisesList: SortableList;
 
   onMount(async () => {
-    const us = get(user);
-    if (!us) {
-      goto(`${base}/account`);
+    const username = get(user);
+    if (!username) {
+      goto(`${base}/account`); // todo: detta är det gammla sättet? skapar problem, blir ivägkastad första gången man går in
     }
-
-    console.log('bru', us);
   });
-
-  function addExercise() {
-    if (!newName || !newSets || !newWeight) {
-      console.log('No set to add:', !newName, !newSets, !newWeight);
-      return;
+  /*  
+      ################
+      HELPER FUNCTIONS
+      ################ 
+  */
+  function checkIfInputFieldsFilled(): boolean {
+    if (!newExName || !newExSetCount || !newExWeight) {
+      console.error(
+        'One or multiple input fields not filled:',
+        !newExName,
+        !newExSetCount,
+        !newExWeight
+      );
+      return false;
     }
-
-    //todo add auto inc here
-    console.log('autothing added:', newAutoInc);
-
-    // todo add serverside checking
-    if (
-      Number(newSets) > 20 ||
-      Number(newWeight) > 9999 ||
-      newName.length > 100 ||
-      currentlyAdded.length > 100
-    ) {
-      alert('Max threshold met.');
-      return;
-    }
-
-    const entry: ExInfoPackage = {
-      name: newName,
-      sets: Number(newSets),
-      weight: Number(newWeight),
-      autoIncrease: newAutoInc,
-      repThreshold: newRepThreshold,
-    };
-
-    currentlyAdded = [...currentlyAdded, entry];
-
-    console.log('NEW THANG');
-    console.log(currentlyAdded);
-
-    reorderableList.addToSortable(entry);
-
-    newName = '';
-    newSets = '';
-    newWeight = '';
+    return true;
   }
 
-  let reorderableList: SortableList;
+  function checkInputLengthExceedsMax(): boolean {
+    // todo add a serverside check too
+    const maxSetsAllowed = 20;
+    const maxWeightAllowed = 9999;
+    const maxExerciseNameAllowed = 100;
+    const maxExercisesAllowed = 100;
+
+    if (
+      Number(newExSetCount) > maxSetsAllowed ||
+      Number(newExWeight) > maxWeightAllowed ||
+      newExName.length > maxExerciseNameAllowed ||
+      sessionExercisesList.extractData().length > maxExercisesAllowed
+    ) {
+      console.error('One or multiple input fields exceed max limits');
+      return false;
+    }
+    return true;
+  }
+
+  function vaidateInputFields(): boolean {
+    if (!checkIfInputFieldsFilled() || !checkInputLengthExceedsMax()) {
+      return false;
+    }
+
+    return true;
+  }
+
+  function packageExerciseEntry(): ExerciseDataPackaged {
+    const entry: ExerciseDataPackaged = {
+      name: newExName,
+      sets: Number(newExSetCount),
+      weight: Number(newExWeight),
+      autoIncrease: newExAutoIncAmount,
+      repThreshold: newExRepThreshold,
+    };
+    return entry;
+  }
+
+  function resetInputFields() {
+    newExName = '';
+    newExSetCount = '';
+    newExWeight = '';
+  }
+
+  function validateSessionData(addedExercisesList: ExerciseDataPackaged[]): boolean {
+    if (addedExercisesList.length == 0) {
+      alert('No exercises added!');
+      return false;
+    }
+
+    if (sessionName == '') {
+      alert('No session name added!');
+      return false;
+    }
+    return true;
+  }
+
+  function clientSideAuthorizationCheck(): boolean {
+    // todo: utvärdera om detta ska existera ens
+
+    //   const username = get(user);
+    //  alert('Problem with log-in authentication');
+    return true;
+  }
+
+  /*  
+      ################
+      MAIN   FUNCTIONS  
+      ################ 
+  */
+  function addExercise() {
+    if (!vaidateInputFields()) {
+      alert('Input(s) empty or exceeds max limit.');
+      return;
+    }
+
+    const newEntry = packageExerciseEntry();
+    sessionExercisesList.pushItemToList(newEntry);
+
+    resetInputFields();
+  }
 
   async function saveSession() {
-    console.log('This is what we send pre');
-    console.log(currentlyAdded);
+    let addedExercisesList: ExerciseDataPackaged[] = sessionExercisesList.extractData();
 
-    currentlyAdded = reorderableList.extractData();
+    // if input field filled but not pushed, adds this
+    if (vaidateInputFields()) {
+      addExercise();
+    }
 
-    // adds inputed exercise in case you forgot
-    addExercise();
-
-    if (currentlyAdded.length == 0) {
-      alert('No exercises added!');
+    if (!validateSessionData(addedExercisesList)) {
       return;
     }
 
-    if (seshName == '') {
-      alert('No session name added!');
+    if (!clientSideAuthorizationCheck()) {
       return;
     }
 
-    console.log('This is what we send post');
-    // console.log(currentlyAdded);
-
-    const username = get(user); // todo: är det här den gamla user logiken?
-    if (username || true) {
-      // todo: ta bort or true
-      const okResponse = await CreateSession(seshName, currentlyAdded);
-      if (okResponse) {
-        alert('Session saved succesfully!');
-        goto(`${base}/`); // todo goto deprecated?
-      } else {
-        alert('Error saving');
-      }
-      // betterAdd(username, seshName, currentlyAdded);
+    const responseStatus: boolean = await CreateSession(sessionName, addedExercisesList);
+    if (responseStatus) {
+      alert('Session saved succesfully!'); // add sonner after redirect instead of alert
+      goto(`${base}/`); // todo goto deprecated?
     } else {
-      alert('Problem with log-in authentication');
+      alert('Error saving');
     }
-  }
-
-  function removeItem(index: number) {
-    currentlyAdded.splice(index, 1);
   }
 
   function repThresholdChange(count: number) {
-    newRepThreshold = count;
+    newExRepThreshold = count;
   }
 
   function autoIncreaseChange(count: number) {
-    newAutoInc = count;
-  }
-
-  function getNames(exs: ExInfoPackage[]): string[] {
-    let newArray: string[] = exs.map((ex) => ex.name);
-    return newArray;
+    newExAutoIncAmount = count;
   }
 </script>
 
 <div class="container">
-  <input maxlength="50" bind:value={seshName} placeholder="Untitled session" class="title" />
+  <input maxlength="50" bind:value={sessionName} placeholder="Untitled session" class="title" />
 
   <div class="add-box shadow">
     <h3 class="w-full pb-2 text-xl font-semibold">Add an exercise</h3>
-    <InputField label={'Exercise name'} bind:value={newName} type={'text'} />
+    <InputField label={'Exercise name'} bind:value={newExName} type={'text'} />
 
-    <InputField label={'Sets'} bind:value={newSets} type={'number'} />
+    <InputField label={'Sets'} bind:value={newExSetCount} type={'number'} />
 
-    <InputField label={'Weight'} bind:value={newWeight} type={'number'} />
+    <InputField label={'Weight'} bind:value={newExWeight} type={'number'} />
 
     <SetAutoIncrease
       title={'Auto-increase threshold'}
@@ -174,7 +188,7 @@
     <button class="add buttonClass" onclick={addExercise}>Add to session</button>
   </div>
 
-  <SortableList bind:this={reorderableList} items={currentlyAdded} />
+  <SortableList bind:this={sessionExercisesList} />
 
   <button onclick={saveSession} class="finish buttonClass">Finish and save session</button>
 </div>
