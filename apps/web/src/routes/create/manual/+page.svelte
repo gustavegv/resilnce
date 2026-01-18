@@ -46,7 +46,6 @@
   }
 
   function checkInputLengthExceedsMax(): boolean {
-    // todo add a serverside check too
     const maxSetsAllowed = 20;
     const maxWeightAllowed = 9999;
     const maxExerciseNameAllowed = 100;

@@ -3,7 +3,9 @@ package db
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -218,13 +220,39 @@ func (supa *SupabaseCFG) CallSetActiveSession(w http.ResponseWriter, r *http.Req
 	supa.SetActiveSession(userMail, sesID, r.Context())
 }
 
+func validateNewSessionDataHelper(id string, exI []ExInfo) error {
+	if exI == nil || id == "" {
+		return errors.New("Error: New data empty when trying to create new session")
+	}
+	const maxExPerSes = 100
+	const maxWeight = 9999
+	const maxSets = 20
+	const maxNameLen = 100
+
+	if len(exI) > maxExPerSes {
+		return errors.New("Error: Too many exercises pushed.")
+	}
+	for _, exercise := range exI {
+		w := exercise.Weights[0]
+		s, err := strconv.Atoi(exercise.SetCount)
+		nl := len(exercise.ExName)
+
+		if err != nil {
+			return errors.New("Error: Non numeric set number")
+		}
+		if w > maxWeight || s > maxSets || nl > maxNameLen {
+			return errors.New("Error: Exercise data exceeding max limits")
+		}
+	}
+
+	return nil
+}
+
 func (supa *SupabaseCFG) MakeNewSession(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		SesID string   `json:"sesID"`
 		ExI   []ExInfo `json:"exI"`
 	}
-
-	// todo check so sesname doesnt already exist
 
 	userMail := getValidatedMail(w, r)
 	if userMail == "" {
@@ -239,15 +267,17 @@ func (supa *SupabaseCFG) MakeNewSession(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if data.ExI == nil || data.SesID == "" {
-		http.Error(w, "Passed data to create session null.", http.StatusBadRequest)
+	err := validateNewSessionDataHelper(data.SesID, data.ExI)
+	if err != nil {
+		log.Printf("invalid session data: %v", err)
+		http.Error(w, "Session data invalid", http.StatusUnauthorized)
 		return
 	}
 
 	fmt.Println("\n\nHandler data-struct:")
 	fmt.Printf("data = %#v\n", data)
 
-	err := supa.NewSession(userMail, data.SesID, data.ExI, r.Context())
+	err = supa.NewSession(userMail, data.SesID, data.ExI, r.Context())
 	if err != nil {
 		http.Error(w, "NewSession add error: "+err.Error(), http.StatusBadRequest)
 		return
