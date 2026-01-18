@@ -24,7 +24,6 @@
     slugs = await GetSessions();
 
     const res = await CheckActiveSession();
-    console.log('Active session:', res);
     activeSession = res != '';
 
     loaded = true;
@@ -49,8 +48,6 @@
         // todo switch popup to custom popup
         SetActiveSession(String(id));
         goto(resolve(`/tracker/${id}`));
-      } else {
-        //goto(resolve(`/tracker`));
       }
     } else {
       goto(resolve(`/tracker/${id}`));
@@ -72,8 +69,6 @@
     } else {
       console.log('Delete cancelled.');
     }
-
-    // popup are you sure
   }
 
   function deleteLocalSlug(id: number) {

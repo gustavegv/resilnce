@@ -145,5 +145,5 @@ export async function CompleteSession(sesID: string) {
 }
 
 export async function SetActiveSession(sesID: string) {
-  await postDB(`setActive?sesID=${sesID}`, null); // todo: blir inte set
+  await postDB(`setActive?sesID=${sesID}`, null);
 }

@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { fade } from 'svelte/transition';
   import SetBlock from '../../components/SetBlock.svelte';
   import ConfirmSelection from '../../components/ConfirmSelection.svelte';
   import { editExercise, type EditData } from '$lib/firebaseDataHandler';
   import { get } from 'svelte/store';
-  import { user } from '../account/user';
+  import { user } from '$lib/stores/appState';
 
   let {
     name = $bindable(),
@@ -36,14 +35,15 @@
     return `${excerID}-s${set}`;
   }
 
-  async function onDone() {
+  // todo: Finishe edit-logic
+  async function onFinishedEditing() {
     const userID = get(user);
-    if (!userID) {
+    if (!userID?.name) {
       alert('No user signed in');
       return;
     }
     let data: EditData = {
-      user: userID,
+      user: userID.name,
       sesID: sesID,
       exID: exID ?? '',
 
@@ -55,14 +55,11 @@
 
     console.log('Done. Added:', data);
 
-    // todo: finish edit
     await editExercise(data);
 
     if (onCancel) {
       onCancel();
     }
-    // todo add this function to db
-    // updateExercise('user1', sesID, data)
   }
 
   function addSet() {
@@ -96,7 +93,7 @@
         }}
         role="button"
         tabindex="0"
-        onclick={onDone}>Done</smp
+        onclick={onFinishedEditing}>Done</smp
       >
     </div>
   </div>
