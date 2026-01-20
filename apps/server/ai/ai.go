@@ -31,11 +31,17 @@ func getValidatedMail(w http.ResponseWriter, r *http.Request) (string, string) {
 
 func GetQuickCreationData(promptSelections []bool, userData string, sesID string, store *sessions.Store, ctx context.Context) (string, error) {
 
-	accountAICallCount, err := store.IncrAICalls(ctx, sesID, 1)
+	accountAICallCount, err := store.GetOrInitAICalls(ctx, sesID)
 	println("AI calls and account number (", accountAICallCount, ",", sesID, ")")
-	if accountAICallCount > 2 {
+	const AI_CALL_LIMIT = 25
+	if accountAICallCount > AI_CALL_LIMIT {
 		println("AI calls exceeded")
 		return "", errors.New("AI call count exceeded")
+	}
+
+	_, err = store.IncrAICalls(ctx, sesID, 1)
+	if err != nil {
+		return "", err
 	}
 
 	callPrompt, err := getPrompt(promptSelections, userData)
@@ -74,7 +80,11 @@ func AutoCreation(store *sessions.Store) http.HandlerFunc {
 		output, err := GetQuickCreationData(data.PromptSelections, data.UserInput, SID, store, r.Context())
 
 		if err != nil {
-			http.Error(w, "Agent failure", http.StatusBadRequest)
+			if err.Error() == "AI call count exceeded" {
+				http.Error(w, "AI call count exceeded", http.StatusUnauthorized)
+				return
+			}
+			http.Error(w, "Agent failiure", http.StatusBadRequest)
 			return
 		}
 

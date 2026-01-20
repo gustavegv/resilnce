@@ -6,8 +6,8 @@ function address(dir: string): string {
   return baseURL + dir;
 }
 
-async function postDB(dir: string, data: any): Promise<any> {
-  const res = await fetch(address(dir), {
+async function postDB(dir: string, data: any): Promise<Response> {
+  const res: Response = await fetch(address(dir), {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -15,14 +15,7 @@ async function postDB(dir: string, data: any): Promise<any> {
     },
     body: JSON.stringify(data),
   });
-  if (!res.ok) {
-    const text = await res.text();
-    console.error(`Request failed: ${res.status} ${res.statusText}`);
-    console.error('Response body:', text);
-    return false;
-  } else {
-    return res;
-  }
+  return res
 }
 
 export interface ExpandedExerciseData {
@@ -74,6 +67,7 @@ function expandExerciseData(list: ExerciseDataPackaged[]): ExpandedExerciseData[
   return list.map((a, idx) => exercisePackageToExpanded(a, idx + 1));
 }
 
+
 export async function CreateSession(
   sesID: string,
   exInfoPack: ExerciseDataPackaged[]
@@ -86,10 +80,10 @@ export async function CreateSession(
   };
 
   const res = await postDB(`/db/newSession`, payload);
-  if (!res) {
+  if (!res.ok) {
     return false;
   }
-  return true;
+  return true
 }
 
 export async function QuickGeneration(
@@ -104,8 +98,12 @@ export async function QuickGeneration(
   const res = await postDB(`/ai/quick`, payload);
 
   if (!res.ok) {
-    throw new Error(await res.text());
+    console.error(`Request failed: ${res.status} ${res.statusText}`);
+    console.error('Response body:', res.text());
+    if (res.status == 401){
+      return "limit"
+    }
+    return "fail"
   }
-
   return await res.text();
 }

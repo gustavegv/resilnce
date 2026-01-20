@@ -9,7 +9,6 @@
   import { resolve } from '$app/paths';
   import { QuickGeneration } from '../dbWrite';
 
-  var sessionTitle = $state<string>('');
   var userText = $state<string>('');
   var isAdditionalInfoEnabled = $state<boolean>(false);
 
@@ -33,7 +32,6 @@
 
   function validateForm(): true | string {
     if (userText.trim().length < 10) return 'Please enter at least 10 characters of data.';
-    if (sessionTitle.trim().length < 2) return 'Title must be at least 2 characters.';
     return true;
   }
 
@@ -73,12 +71,14 @@
     <h1 class="mb-2 text-3xl leading-snug font-bold">Quick Fill</h1>
     <p class="description">
       This feature allows you to paste or upload your workout session notes in any
-      format—messy,structured, or somewhere in between—and automatically transforms them into a
+      format-messy,structured, or somewhere in between, and automatically transforms them into a
       clean, standardized <b>reslince</b> session.
       <br /><br />
       No need to worry about how your notes are written. Whether you list exercises, weights, and reps
       on one line or break them into multiple lines, the AI intelligently detects the details and organizes
       everything into a structured format for you.
+      <br /><br />
+      After the generation is finished, you will get the chance to readjust and edit the session before saving! 
     </p>
   </header>
 
@@ -93,14 +93,7 @@
   <!-- Input Area -->
 
   <section class="input-area" aria-labelledby="input-area-label">
-    <label for="title-textarea" class="field-label"> Session title </label>
 
-    <Textarea
-      placeholder="e.g Push Day"
-      oninput={(e) => (sessionTitle = (e.target as HTMLTextAreaElement).value)}
-      id="title-textarea"
-      maxlength={50}
-    />
 
     <label for="primary-textarea" class="field-label"> Paste workout session </label>
 
@@ -166,7 +159,15 @@
             {#await dataPromise}
               Creating session...
             {:then paragraphs}
+            {#if paragraphs == "limit"}
+              AI usage limit reached!
+
+            {:else if paragraphs == "fail"}
+              Generation failed!
+
+            {:else}
               Session created!
+            {/if}
             {/await}
           </Dialog.Title>
           <Dialog.Description>
@@ -174,12 +175,22 @@
               <Icon icon="svg-spinners:blocks-shuffle-3" height={50} class="m-4"></Icon>
               Hang on as our AI tool analyzes your session...
             {:then result}
+            {#if result == "fail"}
+              <ul>
+                <p>{"Try again later."}</p>
+              </ul>
+            {:else if result == "limit"}
+              <ul>
+                <p>{"Wait for token count to replenish."}</p>
+              </ul>
+            {:else}
               <ul>
                 <p>{result}</p>
               </ul>
               <button type="button" class="continue-button" onclick={saveSession}
                 >Save session!</button
               >
+            {/if}
             {/await}
           </Dialog.Description>
         </Dialog.Header>

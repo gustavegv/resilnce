@@ -30,6 +30,7 @@
         <CheckIcon class="size-3.5" />
       {:else if indeterminate}
         <MinusIcon class="size-3.5" />
+
       {/if}
     </div>
   {/snippet}
