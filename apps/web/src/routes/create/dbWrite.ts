@@ -15,7 +15,7 @@ async function postDB(dir: string, data: any): Promise<Response> {
     },
     body: JSON.stringify(data),
   });
-  return res
+  return res;
 }
 
 export interface ExpandedExerciseData {
@@ -67,7 +67,6 @@ function expandExerciseData(list: ExerciseDataPackaged[]): ExpandedExerciseData[
   return list.map((a, idx) => exercisePackageToExpanded(a, idx + 1));
 }
 
-
 export async function CreateSession(
   sesID: string,
   exInfoPack: ExerciseDataPackaged[]
@@ -83,7 +82,7 @@ export async function CreateSession(
   if (!res.ok) {
     return false;
   }
-  return true
+  return true;
 }
 
 export async function QuickGeneration(
@@ -100,10 +99,10 @@ export async function QuickGeneration(
   if (!res.ok) {
     console.error(`Request failed: ${res.status} ${res.statusText}`);
     console.error('Response body:', res.text());
-    if (res.status == 401){
-      return "limit"
+    if (res.status == 401) {
+      return 'limit';
     }
-    return "fail"
+    return 'fail';
   }
   return await res.text();
 }

@@ -227,7 +227,6 @@ func generateMultiAddSQLQuery(info []ExInfo, userMail string) (string, []any, er
 	return query, args, nil
 }
 
-// todo: fix function (gammal todo men kanske fortfarande giltig)
 func (supa *SupabaseCFG) AddMultipleExercises(userMail string, info []ExInfo, ctx context.Context) ([]ExInfo, error) {
 	query, args, err := generateMultiAddSQLQuery(info, userMail)
 	if err != nil {

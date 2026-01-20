@@ -52,7 +52,7 @@
     const jsonData = await dataPromise;
 
     if (jsonData == null) {
-      toast.error('Data creation error. Try again')
+      toast.error('Data creation error. Try again');
       console.error('JSON Data not loaded properly.');
       return;
     }
@@ -78,7 +78,8 @@
       on one line or break them into multiple lines, the AI intelligently detects the details and organizes
       everything into a structured format for you.
       <br /><br />
-      After the generation is finished, you will get the chance to readjust and edit the session before saving! 
+      After the generation is finished, you will get the chance to readjust and edit the session before
+      saving!
     </p>
   </header>
 
@@ -93,8 +94,6 @@
   <!-- Input Area -->
 
   <section class="input-area" aria-labelledby="input-area-label">
-
-
     <label for="primary-textarea" class="field-label"> Paste workout session </label>
 
     <Textarea
@@ -159,15 +158,13 @@
             {#await dataPromise}
               Creating session...
             {:then paragraphs}
-            {#if paragraphs == "limit"}
-              AI usage limit reached!
-
-            {:else if paragraphs == "fail"}
-              Generation failed!
-
-            {:else}
-              Session created!
-            {/if}
+              {#if paragraphs == 'limit'}
+                AI usage limit reached!
+              {:else if paragraphs == 'fail'}
+                Generation failed!
+              {:else}
+                Session created!
+              {/if}
             {/await}
           </Dialog.Title>
           <Dialog.Description>
@@ -175,22 +172,22 @@
               <Icon icon="svg-spinners:blocks-shuffle-3" height={50} class="m-4"></Icon>
               Hang on as our AI tool analyzes your session...
             {:then result}
-            {#if result == "fail"}
-              <ul>
-                <p>{"Try again later."}</p>
-              </ul>
-            {:else if result == "limit"}
-              <ul>
-                <p>{"Wait for token count to replenish."}</p>
-              </ul>
-            {:else}
-              <ul>
-                <p>{result}</p>
-              </ul>
-              <button type="button" class="continue-button" onclick={saveSession}
-                >Save session!</button
-              >
-            {/if}
+              {#if result == 'fail'}
+                <ul>
+                  <p>{'Try again later.'}</p>
+                </ul>
+              {:else if result == 'limit'}
+                <ul>
+                  <p>{'Wait for token count to replenish.'}</p>
+                </ul>
+              {:else}
+                <ul>
+                  <p>{result}</p>
+                </ul>
+                <button type="button" class="continue-button" onclick={saveSession}
+                  >Save session!</button
+                >
+              {/if}
             {/await}
           </Dialog.Description>
         </Dialog.Header>

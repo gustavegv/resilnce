@@ -2,7 +2,6 @@
   import '../../app.css';
 
   import { Button } from '$lib/components/ui/button';
-  import { Label } from '$lib/components/ui/label';
   import { Input } from '$lib/components/ui/input';
   import { Checkbox } from '$lib/components/ui/checkbox';
 
@@ -11,7 +10,6 @@
   import { user } from '$lib/stores/appState';
   import { get } from 'svelte/store';
 
-  import { signInOrSignUp } from '$lib/firebaseCreation';
   import Icon from '@iconify/svelte';
   import { PUBLIC_BACKEND_BASE_URL } from '$env/static/public';
   import { onMount } from 'svelte';

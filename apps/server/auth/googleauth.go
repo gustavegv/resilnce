@@ -108,7 +108,6 @@ func redirectTo(loc string, w http.ResponseWriter, r *http.Request) {
 	switch loc {
 	case "home":
 		directory = "/?sonner=loggedin"
-		// TODO: Switch back: "/?sonner=loggedin"
 
 	case "login":
 		directory = "/account"
@@ -171,5 +170,3 @@ func (s *Service) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }
-
-// TODO: Move function. Make it return only payload. Make it return err not bool

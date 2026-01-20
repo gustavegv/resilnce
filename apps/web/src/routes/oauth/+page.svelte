@@ -6,6 +6,7 @@
   import { user } from '$lib/stores/appState';
   import { PUBLIC_BACKEND_BASE_URL } from '$env/static/public';
   import { get } from 'svelte/store';
+  import { toast } from 'svelte-sonner';
 
   var loggedIn: boolean = $state(false);
 
@@ -39,7 +40,7 @@
       loggedIn = true;
     } else {
       console.error('Log in first');
-      // todo: Sonner? Set state to be logged out so you only see the login button?
+      toast.error('Log in first');
       user.set(null);
     }
   }

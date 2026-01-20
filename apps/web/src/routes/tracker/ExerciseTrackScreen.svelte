@@ -1,9 +1,22 @@
 <script lang="ts">
   import SetBlock from '../../components/SetBlock.svelte';
   import ConfirmSelection from '../../components/ConfirmSelection.svelte';
-  import { editExercise, type EditData } from '$lib/firebaseDataHandler';
   import { get } from 'svelte/store';
   import { user } from '$lib/stores/appState';
+
+  interface EditData {
+    user: string;
+    sesID: string;
+    exID: string;
+    oldName: string;
+    newName?: string;
+    newW?: number;
+    addedSets: number;
+  }
+
+  async function editExercise(data: EditData) {
+    // WIP implementation
+  }
 
   let {
     name = $bindable(),

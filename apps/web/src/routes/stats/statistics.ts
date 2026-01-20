@@ -1,5 +1,4 @@
 import type { ChartData } from '$lib/components/ui/chart/chart-line-default.svelte';
-import { fetchHistoricData, type Exercise, type Historic } from '$lib/firebaseDataHandler';
 import { get } from 'svelte/store';
 import { user } from '../account/user';
 
@@ -13,6 +12,11 @@ export function est1RM(weight: number, reps: number) {
   if (reps < 1) throw new Error('Reps must be at least 1');
   return weight * (1 + 0.0333 * reps);
 }
+
+/* 
+Commented out to remove old Firebase dependencies, but no timeplan of when to look at statistics again.
+
+
 
 export function historicTo1RM(d: Historic[]): ChartData[] {
   let newA: ChartData[] = [];
@@ -41,3 +45,4 @@ export async function calling(sesID: string): Promise<ChartData[]> {
 
   return chartData;
 }
+ */

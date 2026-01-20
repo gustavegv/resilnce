@@ -1,7 +1,6 @@
 <script lang="ts">
   import '../app.css';
   import { goto } from '$app/navigation';
-  import { checkActiveSession } from '$lib/firebaseDataHandler';
   import { onMount } from 'svelte';
   import { user } from '$lib/stores/appState';
   import { get } from 'svelte/store';
