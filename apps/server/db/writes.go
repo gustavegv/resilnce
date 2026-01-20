@@ -368,6 +368,7 @@ func (supa *SupabaseCFG) AddUser(userMail string, name string, ctx context.Conte
 	const query = `
 		insert into "User" (mail, name, signup_date)
 		values ($1, $2, NOW())
+		ON CONFLICT (mail) DO NOTHING;
 	`
 
 	_, err := supa.DB.Exec(ctx, query, userMail, name)

@@ -40,14 +40,14 @@ type Config struct {
 	PKCETTLSeconds  int // default 600
 }
 
-func (s *Service) UpsertUser(ctx context.Context, provider, providerID, email, name string) (userID string, err error) {
+func (s *Service) UpsertUser(ctx context.Context, provider, providerSID, email, name string) (userID string, err error) {
 
 	var data = sessions.SessionData{
 		Email: email,
 		Name:  name,
 	}
 
-	err = s.store().SaveSession(ctx, providerID, data, 120*24*time.Hour)
+	err = s.store().SaveSession(ctx, providerSID, data, 120*24*time.Hour)
 	if err != nil {
 		log.Println("Redis SaveSession failed (auth.go)", err)
 		return "", err
@@ -96,7 +96,7 @@ type Service struct {
 	appleVerifier  *oidc.IDTokenVerifier
 	appleOAuth     *oauth2.Config
 
-	redisStore *sessions.Store
+	RedisStore *sessions.Store
 
 	SBDB db.SupabaseCFG
 
@@ -177,7 +177,7 @@ func New(ctx context.Context, cfg Config) (*Service, error) {
 		appleOAuth:       appleOAuth,
 		stateCookieAttrs: cookieAttrs{Path: "/", HTTPOnly: true, SameSite: http.SameSiteNoneMode, Secure: cfg.SecureCookies, MaxAge: cfg.StateTTLSeconds},
 		pkceCookieAttrs:  cookieAttrs{Path: "/", HTTPOnly: true, SameSite: http.SameSiteNoneMode, Secure: cfg.SecureCookies, MaxAge: cfg.PKCETTLSeconds},
-		redisStore:       redisStore,
+		RedisStore:       redisStore,
 	}
 	return s, nil
 }
@@ -276,8 +276,8 @@ func GetBaseURL() string {
 }
 
 func (s *Service) store() *sessions.Store {
-	if s == nil || s.redisStore == nil {
+	if s == nil || s.RedisStore == nil {
 		panic("auth.Service.redisStore is nil; construct Service via auth.New")
 	}
-	return s.redisStore
+	return s.RedisStore
 }

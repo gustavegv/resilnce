@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/gustavegv/resilnce/apps/server/ai"
 	"github.com/gustavegv/resilnce/apps/server/auth"
 	"github.com/gustavegv/resilnce/apps/server/db"
 	"github.com/rs/cors"
@@ -41,7 +42,7 @@ func RoutingCreation() http.Handler {
 	mux.HandleFunc("/db/newSession", service.SBDB.MakeNewSession)
 
 	// Other
-	mux.HandleFunc("/ai/quick", db.AutoCreation)
+	mux.HandleFunc("/ai/quick", ai.AutoCreation(service.RedisStore))
 
 	originURL := trimURLSlash(siteDirectory)
 

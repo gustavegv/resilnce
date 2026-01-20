@@ -31,6 +31,7 @@
         break;
       case 'loggedin':
         toast.success('Log in successul!', { duration: 3000 });
+        break;
 
       case 'auth':
         toast.warning('Please log in first.', { duration: 4000 });

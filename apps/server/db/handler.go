@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gustavegv/resilnce/apps/server/ai"
 	scookie "github.com/gustavegv/resilnce/apps/server/scookies"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -20,6 +19,8 @@ type SupabaseCFG struct {
 }
 
 func getValidatedMail(w http.ResponseWriter, r *http.Request) string {
+
+	// todo, add redis validation, to check if mail expired, if so log out user
 	userMail := r.URL.Query().Get("mail")
 	_, userMail, _, success := scookie.ValidateSignedCookie(r)
 	if !success {
@@ -285,34 +286,4 @@ func (supa *SupabaseCFG) MakeNewSession(w http.ResponseWriter, r *http.Request) 
 	}
 
 	defer r.Body.Close()
-}
-
-func AutoCreation(w http.ResponseWriter, r *http.Request) {
-
-	userMail := getValidatedMail(w, r)
-	if userMail == "" {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-		return
-	}
-
-	var data struct {
-		UserInput        string `json:"userInput"`
-		PromptSelections []bool `json:"promptSelections"`
-	}
-
-	dec := json.NewDecoder(r.Body)
-	dec.DisallowUnknownFields()
-	if err := dec.Decode(&data); err != nil {
-		http.Error(w, "Invalid JSON: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	output, err := ai.GetQuickCreationData(data.PromptSelections, data.UserInput)
-	if err != nil {
-		http.Error(w, "Agent failure", http.StatusBadRequest)
-		return
-	}
-
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	_, _ = w.Write([]byte(output))
 }
