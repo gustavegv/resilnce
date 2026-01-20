@@ -11,6 +11,9 @@
   import { base, resolve } from '$app/paths';
   import SortableList from '../SortableList.svelte';
   import { CreateSession } from '../dbWrite';
+  import { page } from '$app/state';
+  import { toast } from 'svelte-sonner';
+  import { getMe } from '../../me';
 
   let sessionName = $state('');
   let newExName = $state('');
@@ -21,10 +24,20 @@
 
   let sessionExercisesList: SortableList;
 
+  let exercises = $state<ExerciseDataPackaged[]>([]);
+  let hasFlag = $derived(page.url.searchParams.get('quickload') === '1');
+  const QUICKLOAD_STORAGE_KEY = 'workoutPayload';
+
   onMount(async () => {
-    const value = get(user);
-    if (!value?.name) {
-      goto(resolve(`/`));
+    if (await !checkUserStatus()) {
+      goHomeWithSonner('auth');
+    }
+    if (hasFlag) {
+      const raw = sessionStorage.getItem(QUICKLOAD_STORAGE_KEY);
+      exercises = raw ? JSON.parse(raw) : [];
+
+      sessionExercisesList.fillFromArray(exercises);
+      toast.success(`Quick filled session!`, { duration: 3000 });
     }
   });
   /*  
@@ -32,20 +45,43 @@
       HELPER FUNCTIONS
       ################ 
   */
-  function checkIfInputFieldsFilled(): boolean {
+
+  function removeQuickLoadFromStore() {
+    sessionStorage.removeItem(QUICKLOAD_STORAGE_KEY); // ta bort efter användning
+  }
+
+  function goHomeWithSonner(value: string) {
+    console.log('Going home...');
+    goto(`${resolve('/')}?sonner=${value}`);
+  }
+
+  async function checkUserStatus(): Promise<boolean> {
+    const value = get(user);
+    if (value?.name || (await getMe())) {
+      return true;
+    } else {
+      console.error('User not logged in.');
+      return false;
+    }
+  }
+
+  function checkIfInputFieldsFilled(safetyCheck: boolean): boolean {
     if (!newExName || !newExSetCount || !newExWeight) {
-      console.error(
-        'One or multiple input fields not filled:',
-        !newExName,
-        !newExSetCount,
-        !newExWeight
-      );
+      if (!safetyCheck) {
+        console.error(
+          'One or multiple input fields not filled:',
+          !newExName,
+          !newExSetCount,
+          !newExWeight
+        );
+        toast.error('One or multiple input fields not filled');
+      }
       return false;
     }
     return true;
   }
 
-  function checkInputLengthExceedsMax(): boolean {
+  function checkInputLengthExceedsMax(safetyCheck: boolean): boolean {
     const maxSetsAllowed = 20;
     const maxWeightAllowed = 9999;
     const maxExerciseNameAllowed = 100;
@@ -57,14 +93,18 @@
       newExName.length > maxExerciseNameAllowed ||
       sessionExercisesList.extractData().length > maxExercisesAllowed
     ) {
+      if (safetyCheck) {
+        return false;
+      }
       console.error('One or multiple input fields exceed max limits');
+      toast.error('One or multiple input fields exceed max limits');
       return false;
     }
     return true;
   }
 
-  function vaidateInputFields(): boolean {
-    if (!checkIfInputFieldsFilled() || !checkInputLengthExceedsMax()) {
+  function vaidateInputFields(safetyCheck: boolean): boolean {
+    if (!checkIfInputFieldsFilled(safetyCheck) || !checkInputLengthExceedsMax(safetyCheck)) {
       return false;
     }
 
@@ -90,21 +130,12 @@
 
   function validateSessionData(addedExercisesList: ExerciseDataPackaged[]): boolean {
     if (addedExercisesList.length == 0) {
-      alert('No exercises added!');
+      toast.error('No exercises added!');
       return false;
     }
 
     if (sessionName == '') {
-      alert('No session name added!');
-      return false;
-    }
-    return true;
-  }
-
-  function clientSideAuthorizationCheck(): boolean {
-    const userStatus = get(user);
-    if (!userStatus?.name) {
-      console.error('Not logged in. Please update authorization store.');
+      toast.error('No session name added!');
       return false;
     }
     return true;
@@ -116,8 +147,7 @@
       ################ 
   */
   function addExercise() {
-    if (!vaidateInputFields()) {
-      alert('Input(s) empty or exceeds max limit.');
+    if (!vaidateInputFields(false)) {
       return;
     }
 
@@ -131,7 +161,7 @@
     let addedExercisesList: ExerciseDataPackaged[] = sessionExercisesList.extractData();
 
     // if input field filled but not pushed, adds this
-    if (vaidateInputFields()) {
+    if (vaidateInputFields(true)) {
       addExercise();
     }
 
@@ -139,16 +169,16 @@
       return;
     }
 
-    if (!clientSideAuthorizationCheck()) {
+    if (await !checkUserStatus()) {
       return;
     }
 
     const responseStatus: boolean = await CreateSession(sessionName, addedExercisesList);
     if (responseStatus) {
-      alert('Session saved succesfully!'); // add sonner after redirect instead of alert
-      goto(resolve(`/`));
+      removeQuickLoadFromStore();
+      goHomeWithSonner('saved');
     } else {
-      alert('Error saving');
+      toast.error('Error saving, please try again.');
     }
   }
 

@@ -6,8 +6,8 @@
   import { goto } from '$app/navigation';
   import Icon from '@iconify/svelte';
   import { toast } from 'svelte-sonner';
-  import { promptAutoChoose, promptRestart, promptSpell, promptStandard } from './prompt';
-  import { base } from '$app/paths';
+  import { resolve } from '$app/paths';
+  import { QuickGeneration } from '../dbWrite';
 
   var sessionTitle = $state<string>('');
   var userText = $state<string>('');
@@ -16,59 +16,19 @@
   let cbSpellcheck = $state(false);
   let cbRestart = $state(false);
   let cbAutoChoose = $state(false);
+  let cbStrength = $state(false);
 
   let collapsibleOpen = $state(false);
 
-  let dataPromise = $state<Promise<any> | null>(null);
+  let dataPromise = $state<Promise<string> | null>(null);
 
-  function getCheckboxPrompt(): string {
-    if (!cbSpellcheck && !cbRestart && !cbAutoChoose) {
-      return '';
-    }
-    const advancedPrompt = `
-        {
-        ${cbSpellcheck ? promptSpell : ''} \n
-        ${cbRestart ? promptRestart : ''} \n
-        ${cbAutoChoose ? promptAutoChoose : ''} \n
-        }
-        `;
-    return advancedPrompt;
-  }
+  async function quickfillAPICall(prompt: string) {
+    const choices: boolean[] = [cbSpellcheck, cbRestart, cbAutoChoose, cbStrength];
 
-  function getDataPrompt(): string {
-    const userData = `
-      # HERE IS THE DATA YOU WILL PROCESS AND TRANSFORM: 
-      { 
-      session name: '${sessionTitle}'; 
-      unformatted text workout session input: '${userText}';
-      }
-    `;
-    if (userData.length > 500) {
-      return '### USER INPUT INVALID. RETURN AN ERROR';
-    }
-    return userData;
-  }
-
-  function delay(ms: number) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  function quickfillAPICall(prompt: string) {
-    dataPromise = (async () => {
-      await delay(300); // ← simulate slow API
-      const res = await fetch('https://baconipsum.com/api/?type=meat-and-filler&paras=3');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.json();
-    })();
-  }
-
-  async function sendValues() {
-    const userInput = getDataPrompt();
-    const advancedPrompt = getCheckboxPrompt();
-    const finalPrompt = promptStandard + '\n' + advancedPrompt + '\n' + userInput;
-    console.log(finalPrompt);
-
-    quickfillAPICall(finalPrompt);
+    // load
+    dataPromise = QuickGeneration(prompt, choices);
+    // finish loading
+    console.log(await dataPromise);
   }
 
   function validateForm(): true | string {
@@ -86,12 +46,23 @@
       return;
     } else {
       collapsibleOpen = true;
-      sendValues();
+      quickfillAPICall(userText);
     }
   }
 
-  function saveSession() {
-    goto(`${base}/?sonner=saved`);
+  async function saveSession() {
+    const jsonData = await dataPromise;
+
+    if (jsonData == null) {
+      toast.error('Data creation error. Try again')
+      console.error('JSON Data not loaded properly.');
+      return;
+    }
+    const STORAGE_KEY = 'workoutPayload';
+    sessionStorage.setItem(STORAGE_KEY, jsonData);
+    console.log('Storing...');
+
+    goto(resolve('/create/manual'), { replaceState: true, state: { quickload: '1' } });
   }
 </script>
 
@@ -170,6 +141,11 @@
         <label class="flex items-center gap-2">
           <Checkbox bind:checked={cbAutoChoose} />
           <span>Auto-choose reps and weights</span>
+        </label>
+
+        <label class="flex items-center gap-2">
+          <Checkbox bind:checked={cbStrength} />
+          <span>Prioritize strength for compound lifts</span>
         </label>
       </Collapsible.Content>
     </Collapsible.Root>

@@ -58,6 +58,12 @@
     exerciseList.push(newEx);
   }
 
+  export function fillFromArray(data: ExerciseDataPackaged[]) {
+    data.forEach((exercise) => {
+      pushItemToList(exercise);
+    });
+  }
+
   function removeFromStack(name: string) {
     const index = exerciseList.findIndex((item) => item.name === name);
     if (index !== -1) exerciseList.splice(index, 1);

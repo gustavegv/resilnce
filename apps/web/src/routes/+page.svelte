@@ -11,9 +11,9 @@
   import { resolve } from '$app/paths';
   import { toast } from 'svelte-sonner';
   import { afterNavigate } from '$app/navigation';
-  import { PUBLIC_BACKEND_BASE_URL } from '$env/static/public';
   import { greet } from './greeting';
   import { CheckActiveSession } from './tracker/dbFetches';
+  import { getMe } from './me';
 
   const linkBase = import.meta.env.BASE_URL;
 
@@ -32,6 +32,8 @@
       case 'loggedin':
         toast.success('Log in successul!', { duration: 3000 });
 
+      case 'auth':
+        toast.warning('Please log in first.', { duration: 4000 });
         break;
       default:
         toast.warning(`${sonner}`, { duration: 4000 });
@@ -43,28 +45,6 @@
   let existingID = $state('');
   let greetMessage = $state('');
   let loading = $state(true);
-
-  function backendAdress(dir: string): string {
-    const baseURL: string = PUBLIC_BACKEND_BASE_URL;
-    return baseURL + dir;
-  }
-
-  async function getMe(): Promise<boolean> {
-    const res = await fetch(backendAdress('/api/me'), {
-      method: 'GET',
-      credentials: 'include',
-    });
-    if (res.ok) {
-      const data = await res.json();
-      console.log(data);
-      user.set(data);
-      return true;
-    } else {
-      user.set(null);
-      console.error('User not logged in.');
-      return false;
-    }
-  }
 
   onMount(async () => {
     const value = get(user);

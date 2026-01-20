@@ -6,8 +6,8 @@ function address(dir: string): string {
   return baseURL + dir;
 }
 
-async function postDB(dir: string, data: any): Promise<boolean> {
-  const res = await fetch(address(`/db/` + dir), {
+async function postDB(dir: string, data: any): Promise<any> {
+  const res = await fetch(address(dir), {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -21,7 +21,7 @@ async function postDB(dir: string, data: any): Promise<boolean> {
     console.error('Response body:', text);
     return false;
   } else {
-    return true;
+    return res;
   }
 }
 
@@ -85,5 +85,27 @@ export async function CreateSession(
     exI: ExpandedExInfo,
   };
 
-  return await postDB(`newSession`, payload);
+  const res = await postDB(`/db/newSession`, payload);
+  if (!res) {
+    return false;
+  }
+  return true;
+}
+
+export async function QuickGeneration(
+  userInput: string,
+  promptSelections: boolean[]
+): Promise<string> {
+  const payload: { userInput: string; promptSelections: boolean[] } = {
+    userInput: userInput,
+    promptSelections: promptSelections,
+  };
+
+  const res = await postDB(`/ai/quick`, payload);
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  return await res.text();
 }

@@ -31,7 +31,6 @@ func RoutingCreation() http.Handler {
 	mux.HandleFunc("/oauth/google/callback", service.CallbackGoogle)
 
 	// DB (supabase)
-
 	mux.HandleFunc("/db/mySessions", service.SBDB.GetUserSessions)
 	mux.HandleFunc("/db/getExercises", service.SBDB.GetSessionExercises)
 	mux.HandleFunc("/db/active", service.SBDB.GetActiveSession)
@@ -41,7 +40,8 @@ func RoutingCreation() http.Handler {
 	mux.HandleFunc("/db/setActive", service.SBDB.CallSetActiveSession)
 	mux.HandleFunc("/db/newSession", service.SBDB.MakeNewSession)
 
-	// -
+	// Other
+	mux.HandleFunc("/ai/quick", db.AutoCreation)
 
 	originURL := trimURLSlash(siteDirectory)
 
