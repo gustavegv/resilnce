@@ -107,16 +107,19 @@ func (supa *SupabaseCFG) GetActiveSession(w http.ResponseWriter, r *http.Request
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
 
-	active, err := supa.CheckIfActive(userMail, ctx)
+	activeSesName, activeSesID, err := supa.CheckIfActive(userMail, ctx)
 	if err != nil {
+		println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	jsonPayload := struct {
-		ActiveSession string
+		ActiveSession     string
+		ActiveSessionName string
 	}{
-		ActiveSession: active,
+		ActiveSession:     activeSesID,
+		ActiveSessionName: activeSesName,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

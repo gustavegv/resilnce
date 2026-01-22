@@ -98,19 +98,25 @@ func (supa *SupabaseCFG) SessionExercises(userMail string, sesID int, ctx contex
 	return exs, nil
 }
 
-func (supa *SupabaseCFG) CheckIfActive(userMail string, ctx context.Context) (string, error) {
+func (supa *SupabaseCFG) CheckIfActive(userMail string, ctx context.Context) (string, string, error) {
 	const query = `
-	select active_session from "User"
-	where mail = $1
-`
-	var activeSession sql.NullString
-	if err := supa.DB.QueryRow(ctx, query, userMail).Scan(&activeSession); err != nil {
-		return "", fmt.Errorf("CheckIfActive scan: %w", err)
+	SELECT s.ses_name, u.active_session
+	FROM "User" u
+	LEFT JOIN "Session" s
+	ON s.ses_id::text = u.active_session
+	WHERE u.mail = $1;
+	`
+	var sesName sql.NullString
+	var sesID sql.NullString
+
+	err := supa.DB.QueryRow(ctx, query, userMail).Scan(&sesName, &sesID)
+	if err != nil {
+		return "", "", fmt.Errorf("CheckIfActive scan: %w", err)
 	}
-	if activeSession.Valid {
-		return activeSession.String, nil
+	if sesID.Valid {
+		return sesName.String, sesID.String, nil
 	}
-	return "", nil
+	return "", "", nil // no active session
 }
 
 func (supa *SupabaseCFG) CheckFinishedExercises(userMail string, sesID int, ctx context.Context) ([]int, error) {

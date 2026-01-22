@@ -87,12 +87,12 @@ export async function GetSessions(): Promise<SessionMetaData[]> {
   return b;
 }
 
-export async function CheckActiveSession(): Promise<string> {
+export async function CheckActiveSession(): Promise<[string, string]> {
   const data = await fetchDB(`active`);
   if (!data.ok) {
     console.log(data);
   }
-  return data.ActiveSession;
+  return [data.ActiveSession, data.ActiveSessionName];
 }
 
 export async function GetSessionExercises(sesID: number): Promise<ExerciseInfo[]> {

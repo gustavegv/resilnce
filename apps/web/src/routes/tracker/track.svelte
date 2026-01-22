@@ -47,14 +47,6 @@
   const exWeight: number = $derived(currentExercise?.currentProgress.weightPerSet[0] ?? 0);
   const finished: boolean = $derived(currentExercise?.finished ?? false);
 
-  const userID = 'gustavengvall@yahoo.se';
-
-  /**
-   * dbFetches bör returna rätt typer.
-   * Plug and play?
-   *
-   */
-
   onMount(async () => {
     try {
       exercises = await GetSessionExercises(parseInt(sesID));
@@ -173,11 +165,10 @@
   }
 
   async function quitSession() {
-    // todo: Nånstans här. Quit måste resetta redan sparade ex's, så att dom inte står som klarade när man startar om.
     if (
       confirm('Are you sure you want to quit the session?\n(All confirmed sets are already saved)')
     ) {
-      await SetActiveSession('-1');
+      await CompleteSession(sesID);
       goto(resolve('/'));
     } else {
       console.log('Quit adverted.');

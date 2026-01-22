@@ -43,6 +43,7 @@
 
   let existingSession = $state(false);
   let existingID = $state('');
+  let existingName = $state('');
   let greetMessage = $state('');
   let loading = $state(true);
 
@@ -71,16 +72,18 @@
       return;
     }
 
-    const res = await CheckActiveSession();
-    console.log('Active session:', res);
-    var actv = res != '';
+    const [activeID, activeName] = await CheckActiveSession();
+    console.log('Active session:', activeID, activeName);
+
+    var actv = activeID != '';
 
     if (actv != null) {
       existingSession = actv;
       console.log('exists', existingSession);
 
       if (existingSession) {
-        existingID = res;
+        existingID = activeID;
+        existingName = activeName;
       }
     }
     greetMessage = greet(name, existingSession);
@@ -107,7 +110,7 @@
               onclick={() => goto(resolve(`/tracker/${existingID}`))}
             >
               <g>Continue session:</g>
-              <i class="font-regular">{existingID}</i>
+              <i class="font-regular">{existingName}</i>
             </button>
           {/if}
 
