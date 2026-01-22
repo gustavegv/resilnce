@@ -1,7 +1,7 @@
 import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import path from 'path';
-
+const dev = process.env.NODE_ENV === 'development';
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
   // Consult https://svelte.dev/docs/kit/integrations
@@ -23,7 +23,7 @@ const config = {
       ui: path.resolve('src/lib/components/ui'),
     },
     paths: {
-      base: process.argv.includes('dev') ? '' : process.env.BASE_PATH,
+      base: dev ? '' : '/resilnce',
     },
     prerender: {
       // onError 'continue' will skip over any 404s instead of crashing

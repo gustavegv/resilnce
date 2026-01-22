@@ -11,12 +11,7 @@ jobs:
     permissions:
       contents: read
     env:
-      PUBLIC_FIREBASE_API_KEY: ${{ secrets.PUBLIC_FIREBASE_API_KEY }}
-      PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.PUBLIC_FIREBASE_AUTH_DOMAIN }}
-      PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.PUBLIC_FIREBASE_PROJECT_ID }}
-      PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.PUBLIC_FIREBASE_STORAGE_BUCKET }}
-      PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-      PUBLIC_FIREBASE_APP_ID: ${{ secrets.PUBLIC_FIREBASE_APP_ID }}
+      PUBLIC_BACKEND_BASE_URL: ${{ secrets.PUBLIC_BACKEND_BASE_URL }}
       # ensure dev deps (vite) are installed
       npm_config_production: "false"
 
@@ -35,9 +30,9 @@ jobs:
         working-directory: apps/web
         run: npm ci
 
-      - name: Check Firebase env vars exist
+      - name: Check .env vars exist
         run: |
-          for v in PUBLIC_FIREBASE_API_KEY PUBLIC_FIREBASE_AUTH_DOMAIN PUBLIC_FIREBASE_PROJECT_ID PUBLIC_FIREBASE_STORAGE_BUCKET PUBLIC_FIREBASE_MESSAGING_SENDER_ID PUBLIC_FIREBASE_APP_ID; do
+          for v in PUBLIC_BACKEND_BASE_URL; do
             echo "$v=${!v:+__SET__}"
           done
 

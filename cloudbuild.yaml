@@ -4,6 +4,9 @@ substitutions:
   _SERVICE: resilnce
   _IMAGE_NAME: server
 
+options:
+  logging: CLOUD_LOGGING_ONLY
+
 steps:
   # build container from monorepo root context
   - name: 'gcr.io/cloud-builders/docker'
