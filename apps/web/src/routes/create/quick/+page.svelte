@@ -60,7 +60,7 @@
     sessionStorage.setItem(STORAGE_KEY, jsonData);
     console.log('Storing...');
 
-    goto(resolve('/create/manual'), { replaceState: true, state: { quickload: '1' } });
+    goto(`${resolve('/create/manual')}?quickload=1`);
   }
 </script>
 
@@ -182,10 +182,10 @@
                 </ul>
               {:else}
                 <ul>
-                  <p>{result}</p>
+                  <p>{'Generation successful!'}</p>
                 </ul>
                 <button type="button" class="continue-button" onclick={saveSession}
-                  >Save session!</button
+                  >Review generated session!</button
                 >
               {/if}
             {/await}

@@ -172,7 +172,7 @@
     if (await !checkUserStatus()) {
       return;
     }
-    
+
     const responseStatus: boolean = await CreateSession(sessionName, addedExercisesList);
     if (responseStatus) {
       removeQuickLoadFromStore();
