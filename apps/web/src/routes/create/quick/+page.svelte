@@ -6,74 +6,32 @@
   import { goto } from '$app/navigation';
   import Icon from '@iconify/svelte';
   import { toast } from 'svelte-sonner';
-  import { promptAutoChoose, promptRestart, promptSpell, promptStandard } from './prompt';
-  import { base } from '$app/paths';
+  import { resolve } from '$app/paths';
+  import { QuickGeneration } from '../dbWrite';
 
-  var sessionTitle = $state<string>('');
   var userText = $state<string>('');
   var isAdditionalInfoEnabled = $state<boolean>(false);
 
   let cbSpellcheck = $state(false);
   let cbRestart = $state(false);
   let cbAutoChoose = $state(false);
+  let cbStrength = $state(false);
 
   let collapsibleOpen = $state(false);
 
-  let dataPromise = $state<Promise<any> | null>(null);
+  let dataPromise = $state<Promise<string> | null>(null);
 
-  function getCheckboxPrompt(): string {
-    if (!cbSpellcheck && !cbRestart && !cbAutoChoose) {
-      return '';
-    }
-    const advancedPrompt = `
-        {
-        ${cbSpellcheck ? promptSpell : ''} \n
-        ${cbRestart ? promptRestart : ''} \n
-        ${cbAutoChoose ? promptAutoChoose : ''} \n
-        }
-        `;
-    return advancedPrompt;
-  }
+  async function quickfillAPICall(prompt: string) {
+    const choices: boolean[] = [cbSpellcheck, cbRestart, cbAutoChoose, cbStrength];
 
-  function getDataPrompt(): string {
-    const userData = `
-      # HERE IS THE DATA YOU WILL PROCESS AND TRANSFORM: 
-      { 
-      session name: '${sessionTitle}'; 
-      unformatted text workout session input: '${userText}';
-      }
-    `;
-    if (userData.length > 500) {
-      return '### USER INPUT INVALID. RETURN AN ERROR';
-    }
-    return userData;
-  }
-
-  function delay(ms: number) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  function quickfillAPICall(prompt: string) {
-    dataPromise = (async () => {
-      await delay(300); // ← simulate slow API
-      const res = await fetch('https://baconipsum.com/api/?type=meat-and-filler&paras=3');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.json();
-    })();
-  }
-
-  async function sendValues() {
-    const userInput = getDataPrompt();
-    const advancedPrompt = getCheckboxPrompt();
-    const finalPrompt = promptStandard + '\n' + advancedPrompt + '\n' + userInput;
-    console.log(finalPrompt);
-
-    quickfillAPICall(finalPrompt);
+    // load
+    dataPromise = QuickGeneration(prompt, choices);
+    // finish loading
+    console.log(await dataPromise);
   }
 
   function validateForm(): true | string {
     if (userText.trim().length < 10) return 'Please enter at least 10 characters of data.';
-    if (sessionTitle.trim().length < 2) return 'Title must be at least 2 characters.';
     return true;
   }
 
@@ -86,12 +44,23 @@
       return;
     } else {
       collapsibleOpen = true;
-      sendValues();
+      quickfillAPICall(userText);
     }
   }
 
-  function saveSession() {
-    goto(`${base}/?sonner=saved`);
+  async function saveSession() {
+    const jsonData = await dataPromise;
+
+    if (jsonData == null) {
+      toast.error('Data creation error. Try again');
+      console.error('JSON Data not loaded properly.');
+      return;
+    }
+    const STORAGE_KEY = 'workoutPayload';
+    sessionStorage.setItem(STORAGE_KEY, jsonData);
+    console.log('Storing...');
+
+    goto(`${resolve('/create/manual')}?quickload=1`);
   }
 </script>
 
@@ -102,12 +71,15 @@
     <h1 class="mb-2 text-3xl leading-snug font-bold">Quick Fill</h1>
     <p class="description">
       This feature allows you to paste or upload your workout session notes in any
-      format—messy,structured, or somewhere in between—and automatically transforms them into a
+      format-messy,structured, or somewhere in between, and automatically transforms them into a
       clean, standardized <b>reslince</b> session.
       <br /><br />
       No need to worry about how your notes are written. Whether you list exercises, weights, and reps
       on one line or break them into multiple lines, the AI intelligently detects the details and organizes
       everything into a structured format for you.
+      <br /><br />
+      After the generation is finished, you will get the chance to readjust and edit the session before
+      saving!
     </p>
   </header>
 
@@ -122,15 +94,6 @@
   <!-- Input Area -->
 
   <section class="input-area" aria-labelledby="input-area-label">
-    <label for="title-textarea" class="field-label"> Session title </label>
-
-    <Textarea
-      placeholder="e.g Push Day"
-      oninput={(e) => (sessionTitle = (e.target as HTMLTextAreaElement).value)}
-      id="title-textarea"
-      maxlength={50}
-    />
-
     <label for="primary-textarea" class="field-label"> Paste workout session </label>
 
     <Textarea
@@ -171,6 +134,11 @@
           <Checkbox bind:checked={cbAutoChoose} />
           <span>Auto-choose reps and weights</span>
         </label>
+
+        <label class="flex items-center gap-2">
+          <Checkbox bind:checked={cbStrength} />
+          <span>Prioritize strength for compound lifts</span>
+        </label>
       </Collapsible.Content>
     </Collapsible.Root>
 
@@ -190,7 +158,13 @@
             {#await dataPromise}
               Creating session...
             {:then paragraphs}
-              Session created!
+              {#if paragraphs == 'limit'}
+                AI usage limit reached!
+              {:else if paragraphs == 'fail'}
+                Generation failed!
+              {:else}
+                Session created!
+              {/if}
             {/await}
           </Dialog.Title>
           <Dialog.Description>
@@ -198,12 +172,22 @@
               <Icon icon="svg-spinners:blocks-shuffle-3" height={50} class="m-4"></Icon>
               Hang on as our AI tool analyzes your session...
             {:then result}
-              <ul>
-                <p>{result}</p>
-              </ul>
-              <button type="button" class="continue-button" onclick={saveSession}
-                >Save session!</button
-              >
+              {#if result == 'fail'}
+                <ul>
+                  <p>{'Try again later.'}</p>
+                </ul>
+              {:else if result == 'limit'}
+                <ul>
+                  <p>{'Wait for token count to replenish.'}</p>
+                </ul>
+              {:else}
+                <ul>
+                  <p>{'Generation successful!'}</p>
+                </ul>
+                <button type="button" class="continue-button" onclick={saveSession}
+                  >Review generated session!</button
+                >
+              {/if}
             {/await}
           </Dialog.Description>
         </Dialog.Header>

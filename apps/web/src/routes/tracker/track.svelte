@@ -1,20 +1,24 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
-  import { getOrderedExercises, saveRecordedLift } from '$lib/firebaseDataHandler';
-  import { setActivityStatus, loadFinishedExercises } from '$lib/firebaseCreation';
-  import type { ExerciseInfo } from '$lib/firebaseCreation';
 
   import '../../app.css';
   import { goto } from '$app/navigation';
   import Icon from '@iconify/svelte';
   import ExerciseTrackScreen from './ExerciseTrackScreen.svelte';
   import LoadingSkeleton from './LoadingSkeleton.svelte';
-  import { get } from 'svelte/store';
-  import { user } from '../account/user';
   import * as Card from '$lib/components/ui/card/';
   import FinishBlob from '../../components/FinishBlob.svelte';
   import { resolve } from '$app/paths';
+
+  import {
+    CompleteSession,
+    GetFinishedExercises,
+    GetSessionExercises,
+    SendUpdate,
+    SetActiveSession,
+    type ExerciseInfo,
+  } from './dbFetches';
 
   // Exercise ID som blir tilldelad när man callar komponenten:
   //   Exempel:  <Track sesID="push" />
@@ -38,25 +42,18 @@
   );
 
   const exName: string = $derived(currentExercise?.name ?? '');
-  const exID: string = $derived(currentExercise?.id ?? '');
+  const exID: number = $derived(currentExercise?.id ?? -1);
   const repArray: number[] = $derived(currentExercise?.currentProgress.repsPerSet ?? []);
   const exWeight: number = $derived(currentExercise?.currentProgress.weightPerSet[0] ?? 0);
   const finished: boolean = $derived(currentExercise?.finished ?? false);
 
-  const userID = $derived(get(user));
-
   onMount(async () => {
-    if (!userID) {
-      goto(resolve(`/account`));
-      return;
-    }
     try {
-      exercises = await getOrderedExercises(userID, sesID);
-      console.log('\n\nSesID:', sesID);
-
-      await loadUnfinishedSession();
+      exercises = await GetSessionExercises(parseInt(sesID));
+      await SetActiveSession(sesID);
     } catch (e) {
       error = (e as Error).message;
+      console.error(error);
     } finally {
       loading = false;
     }
@@ -70,7 +67,7 @@
 
   //Functions
 
-  function handleCountChange({ id, count }: { id: number; count: number }) {
+  function handleRepCountIncrementation({ id, count }: { id: number; count: number }) {
     if (currentExercise) {
       currentExercise.currentProgress.repsPerSet[id - 1] = count;
     }
@@ -89,52 +86,59 @@
     }
   }
 
-  async function handleSubmit() {
+  function checkRepThresholdMet(r: number[], threshold: number): boolean {
+    if (r.length === 0) return false;
+    const t = r.reduce((acc, c) => acc + c, 0) / r.length;
+    return t > threshold ? true : false;
+  }
+
+  function packageUpdatedProgress() {
     if (currentExercise) {
       const finalReps = currentExercise.currentProgress.repsPerSet;
-      await saveRecordedLift(
-        userID ?? 'error',
-        sesID,
-        finalReps,
-        exWeight,
-        currentExercise.id ?? 'error'
-      );
+      let finalWeight: number = exWeight;
+      const threshold = currentExercise.repThreshold ?? 12;
+
+      var packagedReps: number[] = finalReps.slice(); // kopiera array
+
+      if (checkRepThresholdMet(finalReps, threshold)) {
+        const baseRep = Math.floor(threshold / 1.7);
+        packagedReps.fill(baseRep, 0, finalReps.length);
+        finalWeight += currentExercise.autoIncrease ?? 2.5;
+      }
+
+      var packagedWeight: number[] = new Array(packagedReps.length);
+      packagedWeight.fill(finalWeight, 0, packagedReps.length);
+
+      const updateInfo = {
+        reps: packagedReps,
+        weights: packagedWeight,
+        id: String(currentExercise.id ?? -1),
+      };
+      return updateInfo;
+    }
+    return null;
+  }
+
+  async function submitExercise() {
+    const savedProgress = packageUpdatedProgress();
+    if (savedProgress == null) {
+      console.error('Updated info packaging error');
+      return;
     }
 
-    exercises[currentExerciseIndex].finished = true;
+    SendUpdate(savedProgress, sesID);
 
+    exercises[currentExerciseIndex].finished = true;
     flashLoadingScreen();
 
     if (checkAllFinished()) {
       allFinished = true;
-      await setActivityStatus(userID ?? 'error', sesID, false, []);
+      await CompleteSession(sesID);
+
       console.log('Workout finished, active set to false');
     } else {
-      setUnfinishedSession();
       setTimeout(loadNextExercise, 100);
     }
-  }
-
-  async function setUnfinishedSession() {
-    const fin = getFinished();
-    console.log('Finished so far:', fin);
-    await setActivityStatus(userID ?? 'error', sesID, true, fin);
-  }
-
-  async function loadUnfinishedSession() {
-    const info = await loadFinishedExercises(userID ?? 'error', sesID);
-    let arrFin: number[] = [];
-    if (info.unfinished) {
-      const fins = info.finishedIDXS;
-
-      fins.forEach((fin) => {
-        exercises[fin].finished = true;
-        console.log(fin, 'is finished already!');
-      });
-      arrFin = fins;
-    }
-
-    await setActivityStatus(userID ?? 'error', sesID, true, arrFin);
   }
 
   function checkAllFinished(): boolean {
@@ -143,17 +147,6 @@
     exercises.forEach((ex) => {
       if (ex.finished == undefined || ex.finished == false) {
         finished = false;
-      }
-    });
-    return finished;
-  }
-
-  function getFinished(): number[] {
-    let finished: number[] = [];
-
-    exercises.forEach((ex, index) => {
-      if (ex.finished == true) {
-        finished = [...finished, index];
       }
     });
     return finished;
@@ -171,12 +164,12 @@
     }
   }
 
-  function quitSession() {
+  async function quitSession() {
     if (
       confirm('Are you sure you want to quit the session?\n(All confirmed sets are already saved)')
     ) {
-      setActivityStatus(userID ?? 'error', sesID, false);
-      goto(resolve(`/`));
+      await CompleteSession(sesID);
+      goto(resolve('/'));
     } else {
       console.log('Quit adverted.');
     }
@@ -213,10 +206,9 @@
       weight={exWeight}
       reps={repArray}
       finished={true}
-      {exID}
       exIndex={currentExerciseIndex}
-      onCount={handleCountChange}
-      onSubmit={handleSubmit}
+      onCount={handleRepCountIncrementation}
+      onSubmit={submitExercise}
       onCancel={exitEditMode}
       edit={true}
       {sesID}
@@ -237,8 +229,8 @@
       reps={repArray}
       {finished}
       exIndex={currentExerciseIndex}
-      onCount={handleCountChange}
-      onSubmit={handleSubmit}
+      onCount={handleRepCountIncrementation}
+      onSubmit={submitExercise}
       {sesID}
     />
   {/if}

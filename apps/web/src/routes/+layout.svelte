@@ -1,7 +1,6 @@
 <script lang="ts">
   import '../app.css';
   import { page } from '$app/state';
-  import Logo from '../components/icons/Logo.svelte';
 
   import CustomHeader from '../components/CustomHeader.svelte';
   import { goto } from '$app/navigation';

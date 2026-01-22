@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { ExerciseInfo } from '$lib/firebaseCreation';
   import Icon from '@iconify/svelte';
+  import type { ExerciseInfo } from '../routes/tracker/dbFetches';
 
   let {
     exercises,

@@ -1,153 +1,249 @@
 <script lang="ts">
   import '../../../app.css';
-  import Icon from '@iconify/svelte';
-  import type { ExerciseInfo, ExInfoPackage } from '$lib/firebaseCreation';
-  import { betterAdd } from '$lib/firebaseCreation';
+  import type { ExerciseDataPackaged } from '../dbWrite';
   import InputField from '../../../components/InputField.svelte';
   import { goto } from '$app/navigation';
-  import SetBlock from '../../../components/SetBlock.svelte';
   import SetAutoIncrease from '../../../components/SetAutoIncrease.svelte';
-  import { onDestroy, onMount } from 'svelte';
-  import { user } from '../../account/user';
+  import { onMount } from 'svelte';
+  import { user } from '$lib/stores/appState';
+
   import { get } from 'svelte/store';
-  import { base } from '$app/paths';
+  import { base, resolve } from '$app/paths';
   import SortableList from '../SortableList.svelte';
+  import { CreateSession } from '../dbWrite';
+  import { page } from '$app/state';
+  import { toast } from 'svelte-sonner';
+  import { getMe } from '../../me';
 
-  type SessionInfo = {
-    name: string;
-    exercises: ExInfoPackage[];
-  };
+  let sessionName = $state('');
+  let newExName = $state('');
+  let newExSetCount: string = $state('');
+  let newExWeight: string = $state('');
+  let newExAutoIncAmount: number = $state(2.5);
+  let newExRepThreshold: number = $state(12);
 
-  const dummy1: ExInfoPackage = {
-    name: 'Freelake',
-    weight: 30,
-    sets: 4,
-  };
-  const dummy2: ExInfoPackage = {
-    name: 'Souvlaki',
-    weight: 30,
-    sets: 4,
-  };
+  let sessionExercisesList: SortableList;
 
-  let currentlyAdded: ExInfoPackage[] = $state([]);
-
-  let seshName = $state('');
-  let newName = $state('');
-  let newSets: string = $state('');
-  let newWeight: string = $state('');
-  let newAutoInc: number = $state(2.5);
-  let newRepThreshold: number = $state(12);
+  let exercises = $state<ExerciseDataPackaged[]>([]);
+  let hasFlag = $derived(page.url.searchParams.get('quickload') === '1');
+  const QUICKLOAD_STORAGE_KEY = 'workoutPayload';
 
   onMount(async () => {
-    const us = get(user);
-    if (!us) {
-      goto(`${base}/account`);
+    if (await !checkUserStatus()) {
+      goHomeWithSonner('auth');
     }
+    if (hasFlag) {
+      const raw = sessionStorage.getItem(QUICKLOAD_STORAGE_KEY);
+      exercises = raw ? JSON.parse(raw) : [];
 
-    console.log('bru', us);
+      sessionExercisesList.fillFromArray(exercises);
+      toast.success(`Quick filled session!`, { duration: 3000 });
+    }
   });
+  /*  
+      ################
+      HELPER FUNCTIONS
+      ################ 
+  */
 
-  function addExercise() {
-    if (!newName || !newSets || !newWeight) {
-      console.log('No set to add:', !newName, !newSets, !newWeight);
-      return;
+  function removeQuickLoadFromStore() {
+    sessionStorage.removeItem(QUICKLOAD_STORAGE_KEY); // ta bort efter användning
+  }
+
+  function goHomeWithSonner(value: string) {
+    console.log('Going home...');
+    goto(`${resolve('/')}?sonner=${value}`);
+  }
+
+  async function checkUserStatus(): Promise<boolean> {
+    const value = get(user);
+    if (value?.name || (await getMe())) {
+      return true;
+    } else {
+      console.error('User not logged in.');
+      return false;
     }
+  }
 
-    //todo add auto inc here
-    console.log('autothing added:', newAutoInc);
+  function checkIfInputFieldsFilled(safetyCheck: boolean): boolean {
+    if (!newExName || !newExSetCount || !newExWeight) {
+      if (!safetyCheck) {
+        console.error(
+          'One or multiple input fields not filled:',
+          !newExName,
+          !newExSetCount,
+          !newExWeight
+        );
+        toast.error('One or multiple input fields not filled');
+      }
+      return false;
+    }
+    return true;
+  }
+
+  function checkInputLengthExceedsMax(safetyCheck: boolean): boolean {
+    const maxSetsAllowed = 20;
+    const maxWeightAllowed = 9999;
+    const maxExerciseNameAllowed = 100;
+    const maxExercisesAllowed = 100;
 
     if (
-      Number(newSets) > 20 ||
-      Number(newWeight) > 9999 ||
-      newName.length > 100 ||
-      currentlyAdded.length > 100
+      Number(newExSetCount) > maxSetsAllowed ||
+      Number(newExWeight) > maxWeightAllowed ||
+      newExName.length > maxExerciseNameAllowed ||
+      sessionExercisesList.extractData().length > maxExercisesAllowed
     ) {
-      alert('Max threshold met.');
-      return;
+      if (safetyCheck) {
+        return false;
+      }
+      console.error('One or multiple input fields exceed max limits');
+      toast.error('One or multiple input fields exceed max limits');
+      return false;
+    }
+    return true;
+  }
+
+  function isInputFieldsFilledCorrectly(safetyCheck: boolean): boolean {
+    if (!checkIfInputFieldsFilled(safetyCheck) || !checkInputLengthExceedsMax(safetyCheck)) {
+      return false;
     }
 
-    const entry: ExInfoPackage = {
-      name: newName,
-      sets: Number(newSets),
-      weight: Number(newWeight),
-      autoIncrease: newAutoInc,
-      repThreshold: newRepThreshold,
+    return true;
+  }
+
+  function packageExerciseEntry(): ExerciseDataPackaged {
+    const entry: ExerciseDataPackaged = {
+      name: newExName,
+      sets: Number(newExSetCount),
+      weight: Number(newExWeight),
+      autoIncrease: newExAutoIncAmount,
+      repThreshold: newExRepThreshold,
     };
-
-    currentlyAdded = [...currentlyAdded, entry];
-
-    console.log('NEW THANG');
-    console.log(currentlyAdded);
-
-    reorderableList.addToSortable(entry);
-
-    newName = '';
-    newSets = '';
-    newWeight = '';
+    return entry;
   }
 
-  let reorderableList: SortableList;
+  function resetInputFields() {
+    newExName = '';
+    newExSetCount = '';
+    newExWeight = '';
+  }
 
-  function saveSession() {
-    console.log('This is what we send pre');
-    console.log(currentlyAdded);
+  function validateSessionData(addedExercisesList: ExerciseDataPackaged[]): boolean {
+    if (addedExercisesList.length == 0) {
+      toast.error('No exercises added!');
+      return false;
+    }
 
-    currentlyAdded = reorderableList.extractData();
+    if (sessionName == '') {
+      toast.error('No session name added!');
+      return false;
+    }
+    return true;
+  }
 
-    // adds inputed exercise in case you forgot
-    addExercise();
-
-    if (currentlyAdded.length == 0) {
-      alert('No exercises added!');
+  /*  
+      ################
+      MAIN   FUNCTIONS  
+      ################ 
+  */
+  function addExercise() {
+    if (!isInputFieldsFilledCorrectly(false)) {
       return;
     }
 
-    if (seshName == '') {
-      alert('No session name added!');
+    const newEntry = packageExerciseEntry();
+    sessionExercisesList.pushItemToList(newEntry);
+
+    resetInputFields();
+  }
+
+  async function saveSession() {
+    let addedExercisesList: ExerciseDataPackaged[] = sessionExercisesList.extractData();
+
+    // if input field filled but not pushed, adds this
+    if (isInputFieldsFilledCorrectly(true)) {
+      addExercise();
+    }
+
+    if (!validateSessionData(addedExercisesList)) {
       return;
     }
 
-    console.log('This is what we send post');
-    console.log(currentlyAdded);
+    if (await !checkUserStatus()) {
+      return;
+    }
 
-    const username = get(user);
-    if (username) {
-      betterAdd(username, seshName, currentlyAdded);
-      alert('Session saved succesfully!');
-      goto(`${base}/`);
+    const responseStatus: boolean = await CreateSession(sessionName, addedExercisesList);
+    if (responseStatus) {
+      removeQuickLoadFromStore();
+      goHomeWithSonner('saved');
     } else {
-      alert('Problem with log-in authentication');
+      toast.error('Error saving, please try again.');
     }
-  }
-
-  function removeItem(index: number) {
-    currentlyAdded.splice(index, 1);
   }
 
   function repThresholdChange(count: number) {
-    newRepThreshold = count;
+    newExRepThreshold = count;
   }
 
   function autoIncreaseChange(count: number) {
-    newAutoInc = count;
+    newExAutoIncAmount = count;
   }
 
-  function getNames(exs: ExInfoPackage[]): string[] {
-    let newArray: string[] = exs.map((ex) => ex.name);
-    return newArray;
+  let addBoxEl: HTMLElement | null = null;
+
+  export function bop() {
+    if (!addBoxEl) {
+      return;
+    }
+
+    addBoxEl.classList.remove('bop');
+    void addBoxEl.offsetWidth;
+    addBoxEl.classList.add('bop');
+
+    const onEnd = (ev: AnimationEvent) => {
+      if (ev.animationName !== 'addBoxBop') return;
+      addBoxEl?.classList.remove('bop');
+      addBoxEl?.removeEventListener('animationend', onEnd);
+    };
+
+    addBoxEl.addEventListener('animationend', onEnd);
+  }
+
+  function fillInputFieldFromPackage(pack: ExerciseDataPackaged) {
+    newExName = pack.name;
+    newExSetCount = String(pack.sets);
+    newExWeight = String(pack.weight);
+    newExAutoIncAmount = pack.autoIncrease ?? 2.5;
+    newExRepThreshold = pack.repThreshold ?? 12;
+  }
+
+  function useInputFieldForEditing(pack: ExerciseDataPackaged) {
+    console.log('confirmed with', pack);
+    if (isInputFieldsFilledCorrectly(true)) {
+      toast.warning('Input fields filled but not yet added.');
+      let co = confirm(
+        'Input fields contain an exercise which has not yet been added. Proceed with edit and overwrite input?'
+      );
+      if (!co) return;
+    }
+
+    fillInputFieldFromPackage(pack);
+    bop();
+    toast.success('Exercise sent back to input field');
   }
 </script>
 
 <div class="container">
-  <input maxlength="50" bind:value={seshName} placeholder="Untitled session" class="title" />
+  <input maxlength="50" bind:value={sessionName} placeholder="Untitled session" class="title" />
 
-  <div class="add-box shadow">
+  <div class="add-box shadow" bind:this={addBoxEl}>
     <h3 class="w-full pb-2 text-xl font-semibold">Add an exercise</h3>
-    <InputField label={'Exercise name'} bind:value={newName} type={'text'} />
+    <InputField label={'Exercise name'} bind:value={newExName} type={'text'} />
 
-    <InputField label={'Sets'} bind:value={newSets} type={'number'} />
+    <InputField label={'Sets'} bind:value={newExSetCount} type={'number'} />
 
-    <InputField label={'Weight'} bind:value={newWeight} type={'number'} />
+    <InputField label={'Weight'} bind:value={newExWeight} type={'number'} />
 
     <SetAutoIncrease
       title={'Auto-increase threshold'}
@@ -166,7 +262,7 @@
     <button class="add buttonClass" onclick={addExercise}>Add to session</button>
   </div>
 
-  <SortableList bind:this={reorderableList} items={currentlyAdded} />
+  <SortableList bind:this={sessionExercisesList} editData={useInputFieldForEditing} />
 
   <button onclick={saveSession} class="finish buttonClass">Finish and save session</button>
 </div>
@@ -215,6 +311,36 @@
 
     box-shadow: var(--shadow-dark);
     margin-bottom: 1rem;
+
+    transform: translateZ(0);
+    will-change: transform, filter, box-shadow;
+  }
+
+  :global(.add-box.bop) {
+    animation: addBoxBop 750ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes addBoxBop {
+    0% {
+      transform: scale(1);
+      filter: brightness(1);
+      box-shadow: var(--shadow-dark);
+    }
+
+    15% {
+      transform: scale(1.025);
+      filter: brightness(1.12);
+      box-shadow:
+        var(--shadow-dark),
+        0 0 0 3px rgba(109, 109, 109, 0.22),
+        0 10px 28px rgba(0, 0, 0, 0.18);
+    }
+
+    100% {
+      transform: scale(1);
+      filter: brightness(1);
+      box-shadow: var(--shadow-dark);
+    }
   }
 
   .finish {

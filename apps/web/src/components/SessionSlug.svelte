@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from '@iconify/svelte';
-  import type { SessionMetaData } from '$lib/firebaseDataHandler';
+  import type { SessionMetaData } from '../routes/tracker/dbFetches';
   import { fade, fly, slide } from 'svelte/transition';
 
   let {
@@ -78,7 +78,7 @@
 <div class="inner-cont alt">
   <div class="base-btn alt" style="width:{sty}">
     <button class="start-side buttonClass" onclick={prs}>
-      <p>{slug.id}</p>
+      <p>{slug.name}</p>
       <p class="date">{timeAgo(slug.date ?? grd(3))}</p>
     </button>
 
@@ -88,17 +88,16 @@
   </div>
 
   <div class="under-cont">
-    <div class="icon-under edit">
-      <Icon onclick={edt} icon="material-symbols:edit-outline" width="32" fill={'#FFC107'} />
-    </div>
-    <div class="icon-under del">
+    <button class="icon-under edit" onclick={edt}>
+      <Icon icon="material-symbols:edit-outline" width="32" fill={'#FFC107'} />
+    </button>
+    <button class="icon-under del" onclick={del}>
       <Icon
-        onclick={del}
         icon="material-symbols:delete-outline-rounded"
         width="32"
         fill={'#dc3545'}
       />
-    </div>
+    </button>
   </div>
 </div>
 

@@ -1,158 +1,152 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { getAllSessionMeta, fakeDeleteSession } from '$lib/firebaseDataHandler';
   import { onMount } from 'svelte';
-  import ErrorPopup from '../../components/ErrorPopup.svelte';
   import SessionSlug from '../../components/SessionSlug.svelte';
+  import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
 
-  import type { SessionMetaData } from '$lib/firebaseDataHandler';
-
-  import Popup from '../../components/Popup.svelte';
-  import { fade } from 'svelte/transition';
+  import { fade, scale } from 'svelte/transition';
   import Icon from '@iconify/svelte';
-  import { user } from '../account/user';
-  import { get } from 'svelte/store';
   import { resolve } from '$app/paths';
 
+  import type { SessionMetaData } from './dbFetches';
+  import { CheckActiveSession, DeleteSession, GetSessions, SetActiveSession } from './dbFetches';
+  import { toast, Toaster } from 'svelte-sonner';
+
   let slugs: SessionMetaData[] = $state([]);
-  let activeSession: boolean = $state(false);
-  let loaded: boolean = $state(false);
+  let isAnotherSessionActive: boolean = $state(false);
+  let sessionsLoaded: boolean = $state(false);
 
-  let showPopup: boolean = $state(false);
-
-  let showError: string = $state('');
-
-  const userID = $derived(get(user));
+  let deletePopupShowing: boolean = $state(false);
+  let itemToRemove: [string,number] = $state(['',0]);
+  
+  let activeSessionPopupShowing: boolean = $state(false);
+  let sessionToStart: number = $state(-1)
 
   onMount(async () => {
-    if (!userID) {
-      goto(resolve(`/account`));
-      return;
-    }
+    slugs = await GetSessions();
 
-    const data = await getAllSessionMeta(userID);
-    slugs = data.slugs;
-
-    slugs = sortByDateSafe(slugs, 'desc');
-
-    activeSession = data.active;
-    loaded = true;
+    const [activeID, activeName] = await CheckActiveSession();
+    isAnotherSessionActive = activeID != '';
+    sessionsLoaded = true;
   });
 
-  function sortByDateSafe<T extends { date?: string | Date }>(
-    array: T[],
-    direction: 'asc' | 'desc' = 'asc'
-  ): T[] {
-    return array.sort((a, b) => {
-      const dateA = a.date ? new Date(a.date).getTime() : null;
-      const dateB = b.date ? new Date(b.date).getTime() : null;
 
-      if (dateA === null && dateB === null) return 0;
-      if (dateA === null) return direction === 'asc' ? 1 : -1; // undefined dates go last in asc, first in desc
-      if (dateB === null) return direction === 'asc' ? -1 : 1;
-
-      return direction === 'asc' ? dateA - dateB : dateB - dateA;
-    });
-  }
-
-  function delay(ms: number) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  function closePopup() {
-    showPopup = false;
-  }
-
-  function openPopup(reason: string) {
-    // showPopup = true;
-    // popupResponse = reason
-  }
-
-  function editWorkout(sesID: string) {
-    console.log('Edit', sesID + '!');
-  }
-
-  function startSes(id: string) {
-    console.log(id, 'started');
-
-    if (activeSession) {
-      openPopup('active');
-
-      if (confirm(`You have an unfinished exercise, do you really want to start a new one?`)) {
-        goto(resolve(`/tracker/${id}`));
-      } else {
-        goto(resolve(`/`));
-      }
+  function startSes(id: number) {
+    if (isAnotherSessionActive) {
+      activeSessionPopupShowing = true
+      sessionToStart = id
     } else {
       goto(resolve(`/tracker/${id}`));
     }
   }
-  function editSes(id: string) {
+
+  function confirmStartSession(){
+    const id = sessionToStart
+    if (id != -1) {
+        SetActiveSession(String(id));
+        goto(resolve(`/tracker/${id}`));
+    }
+  }
+
+  function editSes(id: number) {
     console.log(id, 'edited');
     alert('Edit not yet implemented.');
-    // popup edit?
   }
 
-  async function delSes(id: string) {
-    openPopup('delete');
-    if (!userID) return;
-
-    if (confirm(`Are you sure you want to delete ${id}?`)) {
-      await fakeDeleteSession(userID, id);
-      deleteLocalSlug(id);
-      console.log(id, 'deleted.');
-    } else {
-      console.log('Delete cancelled.');
-    }
-
-    // popup are you sure
+  function deleteSession(SessionTitle: string, SesID: number) {
+    deletePopupShowing = true;
+    itemToRemove = [SessionTitle, SesID]
   }
 
-  function deleteLocalSlug(id: string) {
+  async function confirmDeleteSession(toRemove: [string, number]){
+      const SessionTitle:string = toRemove[0]
+      const SessionID:number = toRemove[1]
+
+      console.log(SessionTitle, 'deleted.');
+      deletePopupShowing = false
+      if (await DeleteSession(SessionID)){
+        await new Promise((r) => setTimeout(r, 100));
+        deleteLocally(SessionTitle)
+        toast.success(`Session ${SessionTitle} deleted!`)
+      } else {
+        toast.error('Deletion failed. Could not delete. Try again later.', {
+	        duration: 5000,
+          style: 'background: red;',
+        })
+
+      }
+  }
+
+  function deleteLocally(id: string) {
     for (const item of slugs) {
-      if (item.id === id) {
+      if (item.name === id) {
         item.deleted = true;
-        console.log('Found local copy and delted it');
-
         break;
       }
     }
-  }
-
-  function handlePop(accept: boolean) {
-    if (accept) {
-      console.log('accepted');
-    } else {
-      console.log('declined');
-    }
-    closePopup();
   }
 </script>
 
 <div class="main">
   <h1 class="mb-2 text-3xl leading-snug font-bold">Sessions</h1>
-  <ErrorPopup message={showError}></ErrorPopup>
-  <Popup show={showPopup} onAccept={() => handlePop(true)} onDecline={() => handlePop(false)}
-  ></Popup>
+  <Toaster theme="dark"></Toaster>
+  <AlertDialog.Root bind:open={deletePopupShowing}>
+  <AlertDialog.Content>
+    <AlertDialog.Header>
+    <AlertDialog.Title>Are you absolutely sure?</AlertDialog.Title>
+    <AlertDialog.Description>
+      This action cannot be undone. This will permanently delete the session
+      and remove it from our servers.
+    </AlertDialog.Description>
+    </AlertDialog.Header>
+    <AlertDialog.Footer>
+    <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+    <AlertDialog.Action 
+      class="bg-red-500 text-white-500" 
+      onclick={() => confirmDeleteSession(itemToRemove)}>
+        Remove {itemToRemove[0]}
+      </AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+  </AlertDialog.Root>
+
+    <AlertDialog.Root bind:open={activeSessionPopupShowing}>
+  <AlertDialog.Content>
+    <AlertDialog.Header>
+    <AlertDialog.Title>Another session is already active!</AlertDialog.Title>
+    <AlertDialog.Description>
+      Are you sure you want to start a new one?
+    </AlertDialog.Description>
+    </AlertDialog.Header>
+    <AlertDialog.Footer>
+    <AlertDialog.Cancel>No, take me back</AlertDialog.Cancel>
+    <AlertDialog.Action 
+      class="bg-green-600 text-white-500" 
+      onclick={() => confirmStartSession()}>
+        Yes, start new session
+      </AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+  </AlertDialog.Root>
 
   <hr />
 
-  {#if slugs.length && loaded}
+  {#if slugs.length && sessionsLoaded}
     <div class="btn-container">
       {#each slugs as slug, i}
         {#if !slug.deleted}
-          <div style="width: inherit" in:fade|global={{ delay: i * 50 }}>
+          <div style="width: inherit" in:fade|global={{ delay: i * 50 }} out:scale>
             <SessionSlug
               onPress={() => startSes(slug.id)}
               onEdit={() => editSes(slug.id)}
-              onDel={() => delSes(slug.id)}
+              onDel={() => deleteSession(slug.name, slug.id)}
               {slug}
             />
           </div>
         {/if}
       {/each}
     </div>
-  {:else if !loaded}
+  {:else if !sessionsLoaded}
     <Icon icon="svg-spinners:3-dots-bounce" width="30" />
   {:else}
     <h2>No sessions created yet.</h2>

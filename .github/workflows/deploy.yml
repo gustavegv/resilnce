@@ -43,8 +43,6 @@ jobs:
 
       - name: Build web
         working-directory: apps/web
-        env:
-          BASE_PATH: /resilnce
         run: npm run build
 
       - name: Upload Pages artifact
