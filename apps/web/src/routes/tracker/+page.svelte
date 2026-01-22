@@ -1,121 +1,141 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import ErrorPopup from '../../components/ErrorPopup.svelte';
   import SessionSlug from '../../components/SessionSlug.svelte';
+  import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
 
-  import Popup from '../../components/Popup.svelte';
-  import { fade } from 'svelte/transition';
+  import { fade, scale } from 'svelte/transition';
   import Icon from '@iconify/svelte';
   import { resolve } from '$app/paths';
 
   import type { SessionMetaData } from './dbFetches';
   import { CheckActiveSession, GetSessions, SetActiveSession } from './dbFetches';
+  import { toast } from 'svelte-sonner';
 
   let slugs: SessionMetaData[] = $state([]);
-  let activeSession: boolean = $state(false);
-  let loaded: boolean = $state(false);
+  let isAnotherSessionActive: boolean = $state(false);
+  let sessionsLoaded: boolean = $state(false);
 
-  let showPopup: boolean = $state(false);
-
-  let showError: string = $state('');
+  let deletePopupShowing: boolean = $state(false);
+  let itemToRemove: string = $state('');
+  
+  let activeSessionPopupShowing: boolean = $state(false);
+  let sessionToStart: number = $state(-1)
 
   onMount(async () => {
     slugs = await GetSessions();
 
     const [activeID, activeName] = await CheckActiveSession();
-    activeSession = activeID != '';
-
-    loaded = true;
+    isAnotherSessionActive = activeID != '';
+    sessionsLoaded = true;
   });
 
-  function closePopup() {
-    showPopup = false;
-  }
-
-  function openPopup(reason: string) {
-    // showPopup = true;
-    // popupResponse = reason
-  }
 
   function startSes(id: number) {
-    console.log('Exercise ID: (' + id, +') called for start.');
-
-    if (activeSession) {
-      openPopup('active');
-
-      if (confirm(`You have an unfinished session, do you really want to start a new one?`)) {
-        // todo switch popup to custom popup
-        SetActiveSession(String(id));
-        goto(resolve(`/tracker/${id}`));
-      }
+    if (isAnotherSessionActive) {
+      activeSessionPopupShowing = true
+      sessionToStart = id
     } else {
       goto(resolve(`/tracker/${id}`));
+    }
+  }
+
+  function confirmStartSession(){
+    const id = sessionToStart
+    if (id != -1) {
+        SetActiveSession(String(id));
+        goto(resolve(`/tracker/${id}`));
     }
   }
 
   function editSes(id: number) {
     console.log(id, 'edited');
     alert('Edit not yet implemented.');
-    // popup edit?
   }
 
-  async function delSes(SessionTitle: string) {
-    openPopup('delete');
+  function deleteSession(SessionTitle: string) {
+    deletePopupShowing = true;
+    itemToRemove = SessionTitle
+  }
 
-    if (confirm(`Are you sure you want to delete ${SessionTitle}?`)) {
-      alert('Delete not implemented');
+  async function confirmDeleteSession(SessionTitle: string){
       console.log(SessionTitle, 'deleted.');
-    } else {
-      console.log('Delete cancelled.');
-    }
+      deletePopupShowing = false
+      await new Promise((r) => setTimeout(r, 300));
+      deleteLocally(SessionTitle)
+      toast.success(`Session ${SessionTitle} deleted!`)
   }
 
-  function deleteLocalSlug(id: number) {
+  // todo: Add real deletion too.
+  function deleteLocally(id: string) {
     for (const item of slugs) {
-      if (item.id === id) {
+      if (item.name === id) {
         item.deleted = true;
-        console.log('Found local copy and delted it');
-
         break;
       }
     }
-  }
-
-  function handlePop(accept: boolean) {
-    if (accept) {
-      console.log('accepted');
-    } else {
-      console.log('declined');
-    }
-    closePopup();
   }
 </script>
 
 <div class="main">
   <h1 class="mb-2 text-3xl leading-snug font-bold">Sessions</h1>
-  <ErrorPopup message={showError}></ErrorPopup>
-  <Popup show={showPopup} onAccept={() => handlePop(true)} onDecline={() => handlePop(false)}
-  ></Popup>
+  <AlertDialog.Root bind:open={deletePopupShowing}>
+  <AlertDialog.Content>
+    <AlertDialog.Header>
+    <AlertDialog.Title>Are you absolutely sure?</AlertDialog.Title>
+    <AlertDialog.Description>
+      This action cannot be undone. This will permanently delete the session
+      and remove it from our servers.
+    </AlertDialog.Description>
+    </AlertDialog.Header>
+    <AlertDialog.Footer>
+    <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+    <AlertDialog.Action 
+      class="bg-red-500 text-white-500" 
+      onclick={() => confirmDeleteSession(itemToRemove)}>
+        Remove {itemToRemove}
+      </AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+  </AlertDialog.Root>
+
+    <AlertDialog.Root bind:open={activeSessionPopupShowing}>
+  <AlertDialog.Content>
+    <AlertDialog.Header>
+    <AlertDialog.Title>Another session is already active!</AlertDialog.Title>
+    <AlertDialog.Description>
+      Are you sure you want to start a new one?
+    </AlertDialog.Description>
+    </AlertDialog.Header>
+    <AlertDialog.Footer>
+    <AlertDialog.Cancel>No, take me back</AlertDialog.Cancel>
+    <AlertDialog.Action 
+      class="bg-green-600 text-white-500" 
+      onclick={() => confirmStartSession()}>
+        Yes, start new session
+      </AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+  </AlertDialog.Root>
 
   <hr />
 
-  {#if slugs.length && loaded}
+  {#if slugs.length && sessionsLoaded}
     <div class="btn-container">
       {#each slugs as slug, i}
         {#if !slug.deleted}
-          <div style="width: inherit" in:fade|global={{ delay: i * 50 }}>
+          <div style="width: inherit" in:fade|global={{ delay: i * 50 }} out:scale>
             <SessionSlug
               onPress={() => startSes(slug.id)}
               onEdit={() => editSes(slug.id)}
-              onDel={() => delSes(slug.name)}
+              onDel={() => deleteSession(slug.name)}
               {slug}
             />
           </div>
         {/if}
       {/each}
     </div>
-  {:else if !loaded}
+  {:else if !sessionsLoaded}
     <Icon icon="svg-spinners:3-dots-bounce" width="30" />
   {:else}
     <h2>No sessions created yet.</h2>
