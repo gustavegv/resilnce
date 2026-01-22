@@ -1,4 +1,5 @@
 import { PUBLIC_BACKEND_BASE_URL } from '$env/static/public';
+import { toast } from 'svelte-sonner';
 import { extendTailwindMerge } from 'tailwind-merge';
 
 /**
@@ -39,12 +40,31 @@ function address(dir: string): string {
   return baseURL + dir;
 }
 
+function statusToasterHandler(code: number){
+  switch (code) {
+    case 400:
+      toast.error("The request could not be processed. Please check your input or try again.")
+      break;
+    case 401:
+      toast.error("Your session has expired. Please log in again.")
+      break;
+    case 403:
+      toast.error("You don't have permission to access this feature.")
+      break;
+
+    default:
+      toast.error("Network response was not ok. Try again.")
+      break;
+  }
+}
+
 async function fetchDB(dir: string): Promise<any> {
   const res = await fetch(address(`/db/` + dir), {
     method: 'GET',
     credentials: 'include',
   });
   if (!res.ok) {
+    statusToasterHandler(res.status)
     throw new Error('Network response was not ok');
   } else {
     const data = await res.json();

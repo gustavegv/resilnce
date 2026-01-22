@@ -24,7 +24,7 @@ func RoutingCreation() http.Handler {
 	ctx := context.Background()
 	service, _ := auth.New(ctx, cfg)
 	pool := db.NewPool()
-	supaCFG := &db.SupabaseCFG{DB: pool}
+	supaCFG := &db.SupabaseCFG{DB: pool, RedisStore: service.RedisStore}
 	service.SBDB = *supaCFG
 
 	mux.HandleFunc("/api/me", service.GetUserInfo)

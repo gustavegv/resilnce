@@ -10,19 +10,21 @@ import (
 	"strconv"
 	"time"
 
+	sessions "github.com/gustavegv/resilnce/apps/server/redis"
 	scookie "github.com/gustavegv/resilnce/apps/server/scookies"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type SupabaseCFG struct {
-	DB *pgxpool.Pool
+	DB         *pgxpool.Pool
+	RedisStore *sessions.Store
 }
 
-func getValidatedMail(w http.ResponseWriter, r *http.Request) string {
+func (supa *SupabaseCFG) getValidatedMail(w http.ResponseWriter, r *http.Request) string {
 
-	// todo, add redis validation, to check if mail expired, if so log out user
 	userMail := r.URL.Query().Get("mail")
-	_, userMail, _, success := scookie.ValidateSignedCookie(r)
+	SID, userMail, _, success := scookie.ValidateSignedCookie(r)
 	if !success {
 		println("Verification failed")
 		http.Error(w, "verification failed", http.StatusBadRequest)
@@ -34,6 +36,17 @@ func getValidatedMail(w http.ResponseWriter, r *http.Request) string {
 		http.Error(w, "missing mail", http.StatusBadRequest)
 		return ""
 	}
+
+	data, err := supa.RedisStore.GetSession(r.Context(), SID)
+	if err != nil {
+		http.Error(w, "Authentication error", http.StatusBadRequest)
+		return ""
+	}
+	if data == nil {
+		http.Error(w, "Session expired, please log in again", http.StatusUnauthorized)
+		return ""
+	}
+
 	return userMail
 }
 
@@ -58,7 +71,7 @@ func getExID(w http.ResponseWriter, r *http.Request) int {
 }
 
 func (supa *SupabaseCFG) GetUserSessions(w http.ResponseWriter, r *http.Request) {
-	userMail := getValidatedMail(w, r)
+	userMail := supa.getValidatedMail(w, r)
 	if userMail == "" {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
@@ -79,7 +92,7 @@ func (supa *SupabaseCFG) GetUserSessions(w http.ResponseWriter, r *http.Request)
 
 func (supa *SupabaseCFG) GetSessionExercises(w http.ResponseWriter, r *http.Request) {
 	sesID := getSesID(w, r)
-	userMail := getValidatedMail(w, r)
+	userMail := supa.getValidatedMail(w, r)
 	if userMail == "" || sesID == -1 {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
@@ -98,7 +111,7 @@ func (supa *SupabaseCFG) GetSessionExercises(w http.ResponseWriter, r *http.Requ
 }
 
 func (supa *SupabaseCFG) GetActiveSession(w http.ResponseWriter, r *http.Request) {
-	userMail := getValidatedMail(w, r)
+	userMail := supa.getValidatedMail(w, r)
 	if userMail == "" {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
@@ -128,7 +141,7 @@ func (supa *SupabaseCFG) GetActiveSession(w http.ResponseWriter, r *http.Request
 
 func (supa *SupabaseCFG) GetFinishedExercises(w http.ResponseWriter, r *http.Request) {
 	sesID := getSesID(w, r)
-	userMail := getValidatedMail(w, r)
+	userMail := supa.getValidatedMail(w, r)
 	if userMail == "" || sesID == -1 {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
@@ -162,7 +175,7 @@ func (supa *SupabaseCFG) CallUpdateExercise(w http.ResponseWriter, r *http.Reque
 	var exercise CompactExercise
 
 	sesID := getSesID(w, r)
-	userMail := getValidatedMail(w, r)
+	userMail := supa.getValidatedMail(w, r)
 	if userMail == "" || sesID == -1 {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
@@ -199,7 +212,7 @@ func (supa *SupabaseCFG) CallUpdateExercise(w http.ResponseWriter, r *http.Reque
 
 func (supa *SupabaseCFG) CallCompleteExercise(w http.ResponseWriter, r *http.Request) {
 	sesID := getSesID(w, r)
-	userMail := getValidatedMail(w, r)
+	userMail := supa.getValidatedMail(w, r)
 	if userMail == "" || sesID == -1 {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
@@ -216,7 +229,7 @@ func getURLParam(r *http.Request, param string) string {
 
 func (supa *SupabaseCFG) CallSetActiveSession(w http.ResponseWriter, r *http.Request) {
 	sesID := getSesID(w, r)
-	userMail := getValidatedMail(w, r)
+	userMail := supa.getValidatedMail(w, r)
 	if userMail == "" {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
@@ -259,7 +272,7 @@ func (supa *SupabaseCFG) MakeNewSession(w http.ResponseWriter, r *http.Request) 
 		ExI   []ExInfo `json:"exI"`
 	}
 
-	userMail := getValidatedMail(w, r)
+	userMail := supa.getValidatedMail(w, r)
 	if userMail == "" {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
@@ -275,7 +288,7 @@ func (supa *SupabaseCFG) MakeNewSession(w http.ResponseWriter, r *http.Request) 
 	err := validateNewSessionDataHelper(data.SesID, data.ExI)
 	if err != nil {
 		log.Printf("invalid session data: %v", err)
-		http.Error(w, "Session data invalid", http.StatusUnauthorized)
+		http.Error(w, "Session data invalid", http.StatusFailedDependency)
 		return
 	}
 

@@ -12,7 +12,6 @@ import (
 
 func getValidatedMail(w http.ResponseWriter, r *http.Request) (string, string) {
 
-	// todo, add redis validation, to check if mail expired, if so log out user
 	userMail := r.URL.Query().Get("mail")
 	SID, userMail, _, success := scookie.ValidateSignedCookie(r)
 	if !success {
@@ -81,7 +80,7 @@ func AutoCreation(store *sessions.Store) http.HandlerFunc {
 
 		if err != nil {
 			if err.Error() == "AI call count exceeded" {
-				http.Error(w, "AI call count exceeded", http.StatusUnauthorized)
+				http.Error(w, "AI call count exceeded", http.StatusForbidden)
 				return
 			}
 			http.Error(w, "Agent failiure", http.StatusBadRequest)

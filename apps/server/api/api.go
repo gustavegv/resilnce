@@ -12,7 +12,6 @@ func BaseReq(w http.ResponseWriter, r *http.Request) {
 
 func LogOutUser(w http.ResponseWriter, r *http.Request) {
 
-	// todo: delete SessionID from Redis
 	const redisDeleteSuccess = true
 	if !redisDeleteSuccess {
 		http.Error(w, "fail to logout", http.StatusInternalServerError)
