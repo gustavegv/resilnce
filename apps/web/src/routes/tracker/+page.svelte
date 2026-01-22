@@ -23,8 +23,8 @@
   onMount(async () => {
     slugs = await GetSessions();
 
-    const res = await CheckActiveSession();
-    activeSession = res != '';
+    const [activeID, activeName] = await CheckActiveSession();
+    activeSession = activeID != '';
 
     loaded = true;
   });

@@ -45,7 +45,6 @@
     if (limitReached) {
       console.log('Greyed out');
     }
-    console.log(newCount - decrementInterval);
 
     curCount = newCount;
     onCountChange?.(curCount);

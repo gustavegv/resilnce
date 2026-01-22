@@ -103,7 +103,7 @@
     return true;
   }
 
-  function vaidateInputFields(safetyCheck: boolean): boolean {
+  function isInputFieldsFilledCorrectly(safetyCheck: boolean): boolean {
     if (!checkIfInputFieldsFilled(safetyCheck) || !checkInputLengthExceedsMax(safetyCheck)) {
       return false;
     }
@@ -147,7 +147,7 @@
       ################ 
   */
   function addExercise() {
-    if (!vaidateInputFields(false)) {
+    if (!isInputFieldsFilledCorrectly(false)) {
       return;
     }
 
@@ -161,7 +161,7 @@
     let addedExercisesList: ExerciseDataPackaged[] = sessionExercisesList.extractData();
 
     // if input field filled but not pushed, adds this
-    if (vaidateInputFields(true)) {
+    if (isInputFieldsFilledCorrectly(true)) {
       addExercise();
     }
 
@@ -172,7 +172,7 @@
     if (await !checkUserStatus()) {
       return;
     }
-
+    
     const responseStatus: boolean = await CreateSession(sessionName, addedExercisesList);
     if (responseStatus) {
       removeQuickLoadFromStore();
@@ -189,12 +189,55 @@
   function autoIncreaseChange(count: number) {
     newExAutoIncAmount = count;
   }
+
+  let addBoxEl: HTMLElement | null = null;
+
+  export function bop() {
+    if (!addBoxEl) {
+      return;
+    }
+
+    addBoxEl.classList.remove('bop');
+    void addBoxEl.offsetWidth;
+    addBoxEl.classList.add('bop');
+
+    const onEnd = (ev: AnimationEvent) => {
+      if (ev.animationName !== 'addBoxBop') return;
+      addBoxEl?.classList.remove('bop');
+      addBoxEl?.removeEventListener('animationend', onEnd);
+    };
+
+    addBoxEl.addEventListener('animationend', onEnd);
+  }
+
+  function fillInputFieldFromPackage(pack: ExerciseDataPackaged) {
+    newExName = pack.name;
+    newExSetCount = String(pack.sets);
+    newExWeight = String(pack.weight);
+    newExAutoIncAmount = pack.autoIncrease ?? 2.5;
+    newExRepThreshold = pack.repThreshold ?? 12;
+  }
+
+  function useInputFieldForEditing(pack: ExerciseDataPackaged) {
+    console.log('confirmed with', pack);
+    if (isInputFieldsFilledCorrectly(true)) {
+      toast.warning('Input fields filled but not yet added.');
+      let co = confirm(
+        'Input fields contain an exercise which has not yet been added. Proceed with edit and overwrite input?'
+      );
+      if (!co) return;
+    }
+
+    fillInputFieldFromPackage(pack);
+    bop();
+    toast.success('Exercise sent back to input field');
+  }
 </script>
 
 <div class="container">
   <input maxlength="50" bind:value={sessionName} placeholder="Untitled session" class="title" />
 
-  <div class="add-box shadow">
+  <div class="add-box shadow" bind:this={addBoxEl}>
     <h3 class="w-full pb-2 text-xl font-semibold">Add an exercise</h3>
     <InputField label={'Exercise name'} bind:value={newExName} type={'text'} />
 
@@ -219,7 +262,7 @@
     <button class="add buttonClass" onclick={addExercise}>Add to session</button>
   </div>
 
-  <SortableList bind:this={sessionExercisesList} />
+  <SortableList bind:this={sessionExercisesList} editData={useInputFieldForEditing} />
 
   <button onclick={saveSession} class="finish buttonClass">Finish and save session</button>
 </div>
@@ -268,6 +311,36 @@
 
     box-shadow: var(--shadow-dark);
     margin-bottom: 1rem;
+
+    transform: translateZ(0);
+    will-change: transform, filter, box-shadow;
+  }
+
+  :global(.add-box.bop) {
+    animation: addBoxBop 750ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes addBoxBop {
+    0% {
+      transform: scale(1);
+      filter: brightness(1);
+      box-shadow: var(--shadow-dark);
+    }
+
+    15% {
+      transform: scale(1.025);
+      filter: brightness(1.12);
+      box-shadow:
+        var(--shadow-dark),
+        0 0 0 3px rgba(109, 109, 109, 0.22),
+        0 10px 28px rgba(0, 0, 0, 0.18);
+    }
+
+    100% {
+      transform: scale(1);
+      filter: brightness(1);
+      box-shadow: var(--shadow-dark);
+    }
   }
 
   .finish {
