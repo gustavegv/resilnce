@@ -40,6 +40,7 @@ func RoutingCreation() http.Handler {
 	mux.HandleFunc("/db/complete", service.SBDB.CallCompleteExercise)
 	mux.HandleFunc("/db/setActive", service.SBDB.CallSetActiveSession)
 	mux.HandleFunc("/db/newSession", service.SBDB.MakeNewSession)
+	mux.HandleFunc("/db/deleteSession", service.SBDB.DeleteSessionH)
 
 	// Other
 	mux.HandleFunc("/ai/quick", ai.AutoCreation(service.RedisStore))

@@ -92,6 +92,9 @@ func (supa *SupabaseCFG) GetUserSessions(w http.ResponseWriter, r *http.Request)
 
 func (supa *SupabaseCFG) GetSessionExercises(w http.ResponseWriter, r *http.Request) {
 	sesID := getSesID(w, r)
+	if sesID == -1 {
+		return
+	}
 	userMail := supa.getValidatedMail(w, r)
 	if userMail == "" || sesID == -1 {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
@@ -141,6 +144,9 @@ func (supa *SupabaseCFG) GetActiveSession(w http.ResponseWriter, r *http.Request
 
 func (supa *SupabaseCFG) GetFinishedExercises(w http.ResponseWriter, r *http.Request) {
 	sesID := getSesID(w, r)
+	if sesID == -1 {
+		return
+	}
 	userMail := supa.getValidatedMail(w, r)
 	if userMail == "" || sesID == -1 {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
@@ -175,6 +181,9 @@ func (supa *SupabaseCFG) CallUpdateExercise(w http.ResponseWriter, r *http.Reque
 	var exercise CompactExercise
 
 	sesID := getSesID(w, r)
+	if sesID == -1 {
+		return
+	}
 	userMail := supa.getValidatedMail(w, r)
 	if userMail == "" || sesID == -1 {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
@@ -212,6 +221,9 @@ func (supa *SupabaseCFG) CallUpdateExercise(w http.ResponseWriter, r *http.Reque
 
 func (supa *SupabaseCFG) CallCompleteExercise(w http.ResponseWriter, r *http.Request) {
 	sesID := getSesID(w, r)
+	if sesID == -1 {
+		return
+	}
 	userMail := supa.getValidatedMail(w, r)
 	if userMail == "" || sesID == -1 {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
@@ -229,6 +241,9 @@ func getURLParam(r *http.Request, param string) string {
 
 func (supa *SupabaseCFG) CallSetActiveSession(w http.ResponseWriter, r *http.Request) {
 	sesID := getSesID(w, r)
+	if sesID == -1 {
+		return
+	}
 	userMail := supa.getValidatedMail(w, r)
 	if userMail == "" {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
@@ -302,4 +317,22 @@ func (supa *SupabaseCFG) MakeNewSession(w http.ResponseWriter, r *http.Request) 
 	}
 
 	defer r.Body.Close()
+}
+
+func (supa *SupabaseCFG) DeleteSessionH(w http.ResponseWriter, r *http.Request) {
+	sesID := getSesID(w, r)
+	if sesID == -1 {
+		return
+	}
+	userMail := supa.getValidatedMail(w, r)
+	if userMail == "" {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	err := supa.DeleteSession(userMail, sesID, r.Context())
+	if err != nil {
+		http.Error(w, "Delete failed", http.StatusBadRequest)
+		return
+	}
 }

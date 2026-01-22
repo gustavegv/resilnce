@@ -380,3 +380,20 @@ func (supa *SupabaseCFG) AddUser(userMail string, name string, ctx context.Conte
 
 	return nil
 }
+
+func (supa *SupabaseCFG) DeleteSession(userMail string, sessionID int, ctx context.Context) error {
+	const query = `
+		delete from "Session"
+		where mail = $1 and ses_id = $2;
+	`
+
+	_, err := supa.DB.Exec(ctx, query, userMail, sessionID)
+
+	if err != nil {
+		println("DB query fail (Write: Delete Session)")
+		println(err.Error())
+		return err
+	}
+
+	return nil
+}

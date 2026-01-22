@@ -30,7 +30,6 @@ func (s *Store) SaveSession(ctx context.Context, sessionID string, data SessionD
 
 func (s *Store) GetSession(ctx context.Context, sessionID string) (*SessionData, error) {
 	key := sessKey(sessionID)
-	println("FETCHING REDIS KEY:\n", key)
 
 	m, err := s.rdb.HGetAll(ctx, key).Result()
 	if err != nil {

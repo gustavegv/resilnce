@@ -85,7 +85,7 @@ async function postDB(dir: string, data: any): Promise<boolean> {
     const text = await res.text();
     console.error(`Request failed: ${res.status} ${res.statusText}`);
     console.error('Response body:', text);
-    throw new Error('Network response was not ok');
+    return false
   } else {
     return true;
   }
@@ -166,4 +166,8 @@ export async function CompleteSession(sesID: string) {
 
 export async function SetActiveSession(sesID: string) {
   await postDB(`setActive?sesID=${sesID}`, null);
+}
+
+export async function DeleteSession(sesID: number):Promise<boolean> {
+  return await postDB(`deleteSession?sesID=${sesID}`, null);
 }

@@ -9,15 +9,15 @@
   import { resolve } from '$app/paths';
 
   import type { SessionMetaData } from './dbFetches';
-  import { CheckActiveSession, GetSessions, SetActiveSession } from './dbFetches';
-  import { toast } from 'svelte-sonner';
+  import { CheckActiveSession, DeleteSession, GetSessions, SetActiveSession } from './dbFetches';
+  import { toast, Toaster } from 'svelte-sonner';
 
   let slugs: SessionMetaData[] = $state([]);
   let isAnotherSessionActive: boolean = $state(false);
   let sessionsLoaded: boolean = $state(false);
 
   let deletePopupShowing: boolean = $state(false);
-  let itemToRemove: string = $state('');
+  let itemToRemove: [string,number] = $state(['',0]);
   
   let activeSessionPopupShowing: boolean = $state(false);
   let sessionToStart: number = $state(-1)
@@ -53,20 +53,30 @@
     alert('Edit not yet implemented.');
   }
 
-  function deleteSession(SessionTitle: string) {
+  function deleteSession(SessionTitle: string, SesID: number) {
     deletePopupShowing = true;
-    itemToRemove = SessionTitle
+    itemToRemove = [SessionTitle, SesID]
   }
 
-  async function confirmDeleteSession(SessionTitle: string){
+  async function confirmDeleteSession(toRemove: [string, number]){
+      const SessionTitle:string = toRemove[0]
+      const SessionID:number = toRemove[1]
+
       console.log(SessionTitle, 'deleted.');
       deletePopupShowing = false
-      await new Promise((r) => setTimeout(r, 300));
-      deleteLocally(SessionTitle)
-      toast.success(`Session ${SessionTitle} deleted!`)
+      if (await DeleteSession(SessionID)){
+        await new Promise((r) => setTimeout(r, 100));
+        deleteLocally(SessionTitle)
+        toast.success(`Session ${SessionTitle} deleted!`)
+      } else {
+        toast.error('Deletion failed. Could not delete. Try again later.', {
+	        duration: 5000,
+          style: 'background: red;',
+        })
+
+      }
   }
 
-  // todo: Add real deletion too.
   function deleteLocally(id: string) {
     for (const item of slugs) {
       if (item.name === id) {
@@ -79,6 +89,7 @@
 
 <div class="main">
   <h1 class="mb-2 text-3xl leading-snug font-bold">Sessions</h1>
+  <Toaster theme="dark"></Toaster>
   <AlertDialog.Root bind:open={deletePopupShowing}>
   <AlertDialog.Content>
     <AlertDialog.Header>
@@ -93,7 +104,7 @@
     <AlertDialog.Action 
       class="bg-red-500 text-white-500" 
       onclick={() => confirmDeleteSession(itemToRemove)}>
-        Remove {itemToRemove}
+        Remove {itemToRemove[0]}
       </AlertDialog.Action>
     </AlertDialog.Footer>
   </AlertDialog.Content>
@@ -128,7 +139,7 @@
             <SessionSlug
               onPress={() => startSes(slug.id)}
               onEdit={() => editSes(slug.id)}
-              onDel={() => deleteSession(slug.name)}
+              onDel={() => deleteSession(slug.name, slug.id)}
               {slug}
             />
           </div>
