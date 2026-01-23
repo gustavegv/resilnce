@@ -13,8 +13,8 @@ import (
 func getValidatedMail(w http.ResponseWriter, r *http.Request) (string, string) {
 
 	userMail := r.URL.Query().Get("mail")
-	SID, userMail, _, success := scookie.ValidateSignedCookie(r)
-	if !success {
+	SID, userMail, _, err := scookie.ValidateSignedCookie(r)
+	if err != nil {
 		println("Verification failed")
 		http.Error(w, "verification failed", http.StatusBadRequest)
 		return "", ""

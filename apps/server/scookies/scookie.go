@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -101,7 +102,7 @@ func GetSecret() []byte {
 	secret, err := base64.RawURLEncoding.DecodeString(sec64)
 
 	if err != nil {
-		log.Fatalf("invalid base64 secret: %v", err)
+		log.Fatalf("invalid base64 secret: %v", err.Error())
 	}
 	if len(secret) < 32 {
 		log.Fatal("secret too short; need >=32 bytes. current length:", len(secret))
@@ -127,20 +128,20 @@ func CreateNewSecret(nChars int) (string, error) {
 	return s[:nChars], nil
 }
 
-func ValidateSignedCookie(r *http.Request) (string, string, string, bool) {
+func ValidateSignedCookie(r *http.Request) (string, string, string, error) {
 	cookie, err := r.Cookie("SignedCookie")
 	if err != nil || cookie.Value == "" {
-		return "No cookie value", "", "", false
+		return "No cookie value", "", "", err
 	}
 	secret := GetSecret()
 	pl, success := Verify(cookie.Value, secret)
 	if !success {
-		return "SCookie Verification failed", "", "", false
+		return "SCookie Verification failed", "", "", errors.New("Signed Cookie Error")
 	}
 
 	if pl.SID == "" {
-		return "SID not found", "", "", false
+		return "SID not found", "", "", errors.New("SID not found")
 	}
 
-	return pl.SID, pl.UID, pl.Name, true
+	return pl.SID, pl.UID, pl.Name, nil
 }

@@ -62,6 +62,16 @@ func (s *Service) UpsertUser(ctx context.Context, provider, providerSID, email, 
 	return email, nil
 }
 
+func isHTTPS(r *http.Request) bool {
+	if r.TLS != nil {
+		return true
+	}
+	if strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https") {
+		return true
+	}
+	return false
+}
+
 func (s *Service) IssueSignedCookie(w http.ResponseWriter, r *http.Request, userID, sub, name string) error {
 	pl := scookie.BuildPayload(userID, sub, name)
 
@@ -78,8 +88,8 @@ func (s *Service) IssueSignedCookie(w http.ResponseWriter, r *http.Request, user
 		Value:    cookie,
 		Path:     "/",
 		HttpOnly: true,
-		SameSite: http.SameSiteNoneMode,
-		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+		Secure:   isHTTPS(r),
 		MaxAge:   ttl,
 	})
 
@@ -175,21 +185,25 @@ func New(ctx context.Context, cfg Config) (*Service, error) {
 		appleTokenURL:    appleTokenURL,
 		appleVerifier:    appleVerifier,
 		appleOAuth:       appleOAuth,
-		stateCookieAttrs: cookieAttrs{Path: "/", HTTPOnly: true, SameSite: http.SameSiteNoneMode, Secure: cfg.SecureCookies, MaxAge: cfg.StateTTLSeconds},
-		pkceCookieAttrs:  cookieAttrs{Path: "/", HTTPOnly: true, SameSite: http.SameSiteNoneMode, Secure: cfg.SecureCookies, MaxAge: cfg.PKCETTLSeconds},
+		stateCookieAttrs: cookieAttrs{Path: "/", HTTPOnly: true, SameSite: http.SameSiteLaxMode, Secure: cfg.SecureCookies, MaxAge: cfg.StateTTLSeconds},
+		pkceCookieAttrs:  cookieAttrs{Path: "/", HTTPOnly: true, SameSite: http.SameSiteLaxMode, Secure: cfg.SecureCookies, MaxAge: cfg.PKCETTLSeconds},
 		RedisStore:       redisStore,
 	}
 	return s, nil
 }
 
-func (s *Service) setCookie(w http.ResponseWriter, name, value string, a cookieAttrs) {
+func (s *Service) setCookie(w http.ResponseWriter, r *http.Request, name, value string, a cookieAttrs) {
+	secure := a.Secure
+	if r.TLS == nil { // not HTTPS
+		secure = false
+	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     name,
 		Value:    value,
 		Path:     a.Path,
 		HttpOnly: a.HTTPOnly,
 		SameSite: a.SameSite,
-		Secure:   a.Secure,
+		Secure:   secure,
 		MaxAge:   a.MaxAge,
 	})
 }
@@ -201,7 +215,7 @@ func (s *Service) clearCookie(w http.ResponseWriter, name string) {
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
-		SameSite: http.SameSiteNoneMode,
+		SameSite: http.SameSiteLaxMode,
 		Secure:   s.cfg.SecureCookies,
 	})
 }
