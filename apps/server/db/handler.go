@@ -24,9 +24,9 @@ type SupabaseCFG struct {
 func (supa *SupabaseCFG) getValidatedMail(w http.ResponseWriter, r *http.Request) string {
 
 	userMail := r.URL.Query().Get("mail")
-	SID, userMail, _, success := scookie.ValidateSignedCookie(r)
-	if !success {
-		println("Verification failed")
+	SID, userMail, _, err := scookie.ValidateSignedCookie(r)
+	if err != nil {
+		println("Verification failed.", err.Error())
 		http.Error(w, "verification failed", http.StatusBadRequest)
 		return ""
 	}
@@ -82,6 +82,7 @@ func (supa *SupabaseCFG) GetUserSessions(w http.ResponseWriter, r *http.Request)
 
 	sesMetaData, err := supa.UserSessions(userMail, ctx)
 	if err != nil {
+		println("Error (GetUserSessions):", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -106,6 +107,7 @@ func (supa *SupabaseCFG) GetSessionExercises(w http.ResponseWriter, r *http.Requ
 
 	exInfo, err := supa.SessionExercises(userMail, sesID, ctx)
 	if err != nil {
+		println("Error (GetSessionExercises):", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
@@ -255,7 +257,7 @@ func (supa *SupabaseCFG) CallSetActiveSession(w http.ResponseWriter, r *http.Req
 
 func validateNewSessionDataHelper(id string, exI []ExInfo) error {
 	if exI == nil || id == "" {
-		return errors.New("Error: New data empty when trying to create new session")
+		return errors.New("Error (validateNewSessionDataHelper - 1): New data empty when trying to create new session")
 	}
 	const maxExPerSes = 100
 	const maxWeight = 9999
@@ -263,7 +265,7 @@ func validateNewSessionDataHelper(id string, exI []ExInfo) error {
 	const maxNameLen = 100
 
 	if len(exI) > maxExPerSes {
-		return errors.New("Error: Too many exercises pushed.")
+		return errors.New("Error (validateNewSessionDataHelper - 2): Too many exercises pushed.")
 	}
 	for _, exercise := range exI {
 		w := exercise.Weights[0]
@@ -271,10 +273,10 @@ func validateNewSessionDataHelper(id string, exI []ExInfo) error {
 		nl := len(exercise.ExName)
 
 		if err != nil {
-			return errors.New("Error: Non numeric set number")
+			return errors.New("Error (validateNewSessionDataHelper - 3): Non numeric set number")
 		}
 		if w > maxWeight || s > maxSets || nl > maxNameLen {
-			return errors.New("Error: Exercise data exceeding max limits")
+			return errors.New("Error (validateNewSessionDataHelper - 4): Exercise data exceeding max limits")
 		}
 	}
 
@@ -302,7 +304,7 @@ func (supa *SupabaseCFG) MakeNewSession(w http.ResponseWriter, r *http.Request) 
 
 	err := validateNewSessionDataHelper(data.SesID, data.ExI)
 	if err != nil {
-		log.Printf("invalid session data: %v", err)
+		log.Printf("invalid session data: %v", err.Error())
 		http.Error(w, "Session data invalid", http.StatusFailedDependency)
 		return
 	}

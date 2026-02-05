@@ -33,17 +33,26 @@ func (s *Service) CallbackGoogle(w http.ResponseWriter, r *http.Request) {
 
 	// validate state
 	state := r.URL.Query().Get("state")
-	storedState, _ := s.getCookie(r, s.cfg.StateCookieName)
+	storedState, err := s.getCookie(r, s.cfg.StateCookieName)
+	if err != nil {
+		fmt.Println("Cookie error:", err.Error())
+		http.Error(w, "Cookie error", http.StatusBadRequest)
+		return
+	}
 	if state == "" || storedState == "" || state != storedState {
 		fmt.Println("Invalid state. \nCurrent state", state, " \nStored state:", storedState)
 		http.Error(w, "Invalid state", http.StatusBadRequest)
-
 		return
 	}
 	s.clearCookie(w, s.cfg.StateCookieName)
 
 	// PKCE
-	codeVerifier, _ := s.getCookie(r, s.cfg.PKCECookieName)
+	codeVerifier, err := s.getCookie(r, s.cfg.PKCECookieName)
+	if err != nil {
+		fmt.Println("Code verifier cookie error:", err.Error())
+		http.Error(w, "Cookie error", http.StatusBadRequest)
+		return
+	}
 	s.clearCookie(w, s.cfg.PKCECookieName)
 
 	// exchang code for token
@@ -87,6 +96,7 @@ func (s *Service) CallbackGoogle(w http.ResponseWriter, r *http.Request) {
 	// save / update session in db
 	email, err := s.UpsertUser(ctx, "google", claims.Sub, claims.Email, claims.Name)
 	if err != nil {
+		println("Error (UpsertUser - 1): User upsert failed.", err.Error())
 		http.Error(w, "user upsert failed", http.StatusInternalServerError)
 		return
 	}
@@ -94,6 +104,7 @@ func (s *Service) CallbackGoogle(w http.ResponseWriter, r *http.Request) {
 	err = s.IssueSignedCookie(w, r, email, claims.Sub, claims.Name)
 
 	if err != nil {
+		println("Error (UpsertUser - 2): Signed cookie failed.", err.Error())
 		http.Error(w, "signed cookie issue failed", http.StatusInternalServerError)
 		return
 	}
@@ -113,6 +124,7 @@ func redirectTo(loc string, w http.ResponseWriter, r *http.Request) {
 		directory = "/account"
 
 	default:
+		println("Error (redirectTo): Unknown redirect.")
 		http.Error(w, "unknown redirect location (googleauth.go)", http.StatusInternalServerError)
 		return
 	}
@@ -121,44 +133,11 @@ func redirectTo(loc string, w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, directory, http.StatusSeeOther)
 }
 
-func (s *Service) GetUserInfoOld(w http.ResponseWriter, r *http.Request) {
-	SID, _, _, success := scookie.ValidateSignedCookie(r)
-	if !success {
-		redirectTo("login", w, r)
-		return
-	}
-
-	ctx := r.Context()
-	data, err := s.store().GetSession(ctx, SID)
-	if err != nil {
-		print("getSession error")
-		http.Error(w, "fail to get session from redis store", http.StatusInternalServerError)
-		return
-	}
-
-	if data == nil {
-		print("redis fetched data empty (googleauth.go)")
-		http.Error(w, "redis data empty", http.StatusNotFound)
-		return
-	}
-	println("redis data sent (googleauth.go):", data)
-	firstName := data.Name
-	mail := data.Email
-
-	resp := map[string]any{
-		"name": firstName,
-		"id":   mail,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
-}
-
 func (s *Service) GetUserInfo(w http.ResponseWriter, r *http.Request) {
-	_, mail, name, success := scookie.ValidateSignedCookie(r)
-	if !success {
-		http.Error(w, "unknown redirect location (googleauth.go)", http.StatusInternalServerError)
-
+	_, mail, name, err := scookie.ValidateSignedCookie(r)
+	if err != nil {
+		println("Error (GetUserInfo):", err.Error())
+		http.Error(w, "Try signing in.", http.StatusUnauthorized)
 		return
 	}
 
