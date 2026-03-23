@@ -14,10 +14,6 @@
     addedSets: number;
   }
 
-  async function editExercise(data: EditData) {
-    // WIP implementation
-  }
-
   let {
     name = $bindable(),
     weight = $bindable(),
@@ -47,42 +43,6 @@
   function uniqueKey(set: number, excerID: number) {
     return `${excerID}-s${set}`;
   }
-
-  // todo: Finishe edit-logic
-  async function onFinishedEditing() {
-    const userID = get(user);
-    if (!userID?.name) {
-      alert('No user signed in');
-      return;
-    }
-    let data: EditData = {
-      user: userID.name,
-      sesID: sesID,
-      exID: exID ?? '',
-
-      oldName: name,
-      newName: newName ?? undefined,
-      newW: newWeight ?? undefined,
-      addedSets: addedSetsCount,
-    };
-
-    console.log('Done. Added:', data);
-
-    await editExercise(data);
-
-    if (onCancel) {
-      onCancel();
-    }
-  }
-
-  function addSet() {
-    addedSetsCount++;
-    reps = [...reps, 7];
-  }
-
-  let newName: string = $state('');
-  let newWeight: number = $state(-1);
-  let addedSetsCount: number = $state(0);
 </script>
 
 <header>

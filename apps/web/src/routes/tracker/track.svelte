@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { fade } from 'svelte/transition';
+  import { fade, scale } from 'svelte/transition';
 
   import '../../app.css';
   import { goto } from '$app/navigation';
@@ -8,7 +8,7 @@
   import ExerciseTrackScreen from './ExerciseTrackScreen.svelte';
   import LoadingSkeleton from './LoadingSkeleton.svelte';
   import * as Card from '$lib/components/ui/card/';
-  import FinishBlob from '../../components/FinishBlob.svelte';
+  import FinishBlob from '../../components/ExerciseCompleteScreen.svelte';
   import { resolve } from '$app/paths';
 
   import {
@@ -57,6 +57,7 @@
     } finally {
       loading = false;
     }
+    monitorOutOfBoundsMovement();
   });
 
   $effect(() => {
@@ -78,9 +79,10 @@
     setTimeout(() => (showOverlay = false), speed);
   }
 
-  function loadNextExercise() {
+  async function loadNextExercise() {
     if (currentExerciseIndex + 1 < exercises.length) {
       currentExerciseIndex += 1;
+      console.log('loaded next, index is: ' + currentExerciseIndex);
     } else {
       console.log('Workout finished?');
     }
@@ -120,7 +122,6 @@
   }
 
   async function submitExercise() {
-    monitorOutOfBoundsMovement();
     const savedProgress = packageUpdatedProgress();
     if (savedProgress == null) {
       console.error('Updated info packaging error');
@@ -130,7 +131,7 @@
     SendUpdate(savedProgress, sesID);
 
     exercises[currentExerciseIndex].finished = true;
-    flashLoadingScreen(100);
+    flashLoadingScreen(150);
 
     if (checkAllFinished()) {
       allFinished = true;
@@ -138,7 +139,9 @@
 
       console.log('Workout finished, active set to false');
     } else {
-      setTimeout(loadNextExercise, 100);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      await loadNextExercise();
+      monitorOutOfBoundsMovement();
     }
   }
 
@@ -157,6 +160,7 @@
   let nextExists = $state(true);
 
   function monitorOutOfBoundsMovement() {
+    console.log('my index: ' + currentExerciseIndex);
     if (currentExerciseIndex - 1 < 0) {
       prevExists = false;
     } else {
@@ -168,9 +172,6 @@
       nextExists = true;
     }
   }
-
-  2 / 2;
-  1 + 1 / 2;
 
   function prevExercise() {
     if (currentExerciseIndex > 0) {
@@ -243,11 +244,10 @@
     </div>
 
     {#if allFinished}
-      <h1 class="pb-8 text-2xl font-bold">Session finished!</h1>
-      <Card.Root class="box m-4 w-full p-4">
-        <h2 class="py-2 text-lg font-semibold">Session overview</h2>
-        <FinishBlob {exercises} />
-      </Card.Root>
+      <h1 class="title" class:is-celebrating={allFinished}>Session finished!</h1>
+      <h2 class="subtitle">Session overview</h2>
+      <hr />
+      <FinishBlob {exercises} />
       <button class="buttonClass w-full" onclick={() => goto(resolve(`/`))}
         >Return to homepage</button
       >
@@ -286,6 +286,61 @@
 </button>
 
 <style>
+  hr {
+    border: 1px solid var(--text-muted);
+    margin: 10px 0;
+    width: 100%;
+  }
+
+  .title {
+    margin: 0 0 0.25rem;
+    font-size: 2.25rem;
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-align: left;
+    width: 100%;
+  }
+
+  .title.is-celebrating {
+    animation: session-finished-celebration 900ms ease both;
+  }
+
+  @keyframes session-finished-celebration {
+    0% {
+      transform: scale(0.92);
+    }
+
+    22% {
+      transform: scale(1.05);
+    }
+
+    38% {
+      transform: scale(1.06);
+    }
+
+    58% {
+      transform: scale(1.09);
+    }
+
+    78% {
+      transform: scale(0.99);
+    }
+
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .subtitle {
+    margin-top: 2rem;
+    font-size: 1.125rem;
+    letter-spacing: 0.03em;
+    color: var(--color-gray);
+    text-align: left;
+    width: 100%;
+  }
+
   .but {
     width: 80%;
     background: var(--color-alt);
