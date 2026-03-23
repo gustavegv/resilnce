@@ -2,7 +2,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import SessionSlug from '../../components/SessionSlug.svelte';
-  import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
+  import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 
   import { fade, scale } from 'svelte/transition';
   import Icon from '@iconify/svelte';
@@ -17,10 +17,10 @@
   let sessionsLoaded: boolean = $state(false);
 
   let deletePopupShowing: boolean = $state(false);
-  let itemToRemove: [string,number] = $state(['',0]);
-  
+  let itemToRemove: [string, number] = $state(['', 0]);
+
   let activeSessionPopupShowing: boolean = $state(false);
-  let sessionToStart: number = $state(-1)
+  let sessionToStart: number = $state(-1);
 
   onMount(async () => {
     slugs = await GetSessions();
@@ -30,21 +30,20 @@
     sessionsLoaded = true;
   });
 
-
   function startSes(id: number) {
     if (isAnotherSessionActive) {
-      activeSessionPopupShowing = true
-      sessionToStart = id
+      activeSessionPopupShowing = true;
+      sessionToStart = id;
     } else {
       goto(resolve(`/tracker/${id}`));
     }
   }
 
-  function confirmStartSession(){
-    const id = sessionToStart
+  function confirmStartSession() {
+    const id = sessionToStart;
     if (id != -1) {
-        SetActiveSession(String(id));
-        goto(resolve(`/tracker/${id}`));
+      SetActiveSession(String(id));
+      goto(resolve(`/tracker/${id}`));
     }
   }
 
@@ -55,26 +54,25 @@
 
   function deleteSession(SessionTitle: string, SesID: number) {
     deletePopupShowing = true;
-    itemToRemove = [SessionTitle, SesID]
+    itemToRemove = [SessionTitle, SesID];
   }
 
-  async function confirmDeleteSession(toRemove: [string, number]){
-      const SessionTitle:string = toRemove[0]
-      const SessionID:number = toRemove[1]
+  async function confirmDeleteSession(toRemove: [string, number]) {
+    const SessionTitle: string = toRemove[0];
+    const SessionID: number = toRemove[1];
 
-      console.log(SessionTitle, 'deleted.');
-      deletePopupShowing = false
-      if (await DeleteSession(SessionID)){
-        await new Promise((r) => setTimeout(r, 100));
-        deleteLocally(SessionTitle)
-        toast.success(`Session ${SessionTitle} deleted!`)
-      } else {
-        toast.error('Deletion failed. Could not delete. Try again later.', {
-	        duration: 5000,
-          style: 'background: red;',
-        })
-
-      }
+    console.log(SessionTitle, 'deleted.');
+    deletePopupShowing = false;
+    if (await DeleteSession(SessionID)) {
+      await new Promise((r) => setTimeout(r, 100));
+      deleteLocally(SessionTitle);
+      toast.success(`Session ${SessionTitle} deleted!`);
+    } else {
+      toast.error('Deletion failed. Could not delete. Try again later.', {
+        duration: 5000,
+        style: 'background: red;',
+      });
+    }
   }
 
   function deleteLocally(id: string) {
@@ -91,42 +89,42 @@
   <h1 class="mb-2 text-3xl leading-snug font-bold">Sessions</h1>
   <Toaster theme="dark"></Toaster>
   <AlertDialog.Root bind:open={deletePopupShowing}>
-  <AlertDialog.Content>
-    <AlertDialog.Header>
-    <AlertDialog.Title>Are you absolutely sure?</AlertDialog.Title>
-    <AlertDialog.Description>
-      This action cannot be undone. This will permanently delete the session
-      and remove it from our servers.
-    </AlertDialog.Description>
-    </AlertDialog.Header>
-    <AlertDialog.Footer>
-    <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-    <AlertDialog.Action 
-      class="bg-red-500 text-white-500" 
-      onclick={() => confirmDeleteSession(itemToRemove)}>
-        Remove {itemToRemove[0]}
-      </AlertDialog.Action>
-    </AlertDialog.Footer>
-  </AlertDialog.Content>
+    <AlertDialog.Content>
+      <AlertDialog.Header>
+        <AlertDialog.Title>Are you absolutely sure?</AlertDialog.Title>
+        <AlertDialog.Description>
+          This action cannot be undone. This will permanently delete the session and remove it from
+          our servers.
+        </AlertDialog.Description>
+      </AlertDialog.Header>
+      <AlertDialog.Footer>
+        <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+        <AlertDialog.Action
+          class="text-white-500 bg-red-500"
+          onclick={() => confirmDeleteSession(itemToRemove)}
+        >
+          Remove {itemToRemove[0]}
+        </AlertDialog.Action>
+      </AlertDialog.Footer>
+    </AlertDialog.Content>
   </AlertDialog.Root>
 
-    <AlertDialog.Root bind:open={activeSessionPopupShowing}>
-  <AlertDialog.Content>
-    <AlertDialog.Header>
-    <AlertDialog.Title>Another session is already active!</AlertDialog.Title>
-    <AlertDialog.Description>
-      Are you sure you want to start a new one?
-    </AlertDialog.Description>
-    </AlertDialog.Header>
-    <AlertDialog.Footer>
-    <AlertDialog.Cancel>No, take me back</AlertDialog.Cancel>
-    <AlertDialog.Action 
-      class="bg-green-600 text-white-500" 
-      onclick={() => confirmStartSession()}>
-        Yes, start new session
-      </AlertDialog.Action>
-    </AlertDialog.Footer>
-  </AlertDialog.Content>
+  <AlertDialog.Root bind:open={activeSessionPopupShowing}>
+    <AlertDialog.Content>
+      <AlertDialog.Header>
+        <AlertDialog.Title>Another session is already active!</AlertDialog.Title>
+        <AlertDialog.Description>Are you sure you want to start a new one?</AlertDialog.Description>
+      </AlertDialog.Header>
+      <AlertDialog.Footer>
+        <AlertDialog.Cancel>No, take me back</AlertDialog.Cancel>
+        <AlertDialog.Action
+          class="text-white-500 bg-green-600"
+          onclick={() => confirmStartSession()}
+        >
+          Yes, start new session
+        </AlertDialog.Action>
+      </AlertDialog.Footer>
+    </AlertDialog.Content>
   </AlertDialog.Root>
 
   <hr />

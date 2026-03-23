@@ -40,20 +40,20 @@ function address(dir: string): string {
   return baseURL + dir;
 }
 
-function statusToasterHandler(code: number){
+function statusToasterHandler(code: number) {
   switch (code) {
     case 400:
-      toast.error("The request could not be processed. Please check your input or try again.")
+      toast.error('The request could not be processed. Please check your input or try again.');
       break;
     case 401:
-      toast.error("Your session has expired. Please log in again.")
+      toast.error('Your session has expired. Please log in again.');
       break;
     case 403:
-      toast.error("You don't have permission to access this feature.")
+      toast.error("You don't have permission to access this feature.");
       break;
 
     default:
-      toast.error("Network response was not ok. Try again.")
+      toast.error('Network response was not ok. Try again.');
       break;
   }
 }
@@ -64,7 +64,7 @@ async function fetchDB(dir: string): Promise<any> {
     credentials: 'include',
   });
   if (!res.ok) {
-    statusToasterHandler(res.status)
+    statusToasterHandler(res.status);
     throw new Error('Network response was not ok');
   } else {
     const data = await res.json();
@@ -85,7 +85,7 @@ async function postDB(dir: string, data: any): Promise<boolean> {
     const text = await res.text();
     console.error(`Request failed: ${res.status} ${res.statusText}`);
     console.error('Response body:', text);
-    return false
+    return false;
   } else {
     return true;
   }
@@ -168,6 +168,6 @@ export async function SetActiveSession(sesID: string) {
   await postDB(`setActive?sesID=${sesID}`, null);
 }
 
-export async function DeleteSession(sesID: number):Promise<boolean> {
+export async function DeleteSession(sesID: number): Promise<boolean> {
   return await postDB(`deleteSession?sesID=${sesID}`, null);
 }

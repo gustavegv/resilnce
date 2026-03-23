@@ -92,11 +92,7 @@
       <Icon icon="material-symbols:edit-outline" width="32" fill={'#FFC107'} />
     </button>
     <button class="icon-under del" onclick={del}>
-      <Icon
-        icon="material-symbols:delete-outline-rounded"
-        width="32"
-        fill={'#dc3545'}
-      />
+      <Icon icon="material-symbols:delete-outline-rounded" width="32" fill={'#dc3545'} />
     </button>
   </div>
 </div>
