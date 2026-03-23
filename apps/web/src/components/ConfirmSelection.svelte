@@ -24,17 +24,18 @@
   .confirm-button {
     display: block;
     width: 100%;
-    padding: 1rem;
+    padding: 0.75rem;
     margin-top: 2rem;
     background-color: var(--color-secondary);
-    font-size: 1.25rem;
+    font-size: 18px;
     border: none;
-    border-radius: 0.5rem;
+    border-radius: 10px;
     cursor: pointer;
   }
 
   .confirm-button.diabled {
     color: rgb(255, 255, 255);
     pointer-events: none;
+    background-color: var(--color-secondary-muted);
   }
 </style>

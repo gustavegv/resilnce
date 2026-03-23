@@ -16,18 +16,21 @@
   } = $props();
 
   let curCount = $state(reps);
+  const ogCount = reps;
 
   onMount(() => {
     onCountChange?.({ id, count: curCount });
   });
 
   function decrement() {
+    popScaleWeight();
     curCount = Math.max(0, curCount - 1);
     checksRep();
     onCountChange?.({ id, count: curCount });
   }
 
   function increment() {
+    popScaleWeight();
     curCount += 1;
     checksRep();
     onCountChange?.({ id, count: curCount });
@@ -41,43 +44,52 @@
   }
 
   let checked: boolean = $state(false);
+
+  function getActive(check: boolean): string {
+    if (check) {
+      return 'active';
+    }
+    return 'inactive';
+  }
+
+  let weightPopped = $state(false);
+  function popScaleWeight() {
+    weightPopped = true;
+    setTimeout(() => {
+      weightPopped = false;
+    }, 150);
+  }
 </script>
 
-{#if !finished}
-  <div class="counter-container">
-    <div class="check {checked}"><Icon icon="gg:check-o" /></div>
-    <div>Set {id}</div>
-    <div class="controls">
-      <button class="buttonClass" onclick={decrement}>
-        <Icon icon="ic:sharp-minus"></Icon>
-      </button>
-      <button onclick={checksRep}>{curCount}</button>
-      <button class="buttonClass" onclick={increment}>
-        <Icon icon="ic:sharp-plus"></Icon>
-      </button>
+<div class="counter-container set--{getActive(checked)} finished-{finished}">
+  <div class="check {checked}"><Icon icon="gg:check-o" /></div>
+  <div class="set-card-left">
+    <div class="set-count">{id}</div>
+    <div class="set-description">
+      <p class="set-status">Set goal</p>
+      <p class="set-goal">{ogCount} <span> reps</span></p>
     </div>
   </div>
-{:else}
-  <div class="counter-container disabled">
-    <div>Set {id}</div>
-    <div class="controls">
-      <button class="disabled buttonClass" onclick={decrement}>
-        <Icon icon="ic:sharp-minus"></Icon>
-      </button>
-      <span class="mini">{curCount}</span>
-      <button class="disabled buttonClass bg-white" onclick={increment}>
-        <Icon icon="ic:sharp-plus"></Icon>
-      </button>
-    </div>
+
+  <div class="controls">
+    <button class="stepper" onclick={decrement}>
+      <Icon icon="ic:sharp-minus"></Icon>
+    </button>
+    <button class="stepper-count" class:stepper-scale={weightPopped} onclick={checksRep}
+      >{curCount}</button
+    >
+    <button class="stepper" onclick={increment}>
+      <Icon icon="ic:sharp-plus"></Icon>
+    </button>
   </div>
-{/if}
+</div>
 
 <style>
   .check {
     position: absolute;
-    right: 0.5rem;
+    right: 2.5rem;
     transition: all 0.3s;
-    opacity: 1;
+    opacity: 0;
   }
 
   .check.false {
@@ -85,32 +97,124 @@
   }
 
   .counter-container {
-    position: relative;
-    text-align: center;
-    margin: 0.5rem 0;
-    background-color: var(--color-secondary);
-    width: 80%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: #2a2a2a;
+    width: 100%;
     border-radius: 10px;
-    padding: 0.5rem 0;
     box-shadow: var(--shadow-dark);
+  }
+
+  .counter-container.set--active {
+  }
+
+  .finished-true {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  .set-count {
+    background: #3e3e3e;
+    padding: 1rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    transition: all ease 300ms;
+  }
+
+  .set--active .set-count {
+    background: #3c513b;
+    border: 1px solid rgba(133, 255, 103, 0.441);
+    color: rgb(117, 255, 117);
+  }
+
+  .finished-true .set-count {
+    background: #2b322b;
+    border: 1px solid rgba(133, 255, 103, 0.441);
+    color: rgb(160, 255, 160);
+  }
+
+  .set-card-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .set-description {
+    display: flex;
+    flex-direction: column;
+    justify-content: baseline;
+  }
+
+  .set-status {
+    margin: 0 0 0.125rem;
+    font-size: 0.625rem;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    text-align: left;
+  }
+
+  .set-goal {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+    white-space: nowrap;
+    text-align: left;
+  }
+
+  .set-goal span {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+
+  .stepper {
+    height: 2.5rem;
+    width: 2.5rem;
+
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #3e3e3e;
+    color: var(--color-text);
+    transition:
+      scale 80ms cubic-bezier(0.175, 0.885, 0.32, 1.275),
+      filter ease 100ms;
+    filter: brightness(1);
+  }
+
+  .stepper:active {
+    filter: brightness(0.9);
+    transform: scale(0.9);
+  }
+
+  .stepper-count {
+    transition: scale ease-out 250ms;
+    width: 3rem;
+    text-align: center;
+    font-size: 1.25rem;
+    font-weight: 700;
+    scale: 1;
+  }
+
+  .stepper-scale {
+    scale: 1.1;
   }
 
   .controls {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    font-size: 2rem;
-  }
-
-  .but {
-    width: 55px;
-    height: 55px;
-
-    background-color: var(--color-gray);
-    color: var(--color-black);
-    padding: 14px;
-    border-radius: 50px;
+    gap: 0.5rem;
+    flex: 0 0 auto;
   }
 
   .counter-container.mini {
@@ -124,7 +228,6 @@
     font-weight: 500;
     pointer-events: none;
     box-shadow: none;
-
     margin: auto;
 
     width: 100%;
@@ -133,14 +236,6 @@
 
   .controls.mini {
     font-size: 16px;
-  }
-
-  .but.mini {
-    text-align: center;
-    padding: 0;
-    border-radius: 10px;
-    font-size: 16px;
-    width: 40px;
   }
 
   .mini-count {

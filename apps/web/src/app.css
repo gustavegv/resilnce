@@ -175,10 +175,13 @@ button.mini {
   --color-black: #141414;
 
   --color-text: #ffffff;
+  --text-muted: #bfcaba;
 
   --gradient-prim-o: linear-gradient(to right, #1a1a1a 0%, #222222 50%, #2f2f2f 100%);
 
   --color-secondary: #4a984b;
+  --color-secondary-muted: rgb(85, 86, 85);
+
   --color-alt: #71d772;
 
   --color-background: #232323;

@@ -85,58 +85,19 @@
   let addedSetsCount: number = $state(0);
 </script>
 
-{#if edit}
-  <div class="edit-mother">
-    <div class="edit-pill">
-      <smp
-        onkeydown={(e: KeyboardEvent) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-          }
-        }}
-        role="button"
-        tabindex="0"
-        onclick={onCancel}>Cancel</smp
-      >
-
-      <h1>Edit mode</h1>
-      <smp
-        onkeydown={(e: KeyboardEvent) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-          }
-        }}
-        role="button"
-        tabindex="0"
-        onclick={onFinishedEditing}>Done</smp
-      >
-    </div>
-  </div>
-
-  <header>
-    <input bind:value={newName} placeholder={name + ' (tap to edit)'} class="title" />
-    <input
-      bind:value={newWeight}
-      placeholder={weight + ' kg (tap to edit)'}
-      class="title"
-      type={'number'}
-    />
-  </header>
-{:else}
-  <header>
-    <h1 class="text-3xl font-bold">{name}</h1>
-    <h2 class="text-2xl">{weight} kg</h2>
-  </header>
-{/if}
+<header>
+  <h1 class="exercise-title">{name}</h1>
+  <p class="exercise-subtitle">
+    Target Weight: <strong>{weight} KG</strong>
+  </p>
+</header>
 
 <cont class="cont">
   {#each reps as block, index (uniqueKey(index, exIndex))}
     <SetBlock id={index + 1} {finished} reps={block} onCountChange={onCount} />
   {/each}
 
-  {#if edit}
-    <button class="buttonClass" onclick={addSet}><h1>Add set</h1></button>
-  {:else}
-    <ConfirmSelection {finished} onConfirm={onSubmit} />
-  {/if}
+  <ConfirmSelection {finished} onConfirm={onSubmit} />
 </cont>
 
 <style>
@@ -149,45 +110,34 @@
     overflow-y: auto;
     overflow-x: hidden;
     touch-action: pan-y;
+    gap: 0.5rem;
   }
 
-  .title {
-    font-size: 2em;
-    font-weight: bold;
-    border: none;
-    outline: none;
-    background: transparent;
-    width: 80%;
-    font-family: inherit;
-    color: var(--color-secondary);
-    margin: 1rem 0;
-    text-align: center;
-  }
-
-  .edit-mother {
-    position: absolute;
-    top: 0;
-    background-color: blue;
+  header {
     width: 100%;
-    z-index: 100;
     display: flex;
-
-    justify-content: center;
+    flex-direction: column;
+    align-items: baseline;
+    margin-bottom: 2rem;
   }
 
-  .edit-pill {
-    background-color: purple;
-    width: 90%;
-    border-radius: 100rem;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-evenly;
-    align-items: center;
+  .exercise-title {
+    margin: 0 0 0.25rem;
+    font-size: 2.25rem;
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -0.02em;
   }
 
-  smp {
-    background-color: red;
-    padding: 0.5rem 1rem;
-    border-radius: 100rem;
+  .exercise-subtitle {
+    margin: 0;
+    font-size: 0.875rem;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+  }
+
+  .exercise-subtitle strong {
+    color: var(--color-alt);
+    font-weight: 700;
   }
 </style>

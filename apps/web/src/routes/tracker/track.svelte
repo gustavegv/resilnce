@@ -73,9 +73,9 @@
     }
   }
 
-  function flashLoadingScreen() {
+  function flashLoadingScreen(speed: number) {
     showOverlay = true;
-    setTimeout(() => (showOverlay = false), 100);
+    setTimeout(() => (showOverlay = false), speed);
   }
 
   function loadNextExercise() {
@@ -120,6 +120,7 @@
   }
 
   async function submitExercise() {
+    monitorOutOfBoundsMovement();
     const savedProgress = packageUpdatedProgress();
     if (savedProgress == null) {
       console.error('Updated info packaging error');
@@ -129,7 +130,7 @@
     SendUpdate(savedProgress, sesID);
 
     exercises[currentExerciseIndex].finished = true;
-    flashLoadingScreen();
+    flashLoadingScreen(100);
 
     if (checkAllFinished()) {
       allFinished = true;
@@ -152,16 +153,37 @@
     return finished;
   }
 
+  let prevExists = $state(false);
+  let nextExists = $state(true);
+
+  function monitorOutOfBoundsMovement() {
+    if (currentExerciseIndex - 1 < 0) {
+      prevExists = false;
+    } else {
+      prevExists = true;
+    }
+    if (currentExerciseIndex + 1 >= exercises.length) {
+      nextExists = false;
+    } else {
+      nextExists = true;
+    }
+  }
+
+  2 / 2;
+  1 + 1 / 2;
+
   function prevExercise() {
     if (currentExerciseIndex > 0) {
       currentExerciseIndex--;
     }
+    monitorOutOfBoundsMovement();
   }
 
   function skipExercise() {
     if (exercises.length > currentExerciseIndex + 1) {
       currentExerciseIndex++;
     }
+    monitorOutOfBoundsMovement();
   }
 
   async function quitSession() {
@@ -182,6 +204,22 @@
   function enterEditMode() {
     editMode = true;
   }
+
+  function getProgressRatio(): number {
+    if (allFinished) {
+      return 100;
+    }
+    const ratio: number = currentExerciseIndex / exercises.length;
+    return 100 * ratio;
+  }
+
+  function getProgressFraction(): string {
+    if (allFinished) {
+      return exercises.length + ' of ' + exercises.length;
+    }
+
+    return currentExerciseIndex + 1 + ' of ' + exercises.length;
+  }
 </script>
 
 {#if showOverlay}
@@ -192,47 +230,54 @@
   {#if loading || error}
     <LoadingSkeleton />
     <h1 class="text-2xl">{error ?? ''}</h1>
-  {:else if allFinished}
-    <h1 class="pb-8 text-2xl font-bold">Session finished!</h1>
-    <Card.Root class="box m-4 w-full p-4">
-      <h2 class="py-2 text-lg font-semibold">Session overview</h2>
-      <FinishBlob {exercises} />
-    </Card.Root>
-    <button class="buttonClass w-full" onclick={() => goto(resolve(`/`))}>Return to homepage</button
-    >
-  {:else if editMode}
-    <ExerciseTrackScreen
-      name={exName}
-      weight={exWeight}
-      reps={repArray}
-      finished={true}
-      exIndex={currentExerciseIndex}
-      onCount={handleRepCountIncrementation}
-      onSubmit={submitExercise}
-      onCancel={exitEditMode}
-      edit={true}
-      {sesID}
-    />
   {:else}
-    <button onclick={() => quitSession()} class="abs buttonClass">
-      <Icon icon="entypo:log-out" color="grey" width={20} />
-    </button>
-    <div class="movement-cont">
-      <button class="movement-b mini buttonClass" onclick={() => prevExercise()}>Prev</button>
-      <p class="text-muted-foreground">{currentExerciseIndex + 1}/{exercises.length}</p>
-      <button class="movement-b mini buttonClass" onclick={() => skipExercise()}>Skip</button>
+    <div class="progress">
+      <div class="progress-header">
+        <span class="label">Session Progress</span>
+        <span class="label label--accent">Exercise {getProgressFraction()}</span>
+      </div>
+
+      <div class="progress-track">
+        <div class="progress-fill" style="width: {getProgressRatio()}%"></div>
+      </div>
     </div>
 
-    <ExerciseTrackScreen
-      name={exName}
-      weight={exWeight}
-      reps={repArray}
-      {finished}
-      exIndex={currentExerciseIndex}
-      onCount={handleRepCountIncrementation}
-      onSubmit={submitExercise}
-      {sesID}
-    />
+    {#if allFinished}
+      <h1 class="pb-8 text-2xl font-bold">Session finished!</h1>
+      <Card.Root class="box m-4 w-full p-4">
+        <h2 class="py-2 text-lg font-semibold">Session overview</h2>
+        <FinishBlob {exercises} />
+      </Card.Root>
+      <button class="buttonClass w-full" onclick={() => goto(resolve(`/`))}
+        >Return to homepage</button
+      >
+    {:else}
+      <button onclick={() => quitSession()} class="abs buttonClass">
+        <Icon icon="entypo:log-out" color="grey" width={20} />
+      </button>
+
+      <ExerciseTrackScreen
+        name={exName}
+        weight={exWeight}
+        reps={repArray}
+        {finished}
+        exIndex={currentExerciseIndex}
+        onCount={handleRepCountIncrementation}
+        onSubmit={submitExercise}
+        {sesID}
+      />
+
+      <div class="movement-cont">
+        <button class="movement-b" class:inactive={!prevExists} onclick={() => prevExercise()}>
+          <Icon icon="material-symbols:arrow-left-alt-rounded" />
+          <span>Prev</span>
+        </button>
+        <button class="movement-b" class:inactive={!nextExists} onclick={() => skipExercise()}>
+          <span>Skip</span>
+          <Icon icon="material-symbols:arrow-right-alt-rounded" />
+        </button>
+      </div>
+    {/if}
   {/if}
 </main>
 
@@ -243,6 +288,44 @@
 <style>
   .but {
     width: 80%;
+    background: var(--color-alt);
+  }
+
+  .progress {
+    margin-bottom: 2rem;
+    width: 100%;
+  }
+
+  .progress-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .label {
+    font-family: var(--font-label);
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .label--accent {
+    font-weight: 600;
+    color: var(--color-alt);
+  }
+
+  .progress-track {
+    width: 100%;
+    height: 2px;
+    background: var(--border);
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    transition: all ease-in-out 280ms;
+    height: 100%;
     background: var(--color-alt);
   }
 
@@ -322,7 +405,7 @@
   .overlay {
     position: fixed;
     inset: 0;
-    background: rgb(255, 255, 255);
+    background: #fff;
     opacity: 0.2;
     pointer-events: none;
   }
@@ -331,11 +414,30 @@
     flex-direction: row;
     justify-content: space-between;
     width: 100%;
+    margin-top: 2rem;
   }
 
   .movement-b {
-    background-color: var(--color-secondary);
-    color: var(--color-contrast);
+    display: flex;
+
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: center;
+    width: 5rem;
+    height: 2rem;
+    border-radius: 20px;
+    border: none;
+    outline: none;
     box-shadow: var(--shadow-dark);
+  }
+
+  .movement-b.inactive {
+    filter: brightness(0.5);
+    opacity: 0;
+  }
+
+  .movement-b span {
+    font-size: 12px;
+    color: var(--color-contrast);
   }
 </style>
