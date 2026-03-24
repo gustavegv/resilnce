@@ -23,7 +23,7 @@ const config = {
       ui: path.resolve('src/lib/components/ui'),
     },
     paths: {
-      base: dev ? '' : '/resilnce',
+      base: dev ? '' : '',
     },
     prerender: {
       // onError 'continue' will skip over any 404s instead of crashing

@@ -1,7 +1,7 @@
 {
   "name": "resilnce",
   "short_name": "resilnce",
-  "start_url": "/resilnce",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#232323",
   "theme_color": "#232323",
