@@ -129,7 +129,7 @@ func CreateNewSecret(nChars int) (string, error) {
 }
 
 func ValidateSignedCookie(r *http.Request) (string, string, string, error) {
-	cookie, err := r.Cookie("SignedCookie")
+	cookie, err := r.Cookie("__Host-SignedCookie")
 	if err != nil || cookie.Value == "" {
 		return "No cookie value", "", "", err
 	}

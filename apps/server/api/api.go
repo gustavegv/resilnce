@@ -18,7 +18,7 @@ func LogOutUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     "SignedCookie",
+		Name:     "__Host-SignedCookie",
 		Value:    "",
 		Path:     "/",
 		MaxAge:   -1,

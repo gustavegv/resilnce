@@ -74,11 +74,11 @@ func (s *Service) IssueSignedCookie(w http.ResponseWriter, r *http.Request, user
 
 	const ttl = 86400 * 120
 	http.SetCookie(w, &http.Cookie{
-		Name:     "SignedCookie",
+		Name:     "__Host-SignedCookie",
 		Value:    cookie,
 		Path:     "/",
 		HttpOnly: true,
-		SameSite: http.SameSiteNoneMode,
+		SameSite: http.SameSiteLaxMode,
 		Secure:   true,
 		MaxAge:   ttl,
 	})
@@ -175,8 +175,8 @@ func New(ctx context.Context, cfg Config) (*Service, error) {
 		appleTokenURL:    appleTokenURL,
 		appleVerifier:    appleVerifier,
 		appleOAuth:       appleOAuth,
-		stateCookieAttrs: cookieAttrs{Path: "/", HTTPOnly: true, SameSite: http.SameSiteNoneMode, Secure: cfg.SecureCookies, MaxAge: cfg.StateTTLSeconds},
-		pkceCookieAttrs:  cookieAttrs{Path: "/", HTTPOnly: true, SameSite: http.SameSiteNoneMode, Secure: cfg.SecureCookies, MaxAge: cfg.PKCETTLSeconds},
+		stateCookieAttrs: cookieAttrs{Path: "/", HTTPOnly: true, SameSite: http.SameSiteLaxMode, Secure: cfg.SecureCookies, MaxAge: cfg.StateTTLSeconds},
+		pkceCookieAttrs:  cookieAttrs{Path: "/", HTTPOnly: true, SameSite: http.SameSiteLaxMode, Secure: cfg.SecureCookies, MaxAge: cfg.PKCETTLSeconds},
 		RedisStore:       redisStore,
 	}
 	return s, nil
@@ -201,7 +201,7 @@ func (s *Service) clearCookie(w http.ResponseWriter, name string) {
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
-		SameSite: http.SameSiteNoneMode,
+		SameSite: http.SameSiteLaxMode,
 		Secure:   s.cfg.SecureCookies,
 	})
 }
