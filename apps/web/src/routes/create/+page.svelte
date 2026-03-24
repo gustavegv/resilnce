@@ -78,7 +78,6 @@
 
 <style>
   :global(:root) {
-    --card: rgb(43, 43, 43);
     --card-hover: rgba(255, 255, 255, 0.09);
     --ring: #9bb7ff;
     --shadow: var(--shadow-dark);
@@ -127,7 +126,7 @@
 
     gap: clamp(1rem, 2.5vw, 2rem);
     padding: clamp(1.25rem, 4vw, 2.5rem);
-    background: var(--card);
+    background: var(--surface-low);
     backdrop-filter: saturate(140%) blur(8px);
     transition:
       transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -146,12 +145,6 @@
     width: clamp(64px, 16vw, 100px);
     height: clamp(64px, 16vw, 100px);
     border-radius: var(--radius-lg);
-    background: linear-gradient(
-      135deg,
-      color-mix(in lab, var(--accent) 65%, #fff 0%),
-      color-mix(in lab, var(--accent-2) 65%, #fff 0%)
-    );
-    border: 1px solid rgba(255, 255, 255, 0.24);
     box-shadow:
       inset 0 1px 0 rgba(163, 163, 163, 0.28),
       0 5px 20px rgba(122, 162, 255, 0.12);

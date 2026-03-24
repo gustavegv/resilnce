@@ -14,6 +14,7 @@
   import { page } from '$app/state';
   import { toast } from 'svelte-sonner';
   import { getMe } from '../../me';
+    import Icon from '@iconify/svelte';
 
   let sessionName = $state('');
   let newExName = $state('');
@@ -259,7 +260,7 @@
       onCountChange={(count: number) => autoIncreaseChange(count)}
     />
 
-    <button class="add buttonClass" onclick={addExercise}>Add to session</button>
+    <button class="add buttonClass" onclick={addExercise}>Add to session <Icon icon="material-symbols:add"/></button>
   </div>
 
   <SortableList bind:this={sessionExercisesList} editData={useInputFieldForEditing} />
@@ -269,9 +270,14 @@
 
 <style>
   .add {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
     background-color: var(--color-secondary);
     width: 60%;
-    padding: 0.5rem;
+    padding: var(--spacing-xs);
+    border-radius: var(--border-middle);
     font-weight: 400;
     font-size: 16px;
   }
@@ -295,18 +301,17 @@
     background: transparent;
     width: 80%;
     font-family: inherit;
-    color: white;
     margin: 1rem 0;
   }
 
   .add-box {
     display: flex;
     flex-direction: column;
-    padding: 1rem;
+    padding: var(--spacing-md);
     width: 80%;
     height: fit-content;
     background-color: var(--color-background);
-    border-radius: 15px;
+    border-radius: var(--border-outer);
     align-items: center;
 
     box-shadow: var(--shadow-dark);

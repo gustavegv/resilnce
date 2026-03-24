@@ -70,7 +70,7 @@
     flex-direction: column;
     box-sizing: border-box;
     padding: 0rem 2rem 1rem 2rem;
-    background: #2a2a2a;
+    background: var(--surface-low);
 
     justify-content: space-between;
     align-items: baseline;
@@ -101,7 +101,7 @@
   .set-box {
     padding: 0.5rem 1rem;
     border-radius: 0.5rem;
-    background: #3e3e3e;
+    background: var(--color-surface-middle);
 
     text-align: center;
   }

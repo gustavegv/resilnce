@@ -101,8 +101,8 @@
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding: 1.25rem;
-    background: #2a2a2a;
+    padding: var(--spacing-md);
+    background: var(--surface-low);
     width: 100%;
     border-radius: 10px;
     box-shadow: var(--shadow-dark);
@@ -117,7 +117,7 @@
   }
 
   .set-count {
-    background: #3e3e3e;
+    background: var(--surface-middle);
     padding: 1rem;
     width: 2.5rem;
     height: 2.5rem;
@@ -184,7 +184,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #3e3e3e;
+    background: var(--surface-middle);
     color: var(--color-text);
     transition:
       scale 80ms cubic-bezier(0.175, 0.885, 0.32, 1.275),

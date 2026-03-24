@@ -220,7 +220,7 @@
     box-sizing: border-box;
     padding: 5rem 0;
     height: 100vh;
-    background: var(--gradient-prim-o);
+    background: var(--gradient-front-page);
   }
 
   @media screen and (max-device-height: 667px) and (orientation: portrait) {
@@ -240,7 +240,7 @@
 
   h1 {
     font-weight: 600;
-    color: var(--color-contrast);
+    color: var(--color-text);
   }
 
   .cont {
@@ -277,7 +277,7 @@
 
   .base-btn.alt {
     background-color: var(--color-alt);
-    color: var(--color-contrast);
+    color: var(--color-text);
     box-shadow: var(--color-alt) 0px 0px 20px 1px;
     margin-bottom: 1rem;
   }

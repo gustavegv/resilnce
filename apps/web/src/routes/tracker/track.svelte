@@ -453,9 +453,6 @@
 
     min-height: 100vh;
   }
-  .app-container.edit-mode {
-    background: var(--gradient-edit);
-  }
 
   .overlay {
     position: fixed;
@@ -493,6 +490,6 @@
 
   .movement-b span {
     font-size: 12px;
-    color: var(--color-contrast);
+    color: var(--color-text);
   }
 </style>
