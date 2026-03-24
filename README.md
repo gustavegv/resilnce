@@ -1,15 +1,13 @@
-# resilnce
- *The only gym tracker you need*
 
 <p align="center">
-  <img src="md-images/preview.png" alt="Översikt / UI">
+  <img src="md-images/gh_banner.png" alt="Översikt / UI">
 </p>
 
 ### The goal with the project
 **resilnce** aims to deliver seamless, reliable workout tracking ready to go. 
 A web app that truly feels native.
 No installs, no friction.
-Just log in, track your progress and pick up where you left off - on any device.
+Just log in, track your progress and pick up where you left off, on any device.
 
 ### Features
 * Exercise tracking with automatic weight increases once a certain rep threshold is met on an exercise. Perfect for easy progressive overload, which is key for muscle growth.
