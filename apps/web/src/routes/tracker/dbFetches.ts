@@ -23,8 +23,8 @@ export interface ExerciseInfo {
   order?: number;
   id?: number;
   finished?: boolean;
-  autoIncrease?: number;
-  repThreshold?: number;
+  auto_increase?: number;
+  rep_threshold?: number;
 }
 
 export interface SessionMetaData {

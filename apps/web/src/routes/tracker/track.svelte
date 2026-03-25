@@ -14,7 +14,6 @@
 
   import {
     CompleteSession,
-    GetFinishedExercises,
     GetSessionExercises,
     SendUpdate,
     SetActiveSession,
@@ -42,10 +41,6 @@
     !loading && exercises[currentExerciseIndex] ? exercises[currentExerciseIndex] : undefined
   );
 
-  const exName: string = $derived(currentExercise?.name ?? '');
-  const exID: number = $derived(currentExercise?.id ?? -1);
-  const repArray: number[] = $derived(currentExercise?.currentProgress.repsPerSet ?? []);
-  const exWeight: number = $derived(currentExercise?.currentProgress.weightPerSet[0] ?? 0);
   const finished: boolean = $derived(currentExercise?.finished ?? false);
 
   onMount(async () => {
@@ -98,15 +93,15 @@
   function packageUpdatedProgress() {
     if (currentExercise) {
       const finalReps = currentExercise.currentProgress.repsPerSet;
-      let finalWeight: number = exWeight;
-      const threshold = currentExercise.repThreshold ?? 12;
+      let finalWeight: number = currentExercise?.currentProgress.weightPerSet[0];
+      const threshold = currentExercise.rep_threshold ?? 12;
 
       var packagedReps: number[] = finalReps.slice(); // kopiera array
 
       if (checkRepThresholdMet(finalReps, threshold)) {
         const baseRep = Math.floor(threshold / 1.7);
         packagedReps.fill(baseRep, 0, finalReps.length);
-        finalWeight += currentExercise.autoIncrease ?? 2.5;
+        finalWeight += currentExercise.auto_increase ?? 2.5;
       }
 
       var packagedWeight: number[] = new Array(packagedReps.length);
@@ -359,16 +354,12 @@
           </div>
         {/if}
       </div>
-
       <ExerciseTrackScreen
-        name={exName}
-        weight={exWeight}
-        reps={repArray}
         {finished}
         exIndex={currentExerciseIndex}
         onCount={handleRepCountIncrementation}
         onSubmit={submitExercise}
-        {sesID}
+        exData={currentExercise}
       />
 
       <div class="movement-cont">
