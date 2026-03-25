@@ -258,6 +258,24 @@
     if (confirm('Finish the session now?\nYou will go to the session summary.')) {
     }
   }
+
+function getNextUnfinishedIndex(): number {
+  return exercises.findIndex((ex) => !ex.finished);
+}
+
+function checkNextUnfinished(): boolean {
+  const index = getNextUnfinishedIndex();
+  return index !== -1 && exercises[index].id === currentExercise?.id;
+}
+
+function gotoNextUnfinished() {
+  const index = getNextUnfinishedIndex();
+  if (index !== -1) {
+    currentExerciseIndex = index;
+    monitorOutOfBoundsMovement();
+
+  }
+}
 </script>
 
 {#if showOverlay}
@@ -363,6 +381,9 @@
         <button class="movement-b" class:inactive={!prevExists} onclick={() => prevExercise()}>
           <Icon icon="material-symbols:arrow-left-alt-rounded" />
           <span>Prev</span>
+        </button>
+        <button class="movement-b long" class:inactive={checkNextUnfinished()} onclick={() => gotoNextUnfinished()}>
+          <span>Back to current</span>
         </button>
         <button class="movement-b" class:inactive={!nextExists} onclick={() => skipExercise()}>
           <span>Skip</span>
@@ -518,6 +539,10 @@
   .movement-b.inactive {
     filter: brightness(0.5);
     opacity: 0;
+  }
+
+  .movement-b.long {
+    width: 40%;
   }
 
   .movement-b span {
