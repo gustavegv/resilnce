@@ -75,7 +75,7 @@
         if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') go('back');
       }}
     >
-      <Icon icon="entypo:back" color="grey"></Icon>
+      <Icon icon="material-symbols:arrow-back-rounded" color="grey"></Icon>
     </g>
 
     <div

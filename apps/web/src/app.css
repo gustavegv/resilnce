@@ -178,9 +178,9 @@ button.mini {
 
   --color-secondary: #4a984b;
   --color-secondary-muted: rgb(85, 86, 85);
-  
+
   --color-alt: #71d772;
-  
+
   --gradient-prim: linear-gradient(
     to right,
     var(--color-background) 0%,
@@ -191,7 +191,7 @@ button.mini {
   --color-gray: #edf2f4;
 
   /* Spacing */
-  --spacing-xs: 0.5rem;
+  --spacing-xs: 0.3rem;
   --spacing-sm: 0.75rem;
   --spacing-md: 1.25rem;
   --spacing-lg: 2rem;

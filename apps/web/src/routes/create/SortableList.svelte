@@ -13,12 +13,12 @@
 
   let { editData }: Props = $props();
 
-  function sendEditData(pack: ExerciseDataPackaged):boolean {
+  function sendEditData(pack: ExerciseDataPackaged): boolean {
     const success: boolean | undefined = editData?.(pack);
-    if (success != undefined){
-      return success
+    if (success != undefined) {
+      return success;
     }
-    return false
+    return false;
   }
 
   let exerciseList: ExerciseDataPackaged[] = $state([]);
@@ -91,7 +91,7 @@
     const child = document.getElementById(name) as HTMLElement;
     if (!child) throw new Error(`No element with id="${name}"`);
     const pack = packageElement(child);
-    if (sendEditData(pack)){
+    if (sendEditData(pack)) {
       removeFromStack(name, false);
     }
     // todo: Remove only if edit confirmed

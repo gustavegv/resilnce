@@ -14,7 +14,7 @@
   import { page } from '$app/state';
   import { toast } from 'svelte-sonner';
   import { getMe } from '../../me';
-    import Icon from '@iconify/svelte';
+  import Icon from '@iconify/svelte';
 
   let sessionName = $state('');
   let newExName = $state('');
@@ -219,7 +219,7 @@
     newExRepThreshold = pack.repThreshold ?? 12;
   }
 
-  function useInputFieldForEditing(pack: ExerciseDataPackaged):boolean {
+  function useInputFieldForEditing(pack: ExerciseDataPackaged): boolean {
     console.log('confirmed with', pack);
     if (isInputFieldsFilledCorrectly(true)) {
       toast.warning('Input fields filled but not yet added.');
@@ -227,12 +227,12 @@
         'Input fields contain an exercise which has not yet been added. Proceed with edit and overwrite input?'
       );
       if (!co) {
-      console.log("canclling w editfield swap")
+        console.log('canclling w editfield swap');
 
         return false;
       }
     }
-    console.log("proceeding w editfield swap")
+    console.log('proceeding w editfield swap');
     fillInputFieldFromPackage(pack);
     bop();
     toast.success('Exercise sent back to input field');
@@ -265,7 +265,9 @@
       onCountChange={(count: number) => autoIncreaseChange(count)}
     />
 
-    <button class="add buttonClass" onclick={addExercise}>Add to session <Icon icon="material-symbols:add"/></button>
+    <button class="add buttonClass" onclick={addExercise}
+      >Add to session <Icon icon="material-symbols:add" /></button
+    >
   </div>
 
   <SortableList bind:this={sessionExercisesList} editData={useInputFieldForEditing} />

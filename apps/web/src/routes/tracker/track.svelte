@@ -10,6 +10,7 @@
   import * as Card from '$lib/components/ui/card/';
   import FinishBlob from '../../components/ExerciseCompleteScreen.svelte';
   import { resolve } from '$app/paths';
+  import { cubicOut } from 'svelte/easing';
 
   import {
     CompleteSession,
@@ -221,10 +222,66 @@
 
     return currentExerciseIndex + 1 + ' of ' + exercises.length;
   }
+
+  let showActionMenu: boolean = $state(false);
+
+  function growDown(node: Element, { duration = 180 } = {}) {
+    return {
+      duration,
+      easing: cubicOut,
+      css: (t: number) => `
+      opacity: ${t};
+      transform: scaleY(${0.72 + 0.28 * t}) scaleX(${0.94 + 0.06 * t});
+    `,
+    };
+  }
+
+  function toggleActionMenu() {
+    showActionMenu = !showActionMenu;
+  }
+
+  function closeActionMenu() {
+    showActionMenu = false;
+  }
+
+  function handleWindowKeydown(event: KeyboardEvent) {
+    if (event.key === 'Escape' && showActionMenu) {
+      closeActionMenu();
+    }
+  }
+
+  async function handleQuitAction() {
+    closeActionMenu();
+    await quitSession();
+  }
+
+  function handleEditAction() {
+    closeActionMenu();
+    enterEditMode();
+  }
+
+  async function finishSessionNow() {
+    closeActionMenu();
+
+    if (confirm('Finish the session now?\nYou will go to the session summary.')) {
+    }
+  }
 </script>
 
 {#if showOverlay}
   <div class="overlay" transition:fade={{ duration: 150 }}></div>
+{/if}
+
+<svelte:window onkeydown={handleWindowKeydown} />
+
+{#if showActionMenu}
+  <button
+    type="button"
+    class="menu-backdrop"
+    aria-label="Close session actions"
+    onclick={closeActionMenu}
+    transition:fade={{ duration: 140 }}
+  ></button>
 {/if}
 
 <main class="app-container">
@@ -252,9 +309,56 @@
         >Return to homepage</button
       >
     {:else}
-      <button onclick={() => quitSession()} class="abs buttonClass">
-        <Icon icon="entypo:log-out" color="grey" width={20} />
-      </button>
+      <div class="session-menu-anchor">
+        <button
+          type="button"
+          onclick={toggleActionMenu}
+          class="action-trigger buttonClass"
+          aria-haspopup="menu"
+          aria-expanded={showActionMenu}
+          aria-controls="session-action-menu"
+        >
+          <Icon icon="material-symbols:more-horiz" color="grey" width={24} />
+        </button>
+
+        {#if showActionMenu}
+          <div class="session-action-menu-shell">
+            <div
+              id="session-action-menu"
+              class="session-action-menu"
+              aria-label="Session actions"
+              transition:growDown
+            >
+              <button
+                type="button"
+                class="session-action"
+                aria-label="Quit session"
+                onclick={handleQuitAction}
+              >
+                <Icon icon="material-symbols:logout-rounded" width={24} />
+              </button>
+
+              <button
+                type="button"
+                class="session-action"
+                aria-label="Edit"
+                onclick={handleEditAction}
+              >
+                <Icon icon="material-symbols:edit-outline-rounded" width={24} />
+              </button>
+
+              <button
+                type="button"
+                class="session-action"
+                aria-label="Finish session"
+                onclick={finishSessionNow}
+              >
+                <Icon icon="material-symbols:check-circle-outline-rounded" width={24} />
+              </button>
+            </div>
+          </div>
+        {/if}
+      </div>
 
       <ExerciseTrackScreen
         name={exName}
@@ -491,5 +595,82 @@
   .movement-b span {
     font-size: 12px;
     color: var(--color-text);
+  }
+
+  .menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    border: none;
+    padding: 0;
+    margin: 0;
+    background: linear-gradient(180deg, rgba(28, 28, 28, 0.596), transparent);
+    mask: linear-gradient(black, transparent);
+    backdrop-filter: blur(2px);
+
+    cursor: default;
+  }
+
+  .session-menu-anchor {
+    position: absolute;
+    right: -1.1rem;
+    top: -1.3rem;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .action-trigger {
+    width: fit-content;
+    height: fit-content;
+    background-color: rgba(240, 248, 255, 0);
+    box-shadow: none;
+    z-index: 21;
+  }
+
+  .session-action-menu-shell {
+    position: absolute;
+    top: calc(100% + 0.6rem);
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .session-action-menu {
+    transform-origin: top center;
+    padding: var(--spacing-xs);
+    display: flex;
+    flex-direction: column;
+    border-radius: 20px 0 0 20px;
+    background: var(--color-background);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(14px);
+    box-shadow:
+      0 18px 40px rgba(15, 23, 42, 0.18),
+      var(--shadow-dark);
+  }
+
+  .session-action {
+    display: grid;
+    place-items: center;
+    width: 3.45rem;
+    height: 3.45rem;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-text);
+    transition:
+      transform 140ms ease,
+      background-color 140ms ease,
+      box-shadow 140ms ease;
+  }
+
+  .session-action:active {
+    transform: scale(0.96);
+  }
+
+  .session-action:focus-visible {
+    outline: 2px solid var(--color-alt);
+    outline-offset: 2px;
   }
 </style>
