@@ -2,6 +2,7 @@
   import Icon from '@iconify/svelte';
   import type { ExerciseInfo } from '../routes/tracker/dbFetches';
   import { fade, scale } from 'svelte/transition';
+  import { cubicOut } from 'svelte/easing';
 
   let {
     exercises,
@@ -9,8 +10,27 @@
     exercises: ExerciseInfo[];
   } = $props();
 
+  function thumpIn(node: Element, { delay = 0, duration = 420 } = {}) {
+  return {
+    delay,
+    duration,
+    easing: cubicOut,
+    css: (t: number) => {
+      const scale =
+        t < 0.65
+          ? 0.88 + (1.08 - 0.88) * (t / 0.65)
+          : 1.08 - (1.08 - 1) * ((t - 0.65) / 0.35);
+
+      return `
+        opacity: ${t};
+        transform: scale(${scale});
+      `;
+    }
+  };
+}
+
   function checkPR(setList: number[], index: number): boolean {
-    const repThreshold = exercises[index].repThreshold ?? 12;
+    const repThreshold = exercises[index].rep_threshold ?? 12;
 
     let totalReps = 0;
 
@@ -31,7 +51,7 @@
 </script>
 
 {#each exercises as blob, index}
-  <div class="blob-cont relative" in:fade|global={{ delay: 150 + index * 150 }}>
+<div class="blob-cont relative" in:thumpIn|global={{ delay: 150 + index * 150 }}>
     {#if checkPR(blob.currentProgress.repsPerSet, index)}
       <div class="absolute right-1">
         <Icon icon="ri:medal-line" width="35" color={'444444'} />
@@ -101,7 +121,7 @@
   .set-box {
     padding: 0.5rem 1rem;
     border-radius: 0.5rem;
-    background: var(--color-surface-middle);
+    background: var(--surface-middle);
 
     text-align: center;
   }

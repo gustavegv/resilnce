@@ -8,7 +8,7 @@
   import ExerciseTrackScreen from './ExerciseTrackScreen.svelte';
   import LoadingSkeleton from './LoadingSkeleton.svelte';
   import * as Card from '$lib/components/ui/card/';
-  import FinishBlob from '../../components/ExerciseCompleteScreen.svelte';
+  import ExerciseCompleteScreen from '../../components/ExerciseCompleteScreen.svelte';
   import { resolve } from '$app/paths';
   import { cubicOut } from 'svelte/easing';
 
@@ -314,7 +314,7 @@ function gotoNextUnfinished() {
       <h1 class="title" class:is-celebrating={allFinished}>Session finished!</h1>
       <h2 class="subtitle">Session overview</h2>
       <hr />
-      <FinishBlob {exercises} />
+      <ExerciseCompleteScreen {exercises} />
       <button class="buttonClass w-full" onclick={() => goto(resolve(`/`))}
         >Return to homepage</button
       >
