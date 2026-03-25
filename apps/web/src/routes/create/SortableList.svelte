@@ -8,13 +8,17 @@
   import { error } from '@sveltejs/kit';
 
   type Props = {
-    editData?: (payload: ExerciseDataPackaged) => void;
+    editData?: (payload: ExerciseDataPackaged) => boolean;
   };
 
   let { editData }: Props = $props();
 
-  function sendEditData(pack: ExerciseDataPackaged) {
-    editData?.(pack);
+  function sendEditData(pack: ExerciseDataPackaged):boolean {
+    const success: boolean | undefined = editData?.(pack);
+    if (success != undefined){
+      return success
+    }
+    return false
   }
 
   let exerciseList: ExerciseDataPackaged[] = $state([]);
@@ -87,9 +91,10 @@
     const child = document.getElementById(name) as HTMLElement;
     if (!child) throw new Error(`No element with id="${name}"`);
     const pack = packageElement(child);
-    sendEditData(pack);
-
-    removeFromStack(name, false);
+    if (sendEditData(pack)){
+      removeFromStack(name, false);
+    }
+    // todo: Remove only if edit confirmed
   }
 
   let threeDotsOpenFor: string | null = $state(null);
@@ -188,7 +193,7 @@
     box-sizing: border-box;
     padding: 1rem 2rem;
     flex-direction: row;
-    background-color: var(--color-background);
+    background-color: var(--surface-low);
     justify-content: space-between;
     width: 80%;
     border-radius: 15px;

@@ -219,19 +219,24 @@
     newExRepThreshold = pack.repThreshold ?? 12;
   }
 
-  function useInputFieldForEditing(pack: ExerciseDataPackaged) {
+  function useInputFieldForEditing(pack: ExerciseDataPackaged):boolean {
     console.log('confirmed with', pack);
     if (isInputFieldsFilledCorrectly(true)) {
       toast.warning('Input fields filled but not yet added.');
       let co = confirm(
         'Input fields contain an exercise which has not yet been added. Proceed with edit and overwrite input?'
       );
-      if (!co) return;
-    }
+      if (!co) {
+      console.log("canclling w editfield swap")
 
+        return false;
+      }
+    }
+    console.log("proceeding w editfield swap")
     fillInputFieldFromPackage(pack);
     bop();
     toast.success('Exercise sent back to input field');
+    return true;
   }
 </script>
 
@@ -310,7 +315,7 @@
     padding: var(--spacing-md);
     width: 80%;
     height: fit-content;
-    background-color: var(--color-background);
+    background-color: var(--surface-low);
     border-radius: var(--border-outer);
     align-items: center;
 

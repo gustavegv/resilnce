@@ -83,7 +83,7 @@
   .counter-container {
     display: flex;
     justify-content: space-between;
-    background-color: var(--color-background);
+    background-color: var(--surface-low);
     text-align: left;
     padding: 1rem 0.5rem;
     border-radius: 0;

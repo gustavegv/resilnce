@@ -16,8 +16,7 @@
 
 <style>
   :root {
-    --small: #b1ff4a;
-    --big: var(--color-background);
+    --big: var(--surface-low);
     --action: #535353;
   }
 
