@@ -194,9 +194,6 @@
     }
   }
 
-  function exitEditMode() {
-    editMode = false;
-  }
 
   function enterEditMode() {
     editMode = true;
@@ -376,9 +373,6 @@
   {/if}
 </main>
 
-<button class="floating-edit buttonClass {editMode}" onclick={enterEditMode}>
-  <Icon icon={'material-symbols:edit-outline-rounded'} height={40} />
-</button>
 
 <style>
   hr {
@@ -477,63 +471,6 @@
     transition: all ease-in-out 280ms;
     height: 100%;
     background: var(--color-alt);
-  }
-
-  .floating-edit {
-    position: absolute;
-    bottom: 5rem;
-    right: 1rem;
-    width: fit-content;
-    border-radius: 100px;
-    background-color: var(--color-secondary);
-
-    opacity: 0;
-    touch-action: none;
-  }
-
-  .floating-edit.true {
-    opacity: 0;
-  }
-
-  .abs {
-    position: absolute;
-    width: fit-content;
-    height: fit-content;
-    background-color: rgba(240, 248, 255, 0);
-    box-shadow: none;
-    right: -1.1rem;
-    top: -1.3rem;
-    z-index: 6;
-  }
-  .container {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    background: var(--color-background);
-    overflow-x: hidden;
-  }
-
-  .box {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-
-    width: 80%;
-    box-sizing: border-box;
-
-    border-radius: 15px;
-    background-color: var(--color-secondary);
-    padding: 2rem 1rem;
-    padding-top: 0;
-    text-align: left;
-    box-shadow: var(--shadow-dark);
-  }
-
-  .lowkey {
-    color: grey;
   }
 
   .app-container {
