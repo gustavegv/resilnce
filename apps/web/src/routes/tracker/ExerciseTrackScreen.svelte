@@ -32,8 +32,8 @@
   let currrent = $derived(exData ?? errEx);
   let namev: string = $derived(currrent.name);
   let weightv: number = $derived(currrent.currentProgress.weightPerSet[0]);
-  let threshold: number = $derived(currrent.currentProgress.weightPerSet[0]);
-  let increase: number = $derived(currrent.currentProgress.weightPerSet[0]);
+  let threshold: number = $derived(currrent.rep_threshold ?? 12);
+  let increase: number = $derived(currrent.auto_increase ?? 2.5);
   let repsv: number[] = $derived(currrent.currentProgress.repsPerSet);
 
   function showInfo() {
