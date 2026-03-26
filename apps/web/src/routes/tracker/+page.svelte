@@ -162,7 +162,7 @@
   <h2 class="title">Sessions</h2>
   <Toaster theme="dark"></Toaster>
   <AlertDialog.Root bind:open={deletePopupShowing}>
-    <AlertDialog.Content>
+    <AlertDialog.Content class="border-border border">
       <AlertDialog.Header>
         <AlertDialog.Title>Are you absolutely sure?</AlertDialog.Title>
         <AlertDialog.Description>
@@ -171,9 +171,9 @@
         </AlertDialog.Description>
       </AlertDialog.Header>
       <AlertDialog.Footer>
-        <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+        <AlertDialog.Cancel>No, take me back</AlertDialog.Cancel>
         <AlertDialog.Action
-          class="text-white-500 bg-red-500"
+          class="bg-destructive text-white"
           onclick={() => confirmDeleteSession(itemToRemove)}
         >
           Remove {itemToRemove[0]}
@@ -183,17 +183,14 @@
   </AlertDialog.Root>
 
   <AlertDialog.Root bind:open={activeSessionPopupShowing}>
-    <AlertDialog.Content>
+    <AlertDialog.Content class="border-border border">
       <AlertDialog.Header>
         <AlertDialog.Title>Another session is already active!</AlertDialog.Title>
         <AlertDialog.Description>Are you sure you want to start a new one?</AlertDialog.Description>
       </AlertDialog.Header>
       <AlertDialog.Footer>
         <AlertDialog.Cancel>No, take me back</AlertDialog.Cancel>
-        <AlertDialog.Action
-          class="text-white-500 bg-green-600"
-          onclick={() => confirmStartSession()}
-        >
+        <AlertDialog.Action class="text-white-500 bg-accent" onclick={() => confirmStartSession()}>
           Yes, start new session
         </AlertDialog.Action>
       </AlertDialog.Footer>
@@ -232,9 +229,9 @@
       {/if}
 
       {#if otherSlugs.length}
-        <h3 class="mt-4">Older</h3>
+        <h3 in:fade|global={{ delay: 50 }} class="mt-4">Older</h3>
         {#each otherSlugs as slug, i}
-          <div style="width: inherit" in:fade|global={{ delay: i * 50 }} out:scale>
+          <div style="width: inherit" in:fade|global={{ delay: 50 + i * 50 }} out:scale>
             <SessionSlug
               onPress={() => startSes(slug.id)}
               onEdit={() => editSes(slug.id)}

@@ -11,23 +11,21 @@
   } = $props();
 
   function thumpIn(node: Element, { delay = 0, duration = 420 } = {}) {
-  return {
-    delay,
-    duration,
-    easing: cubicOut,
-    css: (t: number) => {
-      const scale =
-        t < 0.65
-          ? 0.88 + (1.08 - 0.88) * (t / 0.65)
-          : 1.08 - (1.08 - 1) * ((t - 0.65) / 0.35);
+    return {
+      delay,
+      duration,
+      easing: cubicOut,
+      css: (t: number) => {
+        const scale =
+          t < 0.65 ? 0.88 + (1.08 - 0.88) * (t / 0.65) : 1.08 - (1.08 - 1) * ((t - 0.65) / 0.35);
 
-      return `
+        return `
         opacity: ${t};
         transform: scale(${scale});
       `;
-    }
-  };
-}
+      },
+    };
+  }
 
   function checkPR(setList: number[], index: number): boolean {
     const repThreshold = exercises[index].rep_threshold ?? 12;
@@ -51,7 +49,7 @@
 </script>
 
 {#each exercises as blob, index}
-<div class="blob-cont relative" in:thumpIn|global={{ delay: 150 + index * 150 }}>
+  <div class="blob-cont relative" in:thumpIn|global={{ delay: 150 + index * 150 }}>
     {#if checkPR(blob.currentProgress.repsPerSet, index)}
       <div class="absolute right-1">
         <Icon icon="ri:medal-line" width="35" color={'444444'} />

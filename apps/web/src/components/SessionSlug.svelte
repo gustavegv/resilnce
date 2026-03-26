@@ -98,7 +98,7 @@
 <style>
   :root {
     --slug-color: var(--surface-low);
-    --edit-under-color: var(--color-secondary);
+    --edit-under-color: var(--surface-middle);
     --slug-height: 4rem;
   }
   .start-side {

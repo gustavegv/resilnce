@@ -147,7 +147,7 @@
     border-radius: var(--radius-lg);
     box-shadow:
       inset 0 1px 0 rgba(163, 163, 163, 0.28),
-      0 5px 20px rgba(122, 162, 255, 0.12);
+      0 5px 20px rgba(223, 223, 223, 0.12);
   }
 
   .content {
