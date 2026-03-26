@@ -31,13 +31,11 @@
     const nowTime = now.getTime();
     const randomOffset = Math.random() * twoMonthsInMs;
     const date = new Date(nowTime - randomOffset);
-    console.log(date);
     return date;
   }
 
   function timeAgo(date: Date): string {
     date as Date;
-    console.log('timeag', date);
     const now = new Date();
     const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
@@ -67,7 +65,7 @@
   let sty = $state('calc(100vw - 2rem);');
 
   function sideway() {
-    sty = '60vw';
+    sty = '65vw';
 
     setTimeout(() => {
       sty = 'calc(100vw - 2rem);';
@@ -83,29 +81,37 @@
     </button>
 
     <button class="dots-cont buttonClass" onclick={sideway}>
-      <Icon icon={'uiw:more'} fill={'#fff'} width={'20px'}></Icon>
+      <Icon icon={'uiw:more'} fill={'#fff'} width={20}></Icon>
     </button>
   </div>
 
   <div class="under-cont">
     <button class="icon-under edit" onclick={edt}>
-      <Icon icon="material-symbols:edit-outline" width="32" fill={'#FFC107'} />
+      <Icon icon="material-symbols:edit-outline" width={24} fill={'#FFC107'} />
     </button>
     <button class="icon-under del" onclick={del}>
-      <Icon icon="material-symbols:delete-outline-rounded" width="32" fill={'#dc3545'} />
+      <Icon icon="material-symbols:delete-outline-rounded" width={24} fill={'#dc3545'} />
     </button>
   </div>
 </div>
 
 <style>
+  :root {
+    --slug-color: var(--surface-low);
+    --edit-under-color: var(--color-secondary);
+    --slug-height: 4rem;
+  }
   .start-side {
     margin: 0;
     padding: 0;
     border-radius: 0;
     box-shadow: none;
     text-align: left;
-    height: 5rem;
-    background-color: none;
+    height: var(--slug-height);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    background-color: var(--slug-color);
     padding-left: 1rem;
     width: 80%;
   }
@@ -114,7 +120,7 @@
     margin: 0;
     padding: 0;
     border-radius: 0;
-    background-color: none;
+    background-color: var(--slug-color);
 
     box-shadow: none;
     display: flex;
@@ -122,7 +128,7 @@
     align-items: center;
     touch-action: none;
     width: 20%;
-    height: 5rem;
+    height: var(--slug-height);
   }
 
   .icon-under {
@@ -134,7 +140,8 @@
     display: flex;
     flex-direction: row;
     width: 90vw;
-    height: 5rem;
+    height: var(--slug-height);
+
     align-items: center;
     justify-content: end;
     touch-action: pan-y;
@@ -152,8 +159,10 @@
   }
 
   .inner-cont.alt {
-    height: 5rem;
-    background-color: black;
+    height: var(--slug-height);
+
+    background-color: var(--edit-under-color);
+
     box-shadow: var(--shadow-dark);
   }
 
@@ -162,16 +171,16 @@
     box-shadow: var(--shadow-dark);
     display: flex;
     flex-direction: row;
-
     margin: 0;
     overflow: hidden;
   }
 
   .base-btn.alt {
-    background-color: var(--color-secondary);
+    background-color: var(--slug-color);
+
     position: absolute;
     z-index: 4;
-    height: 5rem;
+    height: var(--slug-height);
     border-radius: 10px;
     align-items: center;
     opacity: 1;
@@ -183,7 +192,6 @@
 
   p {
     padding: 0;
-    margin: 0.5rem 0;
     font-size: 16px;
   }
 
