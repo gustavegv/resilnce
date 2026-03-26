@@ -67,7 +67,7 @@
   }
 
   function checkIfInputFieldsFilled(safetyCheck: boolean): boolean {
-    if (!newExName || !newExSetCount || !newExWeight) {
+    if (!newExName || !newExSetCount || (newExWeight != '0' && !newExWeight)) {
       if (!safetyCheck) {
         console.error(
           'One or multiple input fields not filled:',
@@ -91,14 +91,15 @@
     if (
       Number(newExSetCount) > maxSetsAllowed ||
       Number(newExWeight) > maxWeightAllowed ||
+      Number(newExWeight) < 0 ||
       newExName.length > maxExerciseNameAllowed ||
       sessionExercisesList.extractData().length > maxExercisesAllowed
     ) {
       if (safetyCheck) {
         return false;
       }
-      console.error('One or multiple input fields exceed max limits');
-      toast.error('One or multiple input fields exceed max limits');
+      console.error('One or multiple input fields beyond max limits');
+      toast.error('One or multiple input fields beyond max limits');
       return false;
     }
     return true;
@@ -154,7 +155,7 @@
 
     const newEntry = packageExerciseEntry();
     sessionExercisesList.pushItemToList(newEntry);
-
+    toast.success(`Added '${newEntry.name}' to session.`);
     resetInputFields();
   }
 

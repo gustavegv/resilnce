@@ -194,7 +194,6 @@
     }
   }
 
-
   function enterEditMode() {
     editMode = true;
   }
@@ -259,23 +258,22 @@
     }
   }
 
-function getNextUnfinishedIndex(): number {
-  return exercises.findIndex((ex) => !ex.finished);
-}
-
-function checkNextUnfinished(): boolean {
-  const index = getNextUnfinishedIndex();
-  return index !== -1 && exercises[index].id === currentExercise?.id;
-}
-
-function gotoNextUnfinished() {
-  const index = getNextUnfinishedIndex();
-  if (index !== -1) {
-    currentExerciseIndex = index;
-    monitorOutOfBoundsMovement();
-
+  function getNextUnfinishedIndex(): number {
+    return exercises.findIndex((ex) => !ex.finished);
   }
-}
+
+  function checkNextUnfinished(): boolean {
+    const index = getNextUnfinishedIndex();
+    return index !== -1 && exercises[index].id === currentExercise?.id;
+  }
+
+  function gotoNextUnfinished() {
+    const index = getNextUnfinishedIndex();
+    if (index !== -1) {
+      currentExerciseIndex = index;
+      monitorOutOfBoundsMovement();
+    }
+  }
 </script>
 
 {#if showOverlay}
@@ -382,8 +380,12 @@ function gotoNextUnfinished() {
           <Icon icon="material-symbols:arrow-left-alt-rounded" />
           <span>Prev</span>
         </button>
-        <button class="movement-b long" class:inactive={checkNextUnfinished()} onclick={() => gotoNextUnfinished()}>
-          <span>Back to current</span>
+        <button
+          class="movement-b long"
+          class:inactive={checkNextUnfinished()}
+          onclick={() => gotoNextUnfinished()}
+        >
+          <span>Go to current</span>
         </button>
         <button class="movement-b" class:inactive={!nextExists} onclick={() => skipExercise()}>
           <span>Skip</span>
@@ -393,7 +395,6 @@ function gotoNextUnfinished() {
     {/if}
   {/if}
 </main>
-
 
 <style>
   hr {

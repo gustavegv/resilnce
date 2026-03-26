@@ -17,7 +17,7 @@
 <style>
   :root {
     --big: var(--surface-low);
-    --action: #535353;
+    --action: var(--surface-middle);
   }
 
   .inp {

@@ -59,14 +59,21 @@
       weightPopped = false;
     }, 150);
   }
+
+  function statusText(): string {
+    if (checked) {
+      return 'Completed';
+    }
+    return 'Set goal';
+  }
 </script>
 
 <div class="counter-container set--{getActive(checked)} finished-{finished}">
   <div class="check {checked}"><Icon icon="gg:check-o" /></div>
-  <div class="set-card-left">
+  <div class="set-card-left" class:complete={checked}>
     <div class="set-count">{id}</div>
     <div class="set-description">
-      <p class="set-status">Set goal</p>
+      <p class="set-status">{statusText()}</p>
       <p class="set-goal">{ogCount} <span> reps</span></p>
     </div>
   </div>
@@ -146,6 +153,11 @@
     align-items: center;
     gap: 1rem;
     min-width: 0;
+    color: var(--color-text);
+  }
+
+  .set-card-left.complete {
+    color: #838782;
   }
 
   .set-description {
@@ -160,6 +172,7 @@
     letter-spacing: -0.01em;
     text-transform: uppercase;
     text-align: left;
+    color: inherit;
   }
 
   .set-goal {
@@ -174,6 +187,12 @@
     font-size: 0.875rem;
     font-weight: 500;
     color: var(--text-muted);
+  }
+
+  .complete .set-goal span {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: inherit;
   }
 
   .stepper {
