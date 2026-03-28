@@ -63,6 +63,8 @@
   }
 
   async function logOut() {
+    if (!confirm('Log out?')) return;
+
     const res = await fetch(backendAdress('/api/logout'), {
       method: 'POST',
       credentials: 'include',
@@ -215,6 +217,7 @@
     align-items: center;
     height: 100vh;
     flex-direction: column;
+    overflow-y: auto;
   }
 
   :global(.mar) {

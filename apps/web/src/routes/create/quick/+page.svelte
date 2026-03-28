@@ -62,6 +62,8 @@
 
     goto(`${resolve('/create/manual')}?quickload=1`);
   }
+
+  let advancedOpen = $state(false);
 </script>
 
 <!-- Page Wrapper -->
@@ -115,9 +117,16 @@
     aria-live="polite"
     data-enabled={isAdditionalInfoEnabled ? 'true' : 'false'}
   >
-    <Collapsible.Root>
+    <Collapsible.Root bind:open={advancedOpen}>
       <Collapsible.Trigger>
-        <p id="additional-info-label" class="section-heading">Click for advanced settings ⚙️</p>
+        <p id="additional-info-label" class="section-heading">
+          Advanced settings
+          {#if advancedOpen}
+            <Icon icon="si:expand-less-fill" />
+          {:else}
+            <Icon icon="si:expand-more-fill" />
+          {/if}
+        </p>
       </Collapsible.Trigger>
       <Collapsible.Content>
         <label class="flex items-center gap-2">
@@ -237,6 +246,10 @@
   }
 
   .section-heading {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 10rem;
     margin: 0 0 var(--spacing-sm) 0;
     font-weight: 600;
   }
