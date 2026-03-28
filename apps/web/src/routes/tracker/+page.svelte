@@ -2,7 +2,8 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import SessionSlug from '../../components/SessionSlug.svelte';
-  import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
+
+  import * as Alert from '$lib/components/alert/index.js';
 
   import { fade, scale } from 'svelte/transition';
   import Icon from '@iconify/svelte';
@@ -161,41 +162,38 @@
 <div class="main">
   <h2 class="title">Sessions</h2>
   <Toaster theme="dark"></Toaster>
-  <AlertDialog.Root bind:open={deletePopupShowing}>
-    <AlertDialog.Content class="border-border border">
-      <AlertDialog.Header>
-        <AlertDialog.Title>Are you absolutely sure?</AlertDialog.Title>
-        <AlertDialog.Description>
-          This action cannot be undone. This will permanently delete the session and remove it from
-          our servers.
-        </AlertDialog.Description>
-      </AlertDialog.Header>
-      <AlertDialog.Footer>
-        <AlertDialog.Cancel>No, take me back</AlertDialog.Cancel>
-        <AlertDialog.Action
+
+  <Alert.Root bind:open={deletePopupShowing}>
+    <Alert.Content title="Are you absolutely sure?" class="border-border border">
+      <Alert.Description>
+        This action cannot be undone. This will permanently delete the session and remove it from
+        our servers.
+      </Alert.Description>
+
+      <div class="mt-5 flex justify-evenly gap-3">
+        <Alert.Cancel>No, take me back</Alert.Cancel>
+        <Alert.Action
           class="bg-destructive text-white"
           onclick={() => confirmDeleteSession(itemToRemove)}
         >
           Remove {itemToRemove[0]}
-        </AlertDialog.Action>
-      </AlertDialog.Footer>
-    </AlertDialog.Content>
-  </AlertDialog.Root>
+        </Alert.Action>
+      </div>
+    </Alert.Content>
+  </Alert.Root>
 
-  <AlertDialog.Root bind:open={activeSessionPopupShowing}>
-    <AlertDialog.Content class="border-border border">
-      <AlertDialog.Header>
-        <AlertDialog.Title>Another session is already active!</AlertDialog.Title>
-        <AlertDialog.Description>Are you sure you want to start a new one?</AlertDialog.Description>
-      </AlertDialog.Header>
-      <AlertDialog.Footer>
-        <AlertDialog.Cancel>No, take me back</AlertDialog.Cancel>
-        <AlertDialog.Action class="text-white-500 bg-accent" onclick={() => confirmStartSession()}>
-          Yes, start new session
-        </AlertDialog.Action>
-      </AlertDialog.Footer>
-    </AlertDialog.Content>
-  </AlertDialog.Root>
+  <Alert.Root bind:open={activeSessionPopupShowing}>
+    <Alert.Content title="Another session is already active!" class="border-border border">
+      <Alert.Description>Are you sure you want to start a new one?</Alert.Description>
+
+      <div class="mt-5 flex justify-end gap-3">
+        <Alert.Cancel>No, take me back.</Alert.Cancel>
+        <Alert.Action class="bg-accent" onclick={() => confirmStartSession()}>
+          Start new session!
+        </Alert.Action>
+      </div>
+    </Alert.Content>
+  </Alert.Root>
 
   <hr />
 
@@ -251,13 +249,14 @@
 
 <style>
   .main {
+    width: 100%;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: left;
     padding: 5rem 1rem;
-    overflow: scroll;
+    overflow-y: scroll;
   }
 
   .title {
@@ -315,7 +314,7 @@
     border: 0;
     border-radius: var(--border-middle);
     font: inherit;
-    font-weight: 400;
+    font-weight: 500;
     font-size: 14px;
     color: #fff;
     white-space: nowrap;
@@ -326,10 +325,6 @@
       transform 0.2s ease,
       opacity 0.2s ease,
       box-shadow 0.2s ease;
-  }
-
-  .category-pill:hover {
-    opacity: 1;
   }
 
   .active-category {

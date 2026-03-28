@@ -3,6 +3,7 @@
   import ConfirmSelection from '../../components/ConfirmSelection.svelte';
   import Icon from '@iconify/svelte';
   import type { ExerciseInfo } from './dbFetches';
+  import { fade } from 'svelte/transition';
 
   let {
     finished,
@@ -70,7 +71,9 @@
 
 <cont class="cont">
   {#each repsv as block, index (uniqueKey(index, exIndex))}
-    <SetBlock id={index + 1} {finished} reps={block} onCountChange={onCount} />
+    <div class="w-[100%]" in:fade={{ delay: index * 50 }}>
+      <SetBlock id={index + 1} {finished} reps={block} onCountChange={onCount} />
+    </div>
   {/each}
 
   <ConfirmSelection {finished} onConfirm={onSubmit} />

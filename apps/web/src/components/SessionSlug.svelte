@@ -192,11 +192,12 @@
 
   p {
     padding: 0;
-    font-size: 16px;
+    font-size: 14px;
   }
 
   .date {
     color: var(--color-alt);
     text-transform: none;
+    font-size: 12px;
   }
 </style>

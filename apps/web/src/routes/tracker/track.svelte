@@ -7,7 +7,8 @@
   import Icon from '@iconify/svelte';
   import ExerciseTrackScreen from './ExerciseTrackScreen.svelte';
   import LoadingSkeleton from './LoadingSkeleton.svelte';
-  import * as Card from '$lib/components/ui/card/';
+  import * as Alert from '$lib/components/alert/index.js';
+
   import ExerciseCompleteScreen from '../../components/ExerciseCompleteScreen.svelte';
   import { resolve } from '$app/paths';
   import { cubicOut } from 'svelte/easing';
@@ -19,6 +20,9 @@
     SetActiveSession,
     type ExerciseInfo,
   } from './dbFetches';
+
+  import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
+  import { Portal } from 'bits-ui';
 
   // Exercise ID som blir tilldelad när man callar komponenten:
   //   Exempel:  <Track sesID="push" />
@@ -184,14 +188,8 @@
   }
 
   async function quitSession() {
-    if (
-      confirm('Are you sure you want to quit the session?\n(All confirmed sets are already saved)')
-    ) {
-      await CompleteSession(sesID);
-      goto(resolve('/'));
-    } else {
-      console.log('Quit adverted.');
-    }
+    await CompleteSession(sesID);
+    goto(resolve('/'));
   }
 
   function enterEditMode() {
@@ -241,9 +239,15 @@
     }
   }
 
+  let alertVisible = $state(false);
+
+  function toggleAlert() {
+    alertVisible = true;
+  }
+
   async function handleQuitAction() {
     closeActionMenu();
-    await quitSession();
+    toggleAlert();
   }
 
   function handleEditAction() {
@@ -276,9 +280,18 @@
   }
 </script>
 
-{#if showOverlay}
-  <div class="overlay" transition:fade={{ duration: 150 }}></div>
-{/if}
+<Alert.Root bind:open={alertVisible}>
+  <Alert.Content title="Quit session?" class="border-border border">
+    <Alert.Description>All completed exercise are already saved.</Alert.Description>
+
+    <div class="mt-5 flex justify-evenly gap-3">
+      <Alert.Cancel>No, take me back</Alert.Cancel>
+      <Alert.Action class="bg-destructive text-white" onclick={() => quitSession()}>
+        Quit session.
+      </Alert.Action>
+    </div>
+  </Alert.Content>
+</Alert.Root>
 
 <svelte:window onkeydown={handleWindowKeydown} />
 
@@ -343,7 +356,7 @@
                 aria-label="Quit session"
                 onclick={handleQuitAction}
               >
-                <Icon icon="material-symbols:logout-rounded" width={24} />
+                <Icon icon="material-symbols:logout-rounded" width={20} />
               </button>
 
               <button
@@ -352,7 +365,7 @@
                 aria-label="Edit"
                 onclick={handleEditAction}
               >
-                <Icon icon="material-symbols:edit-outline-rounded" width={24} />
+                <Icon icon="material-symbols:edit-outline-rounded" width={20} />
               </button>
 
               <button
@@ -361,7 +374,7 @@
                 aria-label="Finish session"
                 onclick={finishSessionNow}
               >
-                <Icon icon="material-symbols:check-circle-outline-rounded" width={24} />
+                <Icon icon="material-symbols:check-circle-outline-rounded" width={20} />
               </button>
             </div>
           </div>
@@ -504,8 +517,9 @@
     text-align: center;
     align-items: center;
     background: var(--gradient-prim);
-
+    overflow-y: auto;
     min-height: 100vh;
+    overflow-x: hidden;
   }
 
   .overlay {
@@ -535,10 +549,15 @@
     border: none;
     outline: none;
     box-shadow: var(--shadow-dark);
+    transition-property: opacity;
+    transition-timing-function: ease;
+    transition-duration: 700ms;
+    transition-delay: 150ms;
   }
 
   .movement-b.inactive {
     filter: brightness(0.5);
+    transition: opacity ease 200ms;
     opacity: 0;
   }
 
@@ -567,8 +586,9 @@
 
   .session-menu-anchor {
     position: absolute;
-    right: -1.1rem;
-    top: -1.3rem;
+    right: 0;
+    top: 0;
+    transform: translate(1rem, -1.3rem); /* visually offset without creating overflow */
     z-index: 20;
     display: flex;
     flex-direction: column;
@@ -607,7 +627,7 @@
   .session-action {
     display: grid;
     place-items: center;
-    width: 3.45rem;
+    width: 3rem;
     height: 3.45rem;
     border: none;
     border-radius: 999px;
