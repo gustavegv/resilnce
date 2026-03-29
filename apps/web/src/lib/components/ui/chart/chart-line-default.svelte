@@ -8,15 +8,18 @@
   import { max } from 'd3-array';
   import type { DomainType } from 'layerchart/utils/scales.svelte';
 
-  let {
-    title,
-    desc,
-    data,
-  }: {
-    title: string;
-    desc: string;
-    data: ChartData[];
-  } = $props();
+let {
+  title,
+  desc,
+  data,
+  range,
+}: {
+  title: string;
+  desc: string;
+  data: ChartData[];
+  range: string
+} = $props();
+
 
   export interface ChartData {
     date: Date;
@@ -24,14 +27,26 @@
     second: number;
   }
 
-  const chartData: ChartData[] = data;
+
+  function getRangeMonths(range: string) {
+    if (range === '1m') return 1;
+    if (range === '6m') return 6;
+    return 100;
+  }
+
+  function getRangeLabel(range: string) {
+    if (range === '1m') return 'this month';
+    if (range === '6m') return 'during the last 6 months';
+    return 'all time';
+  }
+
+  const rangeMonths = $derived(getRangeMonths(range));
+  const rangeLabel = $derived(getRangeLabel(range));
 
   const chartConfig = {
-    oneRM: { label: 'oneRM', color: 'var(--chart-1)' },
+    oneRM: { label: 'EST 1RM', color: 'var(--color-secondary)' },
     second: { label: 'Weight', color: 'var(--chart-2)' },
   } satisfies Chart.ChartConfig;
-
-  const yDomain: DomainType = getYDomain(data);
 
   function getYDomain(data: ChartData[]): DomainType {
     let lower: number | undefined = undefined;
@@ -65,7 +80,7 @@
     // 3. Build a “one month ago” target date, anchored to latestDate
     const targetDate = new Date(
       latestDate.getFullYear(),
-      latestDate.getMonth() - 1,
+      latestDate.getMonth() - rangeMonths,
       latestDate.getDate(),
       latestDate.getHours()
     );
@@ -90,11 +105,16 @@
     if (!percentageChange || percentageChange < 0) {
       return null;
     } else {
-      return `Trending up by ${rounded}% this month`;
+      return `Trending up by ${rounded}% ${rangeLabel}`;
     }
+    
   }
 
-  const trend: string | null = 'getTrend(data)';
+  const chartData = $derived(data);
+  const yDomain = $derived(getYDomain(chartData));
+  const trend = $derived(getTrend(chartData));
+
+
 </script>
 
 <Card.Header>
@@ -109,15 +129,16 @@
       xScale={scaleUtc()}
       {yDomain}
       series={[
-        {
-          key: 'second',
-          label: 'Weight',
-          color: chartConfig.second.color,
-        },
+
         {
           key: 'oneRM',
           label: '1RM',
           color: chartConfig.oneRM.color,
+        },
+        {
+          key: 'second',
+          label: 'Weight',
+          color: chartConfig.second.color,
         },
       ]}
       axis="x"
@@ -135,7 +156,12 @@
     >
       {#snippet tooltip()}
         <Chart.Tooltip
-          labelFormatter={(v: Date) => v.toLocaleDateString('en-US', { day: 'numeric' })}
+          labelFormatter={(v: Date) =>
+            v.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
+            })}
           indicator="line"
         />
       {/snippet}
