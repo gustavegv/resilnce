@@ -56,7 +56,8 @@
     border: 0;
     padding: 0;
     margin: 0;
-    background: rgb(0 0 0 / 45%);
+    backdrop-filter: blur(4px);
+
     cursor: pointer;
     overflow-x: hidden;
   }

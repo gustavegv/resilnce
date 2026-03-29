@@ -1,4 +1,3 @@
-import { redirect } from '@sveltejs/kit';
 import { user } from '$lib/stores/appState';
 import { get } from 'svelte/store';
 

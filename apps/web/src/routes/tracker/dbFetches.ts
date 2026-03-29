@@ -43,7 +43,9 @@ function address(dir: string): string {
 function statusToasterHandler(code: number) {
   switch (code) {
     case 400:
-      toast.error('The request could not be processed. Please check your input or try again.');
+      toast.error(
+        'The request could not be processed. Please check your credentials or try again.'
+      );
       break;
     case 401:
       toast.error('Your session has expired. Please log in again.');

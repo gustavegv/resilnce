@@ -505,7 +505,7 @@
 
   .session-carousel {
     position: relative;
-    height: min(72svh, 42rem);
+    height: 62svh;
     perspective: 1200px;
     touch-action: pan-y;
     user-select: none;
@@ -526,15 +526,16 @@
   .session-card {
     position: absolute;
     inset: 0;
-    width: min(100%, 25rem);
-    height: min(100%, 34rem);
     margin: auto;
     display: grid;
     border-radius: 1rem;
 
+    width: min(100%, 21.5rem);
+    height: min(100%, 30rem);
+    padding: 1.15rem;
+
     grid-template-rows: auto 1fr auto;
     gap: 1.25rem;
-    padding: 1.35rem;
     text-decoration: none;
     color: var(--session-text-primary);
     background:
@@ -636,7 +637,7 @@
 
   .session-card__title {
     margin: 0;
-    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    font-size: 1.8rem;
     line-height: 1;
     letter-spacing: -0.05em;
   }
@@ -644,7 +645,7 @@
   .session-card__description {
     margin: 0;
     max-width: 22rem;
-    font-size: 1rem;
+    font-size: 0.95rem;
     line-height: 1.6;
     color: var(--session-text-secondary);
   }
@@ -694,6 +695,7 @@
       background-color 180ms ease,
       border-color 180ms ease,
       opacity 180ms ease;
+    display: none;
   }
 
   .session-carousel__nav:hover:not(:disabled) {
@@ -753,27 +755,17 @@
     }
   }
 
-  @media (max-width: 700px) {
+  @media (max-width: 400px) {
     .session-carousel {
-      height: 62svh;
+      scale: 0.9;
     }
 
-    .session-card {
-      width: min(100%, 21.5rem);
-      height: min(100%, 30rem);
-      padding: 1.15rem;
+    .page {
+      padding-top: 3rem;
     }
 
-    .session-card__title {
-      font-size: 1.8rem;
-    }
-
-    .session-card__description {
-      font-size: 0.95rem;
-    }
-
-    .session-carousel__nav {
-      display: none;
+    .session-carousel__dots {
+      margin-top: 1rem;
     }
   }
 </style>

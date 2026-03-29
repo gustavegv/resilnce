@@ -295,20 +295,27 @@
 
 <svelte:window onkeydown={handleWindowKeydown} />
 
-{#if showActionMenu}
-  <button
-    type="button"
-    class="menu-backdrop"
-    aria-label="Close session actions"
-    onclick={closeActionMenu}
-    transition:fade={{ duration: 140 }}
-  ></button>
-{/if}
-
 <main class="app-container">
   {#if loading || error}
+    {#if error}
+      <div class="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 p-4">
+        <div class="flex items-start justify-between gap-3">
+          <div
+            class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-red-500/15 text-red-200"
+          >
+            <Icon icon="mdi:alert-circle" />
+          </div>
+
+          <div class="mt-1">
+            <p class="text-left text-sm font-semibold text-red-50">Something went wrong</p>
+            <p class="mt-1 text-left text-sm leading-6 text-red-100/75">
+              {error}. Please try again.
+            </p>
+          </div>
+        </div>
+      </div>
+    {/if}
     <LoadingSkeleton />
-    <h1 class="text-2xl">{error ?? ''}</h1>
   {:else}
     <div class="progress">
       <div class="progress-header">
@@ -330,7 +337,7 @@
         >Return to homepage</button
       >
     {:else}
-      <div class="session-menu-anchor">
+      <div class="session-menu-anchor z-1">
         <button
           type="button"
           onclick={toggleActionMenu}
@@ -406,6 +413,16 @@
         </button>
       </div>
     {/if}
+  {/if}
+
+  {#if showActionMenu}
+    <button
+      type="button"
+      class="menu-backdrop"
+      aria-label="Close session actions"
+      onclick={closeActionMenu}
+      transition:fade={{ duration: 140 }}
+    ></button>
   {/if}
 </main>
 
@@ -555,9 +572,9 @@
     border: none;
     padding: 0;
     margin: 0;
-    background: linear-gradient(180deg, rgba(28, 28, 28, 0.596), transparent);
+    background: linear-gradient(180deg, var(--color-background), transparent);
     mask: linear-gradient(black, transparent);
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(4px);
 
     cursor: default;
   }
@@ -566,11 +583,11 @@
     position: absolute;
     right: 0;
     top: 0;
-    transform: translate(1rem, -1.3rem); /* visually offset without creating overflow */
-    z-index: 20;
+    transform: translate(1rem, -1.3rem);
     display: flex;
     flex-direction: column;
     align-items: center;
+    z-index: 20;
   }
 
   .action-trigger {
@@ -589,6 +606,7 @@
     top: calc(100% + 0.6rem);
     left: 50%;
     transform: translateX(-50%);
+    z-index: 22;
   }
 
   .session-action-menu {

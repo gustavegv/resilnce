@@ -60,11 +60,7 @@
     </r>
   </div>
 {:else}
-  <div class="abs">
-    <CustomHeader size={3} />
-  </div>
-
-  <div class="head">
+  <div class="head half">
     <g
       class="function-button"
       role="button"
@@ -90,23 +86,25 @@
     >
       <img src={asset('/FriendsWhite.svg')} alt="" draggable="false" />
     </div>
-    <r class="function-button hide">
-      <Icon icon="entypo:back" color="grey"></Icon>
-    </r>
   </div>
 {/if}
 
 {@render children()}
 
 <style>
+  :root {
+    --logo-size: 60px;
+  }
+
   .icon {
     width: var(--size);
     height: var(--size);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 60px; /* your desired size */
+    width: var(--logo-size);
     height: 45px;
+    z-index: 5;
   }
 
   .function-button {
@@ -117,6 +115,7 @@
     font-size: 25px;
     padding: 0;
     height: 3rem;
+    z-index: 5;
   }
 
   .abs {
@@ -127,7 +126,7 @@
     top: -20px;
     left: 0px;
     width: 100%;
-    z-index: 3;
+    z-index: 1;
   }
 
   .head {
@@ -136,11 +135,17 @@
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    z-index: 5;
+    z-index: 1;
     overflow: visible;
+  }
+
+  .head.half {
+    width: calc(50vw + var(--logo-size) / 2);
   }
 
   .hide {
     opacity: 0;
+    height: 0px;
+    width: 24px;
   }
 </style>

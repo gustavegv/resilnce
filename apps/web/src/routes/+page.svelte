@@ -53,7 +53,7 @@
     if (value?.name || (await getMe())) {
       loadUserHomepage(value);
     } else {
-      greetMessage = 'resilnce';
+      greetMessage = 'resilnce.';
     }
 
     loading = false;
@@ -91,7 +91,7 @@
 </script>
 
 {#if loading}
-  <p>loading</p>
+  <p></p>
 {:else}
   <div in:fade={{ duration: 400, delay: 50 }} class="body">
     <div class="flex w-full justify-end p-6">
@@ -155,7 +155,7 @@
             onclick={() => goto(resolve(`/account`))}
           >
             <g>Log in</g>
-            <Icon icon="material-symbols:login-rounded" width="32" />
+            <Icon icon="material-symbols:login-rounded" width="28" />
           </button>
         {/if}
       </div>
@@ -200,7 +200,7 @@
     z-index: 0;
     pointer-events: none;
     user-select: none;
-    width: 15rem;
+    width: 55vw;
     height: auto;
     filter: drop-shadow(0px 19px 38px rgba(79, 89, 111, 0.187))
       drop-shadow(0px 15px 12px rgba(78, 78, 78, 0.13));
@@ -343,7 +343,7 @@
   }
 
   .base-btn.sesh {
-    font-weight: 400;
+    font-weight: 500;
   }
 
   .base-btn.secondary {
