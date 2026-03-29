@@ -266,7 +266,7 @@
       onCountChange={(count: number) => autoIncreaseChange(count)}
     />
 
-    <button class="add buttonClass" onclick={addExercise}
+    <button class="add buttonClass minimal" onclick={addExercise}
       >Add to session <Icon icon="material-symbols:add" /></button
     >
   </div>
@@ -357,10 +357,7 @@
   }
 
   .finish {
-    height: 5rem;
-    box-shadow: var(--shadow-dark);
-    background: var(--color-secondary);
-    font-size: 20px;
+    margin-top: 1rem;
     margin-bottom: 12rem;
     width: 80%;
   }

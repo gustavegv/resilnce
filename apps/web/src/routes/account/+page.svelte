@@ -116,8 +116,10 @@
 </script>
 
 <main class="main">
-  <h1 class="mb-4 w-80 text-3xl leading-none font-bold tracking-tight text-white">Account</h1>
-  <Card.Root class="border-background m-2 w-sm px-2">
+  <eyebrow>Account</eyebrow>
+  <h2>Manage your account</h2>
+  <subtitle>Update your profile, preferences, and sign-in settings.</subtitle>
+  <Card.Root class="border-border m-2 mt-8 w-[100%] px-2">
     <Card.Header class="border-neutral-700">
       {#if username}
         <Card.Title>
@@ -132,20 +134,20 @@
     {#if username}
       <Button
         variant="destructive"
-        class="text-lg&_svg:not([class*='size-'])]:size-8 m-8 mt-4 py-5"
+        class="text-lg&_svg:not([class*='size-'])]:size-8 m-8 mt-0 mb-0 py-5"
         onclick={logOut}
       >
         Log out <Icon icon="mdi:user-arrow-right-outline" width={45} />
       </Button>
     {:else}
-      <Button variant="outline" class="m-8 mt-4 py-5 text-lg" onclick={loginRequest}>
+      <Button variant="outline" class="m-8 mt-0 mb-0 py-5 text-lg" onclick={loginRequest}>
         <Icon icon="ri:google-fill" />
       </Button>
     {/if}
   </Card.Root>
 
   {#if username}
-    <Card.Root class="border-background mb-2 w-sm px-2">
+    <Card.Root class="border-border mb-2 w-[100%] px-2 shadow-lg">
       <Card.Header class="border-neutral-700">
         <Card.Title>Settings</Card.Title>
       </Card.Header>
@@ -158,7 +160,7 @@
       </Card.Content>
     </Card.Root>
 
-    <Card.Root class="border-background w-sm px-2">
+    <Card.Root class="border-border w-[100%] px-2">
       <Card.Header class="border-neutral-700">
         <Card.Title>Calculate 1RM</Card.Title>
       </Card.Header>
@@ -212,6 +214,7 @@
 <style>
   .main {
     margin-top: 4rem;
+    padding: 0 1rem;
     display: flex;
     justify-content: baseline;
     align-items: center;

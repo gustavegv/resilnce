@@ -306,20 +306,19 @@
 
 <div class="page">
   <div class="">
-    <p class="text-sm font-medium text-zinc-400">Create session</p>
-    <h1 class="mt-1 text-3xl font-semibold tracking-tight text-zinc-50">Pick a creation mode</h1>
-    <p class="mt-3 text-sm leading-6 text-zinc-400">Choose how you want to build your session.</p>
+    <eyebrow>Create session</eyebrow>
+    <h2 class="mt-1">Pick a creation mode</h2>
+    <subtitle class="mt-3">Choose how you want to build your session.</subtitle>
 
-    <div class="mt-4 rounded-3xl border border-green-400/15 bg-green-400/10 p-4">
-      <div class="flex items-start gap-3">
-        <div
-          class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-green-300/15 text-green-200"
-        >
-          ✦
+    <div class="helper-card">
+      <div class="helper-card__row">
+        <div class="helper-card__icon">
+          <Icon icon="mdi:star-four-points" />
         </div>
+
         <div>
-          <p class="text-sm font-semibold text-green-100">You can edit everything later</p>
-          <p class="mt-1 text-sm leading-6 text-green-100/75">
+          <p class="helper-card__title">You can edit everything later</p>
+          <p class="helper-card__text">
             Regardless of how you start, you can always edit a session later.
           </p>
         </div>
@@ -452,14 +451,44 @@
     padding-top: 4rem;
   }
 
-  .title {
-    margin: 0 0 0.25rem;
-    font-size: 2.25rem;
-    line-height: 1.1;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    text-align: left;
-    width: 100%;
+  .helper-card {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 1.5rem;
+    border: 1px solid rgb(74 152 75 / 0.15);
+    background: rgb(74 152 75 / 0.1);
+  }
+
+  .helper-card__row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .helper-card__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    margin-top: 0.125rem;
+    border-radius: 1rem;
+    background: rgb(74 152 75 / 0.15);
+    color: rgb(220 252 231);
+  }
+
+  .helper-card__title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: rgb(240 253 244);
+  }
+
+  .helper-card__text {
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    line-height: 1.5rem;
+    color: rgb(240 253 244 / 0.75);
   }
 
   .sr-only {

@@ -8,6 +8,7 @@
   import { toast } from 'svelte-sonner';
   import { resolve } from '$app/paths';
   import { QuickGeneration } from '../dbWrite';
+  import { fade, fly } from 'svelte/transition';
 
   var userText = $state<string>('');
   var isAdditionalInfoEnabled = $state<boolean>(false);
@@ -19,13 +20,17 @@
 
   let collapsibleOpen = $state(false);
 
+  let advancedOpen = $state(false);
+  let loadStateText = $state('');
+  let isLoadingStatesRunning = false;
+
   let dataPromise = $state<Promise<string> | null>(null);
 
   async function quickfillAPICall(prompt: string) {
     const choices: boolean[] = [cbSpellcheck, cbRestart, cbAutoChoose, cbStrength];
 
     // load
-    dataPromise = QuickGeneration(prompt, choices);
+    // dataPromise = QuickGeneration(prompt, choices);
     // finish loading
     console.log(await dataPromise);
   }
@@ -44,6 +49,7 @@
       return;
     } else {
       collapsibleOpen = true;
+      runLoadingStates();
       quickfillAPICall(userText);
     }
   }
@@ -63,15 +69,76 @@
     goto(`${resolve('/create/manual')}?quickload=1`);
   }
 
-  let advancedOpen = $state(false);
+  const loadingTextOptionsByStage = [
+    ['Analyzing your notes', 'Reviewing your input', 'Taking in your notes'],
+    ['Understanding the workout', 'Finding exercises and sets', 'Mapping the workout structure'],
+    ['Building the session', 'Organizing everything', 'Standardizing the format'],
+    ['Cleaning up the details', 'Checking for missing details', 'Refining the session'],
+    ['Getting it ready', 'Preparing your session', 'Finishing up'],
+  ];
+
+  function getRandomItem<T>(items: T[]): T {
+    return items[Math.floor(Math.random() * items.length)];
+  }
+
+  function createRandomLoadingSequence(): string[] {
+    return loadingTextOptionsByStage.map((options) => getRandomItem(options));
+  }
+
+  function wait(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  function createRandomStageDurations(totalMs = 20_000): number[] {
+    const stageCount = loadingTextOptionsByStage.length;
+    const minMsPerStage = 2_000;
+    const maxMsPerStage = 6_000;
+    const stepMs = 250;
+
+    const durations = Array(stageCount).fill(minMsPerStage);
+    const maxExtraStepsPerStage = Math.floor((maxMsPerStage - minMsPerStage) / stepMs);
+    let remainingExtraSteps = Math.floor((totalMs - stageCount * minMsPerStage) / stepMs);
+
+    while (remainingExtraSteps > 0) {
+      const availableStageIndexes = durations
+        .map((duration, index) => {
+          const extraStepsUsed = (duration - minMsPerStage) / stepMs;
+          return extraStepsUsed < maxExtraStepsPerStage ? index : -1;
+        })
+        .filter((index) => index !== -1);
+
+      const randomStageIndex = getRandomItem(availableStageIndexes);
+      durations[randomStageIndex] += stepMs;
+      remainingExtraSteps -= 1;
+    }
+
+    return durations;
+  }
+
+  async function runLoadingStates(totalMs = 20_000): Promise<void> {
+    if (isLoadingStatesRunning) return;
+
+    isLoadingStatesRunning = true;
+
+    const loadingSequence = createRandomLoadingSequence();
+    const stageDurations = createRandomStageDurations(totalMs);
+
+    for (let i = 0; i < loadingSequence.length; i++) {
+      loadStateText = loadingSequence[i];
+      await wait(stageDurations[i]);
+    }
+
+    isLoadingStatesRunning = false;
+  }
 </script>
 
 <!-- Page Wrapper -->
 <main class="page">
   <!-- Head -->
   <header class="head">
-    <h1 class="mb-2 text-3xl leading-snug font-bold">Quick Fill</h1>
-    <p class="description">
+    <eyebrow>Quick fill</eyebrow>
+    <h2 class="">Turn notes into a session</h2>
+    <subtitle class="">
       This feature allows you to paste or upload your workout session notes in any
       format-messy,structured, or somewhere in between, and automatically transforms them into a
       clean, standardized <b>reslince</b> session.
@@ -82,7 +149,7 @@
       <br /><br />
       After the generation is finished, you will get the chance to readjust and edit the session before
       saving!
-    </p>
+    </subtitle>
   </header>
 
   <div
@@ -161,11 +228,21 @@
         Continue
         <Icon icon="fluent:sparkle-16-filled" width={20} class="ml-2" />
       </button>
-      <Dialog.Content>
+      <Dialog.Content class="border-border bg-card box-shadow-shadow">
         <Dialog.Header>
           <Dialog.Title>
             {#await dataPromise}
-              Creating session...
+              <div class="loading-text-wrap">
+                {#key loadStateText}
+                  <p
+                    class="loading-text"
+                    in:fly={{ y: 6, duration: 380, opacity: 0 }}
+                    out:fly={{ y: -6, duration: 340, opacity: 0 }}
+                  >
+                    {loadStateText}...
+                  </p>
+                {/key}
+              </div>
             {:then paragraphs}
               {#if paragraphs == 'limit'}
                 AI usage limit reached!
@@ -178,7 +255,7 @@
           </Dialog.Title>
           <Dialog.Description>
             {#await dataPromise}
-              <Icon icon="svg-spinners:blocks-shuffle-3" height={50} class="m-4"></Icon>
+              <Icon icon="svg-spinners:ring-resize" height={50} class="m-4"></Icon>
               Hang on as our AI tool analyzes your session...
             {:then result}
               {#if result == 'fail'}
@@ -190,12 +267,18 @@
                   <p>{'Wait for token count to replenish.'}</p>
                 </ul>
               {:else}
-                <ul>
-                  <p>{'Generation successful!'}</p>
-                </ul>
-                <button type="button" class="continue-button" onclick={saveSession}
-                  >Review generated session!</button
+                <div transition:fade={{ delay: 200, duration: 200 }}>
+                  <p>Your session is ready to review and edit before you save it.</p>
+                </div>
+
+                <button
+                  type="button"
+                  class="continue-button mt-6"
+                  transition:fade={{ delay: 400, duration: 200 }}
+                  onclick={saveSession}
                 >
+                  Review generated session!
+                </button>
               {/if}
             {/await}
           </Dialog.Description>
@@ -221,8 +304,7 @@
   }
 
   .page {
-    margin: 8svh 0 4svh 0;
-    padding-top: 400px;
+    margin-top: 3rem;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -239,10 +321,16 @@
     max-width: var(--page-max-width);
   }
 
-  .description {
+  .loading-text-wrap {
+    position: relative;
+    height: 1.5rem; /* match one line of text */
+    overflow: hidden;
+  }
+
+  .loading-text {
+    position: absolute;
+    inset: 0;
     margin: 0;
-    color: var(--muted-foreground);
-    line-height: 1.6;
   }
 
   .section-heading {
@@ -290,13 +378,14 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    padding: 0.9rem 1.25rem;
-    border: none;
+    padding: 0.7rem 1.5rem;
+    border: 1px solid var(--border);
     border-radius: var(--radius);
     background: var(--color-secondary);
     color: var(--accent-foreground);
     font-weight: 600;
     cursor: pointer;
+    box-shadow: var(--shadow-dark);
   }
 
   .continue-button:focus-visible {

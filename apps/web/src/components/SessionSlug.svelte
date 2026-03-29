@@ -75,13 +75,13 @@
 
 <div class="inner-cont alt">
   <div class="base-btn alt" style="width:{sty}">
-    <button class="start-side buttonClass" onclick={prs}>
+    <button class="start-side" onclick={prs}>
       <p>{slug.name}</p>
       <p class="date">{timeAgo(slug.date ?? grd(3))}</p>
     </button>
 
-    <button class="dots-cont buttonClass" onclick={sideway}>
-      <Icon icon={'uiw:more'} fill={'#fff'} width={20}></Icon>
+    <button class="dots-cont" onclick={sideway}>
+      <Icon icon={'uiw:more'} fill={'#fff'} width={16}></Icon>
     </button>
   </div>
 
@@ -113,7 +113,7 @@
     justify-content: space-evenly;
     background-color: var(--slug-color);
     padding-left: 1rem;
-    width: 80%;
+    width: 85%;
   }
 
   .dots-cont {
@@ -127,7 +127,7 @@
     justify-content: center;
     align-items: center;
     touch-action: none;
-    width: 20%;
+    width: 15%;
     height: var(--slug-height);
   }
 
@@ -173,6 +173,7 @@
     flex-direction: row;
     margin: 0;
     overflow: hidden;
+    border: 1px solid var(--border);
   }
 
   .base-btn.alt {

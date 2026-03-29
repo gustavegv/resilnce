@@ -69,11 +69,11 @@
 <div class="counter-container mini">
   <div class="ml-1">{title}</div>
   <div class="controls mini">
-    <button class="but mini buttonClass" onclick={decrement}>
+    <button class="but mini" onclick={decrement}>
       <Icon icon={'gg:remove'} height={'25'} color={limitReached ? 'grey' : '#fff'} />
     </button>
     <gf class="mini-count">{curCount} {unit}</gf>
-    <button class="but mini buttonClass" onclick={increment}>
+    <button class="but mini" onclick={increment}>
       <Icon icon={'gg:add'} height={'25'} />
     </button>
   </div>

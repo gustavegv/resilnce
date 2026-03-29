@@ -53,7 +53,7 @@
     if (value?.name || (await getMe())) {
       loadUserHomepage(value);
     } else {
-      greetMessage = 'The only gym tracker you need.';
+      greetMessage = 'resilnce';
     }
 
     loading = false;
@@ -94,29 +94,46 @@
   <p>loading</p>
 {:else}
   <div in:fade={{ duration: 400, delay: 50 }} class="body">
+    <div class="flex w-full justify-end p-6">
+      {#if existingSession}
+        <button
+          in:slide|global={{ duration: 600 }}
+          class="base-btn alt flex w-full items-center justify-between"
+          onclick={() => goto(resolve(`/tracker/${existingID}`))}
+        >
+          <div class="flex min-w-0 flex-1 flex-col text-left">
+            <g class="font-bold">Resume session</g>
+            <i class="truncate">{existingName}</i>
+          </div>
+
+          <Icon icon="material-symbols:resume-rounded" width={40} />
+        </button>
+      {/if}
+    </div>
+
     <cont class="cont">
       <h1 in:fade={{ duration: 400, delay: 100 }} class="wid">
         {greetMessage}
       </h1>
 
-      <hr in:fade={{ duration: 400, delay: 150 }} />
+      <div
+        in:fade={{ duration: 400, delay: 150 }}
+        class="mt-3 mb-4 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70 backdrop-blur-md"
+      >
+        {#if !$user?.name}
+          The only gym tracker you need.
+        {:else if existingSession}
+          Pick up where you left off or start something new.
+        {:else}
+          What are we doing today?
+        {/if}
+      </div>
 
       <div class="btn-container">
         {#if $user?.name}
-          {#if existingSession}
-            <button
-              in:slide|global={{ duration: 600 }}
-              class="base-btn alt buttonClass"
-              onclick={() => goto(resolve(`/tracker/${existingID}`))}
-            >
-              <g>Continue session:</g>
-              <i class="font-regular">{existingName}</i>
-            </button>
-          {/if}
-
           <button
             in:fade={{ duration: 400, delay: 200 }}
-            class="base-btn sesh buttonClass"
+            class="base-btn sesh"
             onclick={() => goto(resolve(`/tracker`))}
           >
             <g>Begin a workout</g>
@@ -125,7 +142,7 @@
 
           <button
             in:fade={{ duration: 400, delay: 300 }}
-            class="base-btn sesh buttonClass"
+            class="base-btn sesh"
             onclick={() => goto(resolve(`/create`))}
           >
             <g>Add new session</g>
@@ -134,7 +151,7 @@
         {:else}
           <button
             in:fade={{ duration: 400, delay: 150 }}
-            class="base-btn sesh buttonClass"
+            class="base-btn sesh"
             onclick={() => goto(resolve(`/account`))}
           >
             <g>Log in</g>
@@ -187,21 +204,46 @@
     height: auto;
     filter: drop-shadow(0px 19px 38px rgba(79, 89, 111, 0.187))
       drop-shadow(0px 15px 12px rgba(78, 78, 78, 0.13));
+    opacity: 1;
   }
 
-  .toUpper {
-    text-transform: capitalize;
+  .body {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    box-sizing: border-box;
+    padding: 5rem 0;
+    min-height: 100vh;
+    overflow: hidden;
+    background: #0b0f0b;
+  }
+
+  .body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+
+    background-image:
+      linear-gradient(rgba(45, 45, 45, 0.45), rgba(13, 13, 13, 0.65)),
+      url('https://images.pexels.com/photos/30004058/pexels-photo-30004058.jpeg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
+    filter: blur(12px) saturate(0) brightness(0.55);
+    transform: scale(1.08);
+  }
+
+  .body > * {
+    position: relative;
+    z-index: 1;
   }
 
   .books.true {
     top: 30%;
-  }
-
-  hr {
-    height: 0.1px;
-    background-color: #ffffff;
-    margin: 1rem 0 1rem 0;
-    width: 100%;
   }
 
   .wid {
@@ -210,17 +252,6 @@
     margin-left: 0.5rem;
     line-height: 2.5rem;
     letter-spacing: -0.02em;
-  }
-
-  .body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    box-sizing: border-box;
-    padding: 5rem 0;
-    height: 100vh;
-    background: var(--gradient-front-page);
   }
 
   @media screen and (max-device-height: 667px) and (orientation: portrait) {
@@ -260,25 +291,108 @@
 
   .base-btn {
     display: flex;
-    flex-direction: row;
-    justify-content: space-between;
     align-items: center;
-    box-shadow: var(--shadow-dark);
+    justify-content: space-between;
+    gap: 0.75rem;
     width: 100%;
+    min-height: 3.5rem;
     margin: 0;
-    padding: 0.8rem 1.2rem;
-    border-radius: 6px;
-    height: 4rem;
+    padding: 0.875rem 1rem;
+
+    border: 1px solid rgb(255 255 255 / 0.08);
+    border-radius: 12px;
+    background: var(--color-secondary);
+    color: white;
+
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.22),
+      inset 0 -1px 0 rgb(0 0 0 / 0.08),
+      0 10px 24px rgb(0 0 0 / 0.18);
+
+    transition:
+      transform 120ms ease,
+      box-shadow 180ms ease,
+      filter 180ms ease,
+      background-color 180ms ease;
+
+    background:
+      linear-gradient(to bottom, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0)),
+      var(--color-secondary);
+  }
+
+  .base-btn:hover {
+    filter: brightness(1.03) saturate(1.02);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.24),
+      inset 0 -1px 0 rgb(0 0 0 / 0.08),
+      0 12px 28px rgb(0 0 0 / 0.2);
+  }
+
+  .base-btn:active {
+    transform: scale(0.985);
+    filter: brightness(0.98);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.16),
+      inset 0 -1px 0 rgb(0 0 0 / 0.12),
+      0 6px 14px rgb(0 0 0 / 0.16);
+  }
+
+  .base-btn:focus-visible {
+    outline: 2px solid rgb(255 255 255 / 0.35);
+    outline-offset: 2px;
   }
 
   .base-btn.sesh {
-    font-weight: 600;
+    font-weight: 400;
+  }
+
+  .base-btn.secondary {
+    color: var(--color-text);
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background:
+      linear-gradient(to bottom, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.03)),
+      rgb(255 255 255 / 0.04);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.06),
+      0 8px 24px rgb(0 0 0 / 0.12);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .base-btn.secondary:hover {
+    background:
+      linear-gradient(to bottom, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.04)),
+      rgb(255 255 255 / 0.05);
+    border-color: rgb(255 255 255 / 0.12);
+  }
+
+  .base-btn.secondary:active {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.05),
+      0 4px 14px rgb(0 0 0 / 0.1);
   }
 
   .base-btn.alt {
-    background-color: var(--color-alt);
-    color: var(--color-text);
-    box-shadow: var(--color-alt) 0px 0px 20px 1px;
-    margin-bottom: 1rem;
+    color: rgb(255 255 255 / 0.7);
+    border: 1px solid rgb(255 255 255 / 0.1);
+    background: rgb(255 255 255 / 0.05);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    width: 50%;
+    font-size: 12px;
+    border-radius: 16px;
+    min-height: 4rem;
+
+    box-shadow: none;
+  }
+
+  .base-btn.alt:hover {
+    background: rgb(255 255 255 / 0.04);
+    border-color: rgb(255 255 255 / 0.09);
+  }
+
+  .base-btn.alt:active {
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.03);
   }
 </style>

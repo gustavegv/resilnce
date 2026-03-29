@@ -322,11 +322,11 @@
     </div>
 
     {#if allFinished}
-      <h1 class="title" class:is-celebrating={allFinished}>Session finished!</h1>
-      <h2 class="subtitle">Session overview</h2>
+      <h1 class:is-celebrating={allFinished}>Session finished!</h1>
+      <h3 class="subtitle">Session overview</h3>
       <hr />
       <ExerciseCompleteScreen {exercises} />
-      <button class="buttonClass w-full" onclick={() => goto(resolve(`/`))}
+      <button class="buttonClass mt-2 w-full" onclick={() => goto(resolve(`/`))}
         >Return to homepage</button
       >
     {:else}
@@ -334,7 +334,7 @@
         <button
           type="button"
           onclick={toggleActionMenu}
-          class="action-trigger buttonClass"
+          class="action-trigger"
           aria-haspopup="menu"
           aria-expanded={showActionMenu}
           aria-controls="session-action-menu"
@@ -416,17 +416,7 @@
     width: 100%;
   }
 
-  .title {
-    margin: 0 0 0.25rem;
-    font-size: 2.25rem;
-    line-height: 1.1;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    text-align: left;
-    width: 100%;
-  }
-
-  .title.is-celebrating {
+  .is-celebrating {
     animation: session-finished-celebration 900ms ease both;
   }
 
@@ -463,11 +453,6 @@
     color: var(--color-gray);
     text-align: left;
     width: 100%;
-  }
-
-  .but {
-    width: 80%;
-    background: var(--color-alt);
   }
 
   .progress {
@@ -522,13 +507,6 @@
     overflow-x: hidden;
   }
 
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: #fff;
-    opacity: 0.2;
-    pointer-events: none;
-  }
   .movement-cont {
     display: flex;
     flex-direction: row;
@@ -601,6 +579,9 @@
     background-color: rgba(240, 248, 255, 0);
     box-shadow: none;
     z-index: 21;
+
+    padding: 1.5rem 1.5rem;
+    outline: none;
   }
 
   .session-action-menu-shell {

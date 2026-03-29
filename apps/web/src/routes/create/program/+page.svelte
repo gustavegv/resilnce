@@ -128,12 +128,12 @@
 <section class="program-page">
   <header class="program-page__header">
     <div>
-      <p class="program-page__eyebrow">Program sessions</p>
-      <h1 class="program-page__title">Start from a proven program</h1>
-      <p class="program-page__subtitle">
+      <eyebrow>Program sessions</eyebrow>
+      <h2>Start from a proven program</h2>
+      <subtitle>
         Pick a training template and build your session from its structure. Expand any program to
         see what the block targets and how it is usually run.
-      </p>
+      </subtitle>
     </div>
 
     <div class="program-page__helper">
@@ -266,6 +266,7 @@
     color: var(--program-text-primary);
     padding: 1rem;
     padding-top: 4rem;
+    overflow-x: auto;
   }
 
   .program-page__header {
@@ -274,19 +275,11 @@
     padding: 0.35rem 0 0.4rem;
   }
 
-  .program-page__eyebrow {
-    margin: 0;
-    font-size: 0.82rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--program-text-muted);
-  }
-
   .program-page__title {
-    margin: 0.3rem 0 0;
-    font-size: clamp(1.95rem, 6vw, 3rem);
-    letter-spacing: -0.02em;
+    font-size: 1.875rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: var(--color-text);
   }
 
   .program-page__subtitle {

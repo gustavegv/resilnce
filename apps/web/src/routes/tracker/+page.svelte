@@ -109,10 +109,74 @@
   }
 
   const keywordsByCategory: Record<string, readonly string[]> = {
-    'Upper body': ['upper', 'pull', 'push', 'chest', 'arms'],
-    'Lower body': ['lower', 'legs', 'quads', 'hamstrings', 'glutes', 'calves'],
-    'Full body': ['full body', 'full-body'],
-    Other: [],
+    'Upper body': [
+      'upper',
+      'upper body',
+      'pull',
+      'push',
+      'chest',
+      'pecs',
+      'back',
+      'lats',
+      'traps',
+      'delts',
+      'shoulders',
+      'biceps',
+      'triceps',
+      'arms',
+      'bench',
+      'press',
+      'overhead press',
+      'ohp',
+      'incline',
+      'dip',
+      'row',
+      'pulldown',
+      'pullup',
+      'pull-up',
+      'chinup',
+      'chin-up',
+    ],
+    'Lower body': [
+      'lower',
+      'lower body',
+      'legs',
+      'leg day',
+      'quads',
+      'quadriceps',
+      'hamstrings',
+      'hams',
+      'glutes',
+      'calves',
+      'adductors',
+      'abductors',
+      'squat',
+      'front squat',
+      'back squat',
+      'deadlift',
+      'rdl',
+      'romanian deadlift',
+      'hinge',
+      'lunge',
+      'split squat',
+      'bulgarian split squat',
+      'leg press',
+      'leg curl',
+      'leg extension',
+      'hip thrust',
+    ],
+    'Full body': [
+      'full body',
+      'full-body',
+      'fullbody',
+      'total body',
+      'total-body',
+      'totalbody',
+      'whole body',
+      'whole-body',
+      'compound',
+      'compound day',
+    ],
   };
 
   function sortByCategory(category: string): void {
@@ -149,7 +213,6 @@
 
   const categories = [
     { label: 'All', tone: 'all' },
-    { label: 'Favorites', tone: 'favorites' },
     { label: 'Upper body', tone: 'upper-body' },
     { label: 'Lower body', tone: 'lower-body' },
     { label: 'Full body', tone: 'full-body' },
@@ -160,7 +223,9 @@
 </script>
 
 <div class="main">
-  <h2 class="title">Sessions</h2>
+  <eyebrow>Sessions</eyebrow>
+  <h2>Start a new session</h2>
+  <subtitle>Select the session you want to run.</subtitle>
   <Toaster theme="dark"></Toaster>
 
   <Alert.Root bind:open={deletePopupShowing}>
@@ -243,7 +308,7 @@
   {:else if !sessionsLoaded}
     <Icon icon="svg-spinners:3-dots-bounce" width="30" />
   {:else}
-    <h2>No sessions created yet.</h2>
+    <subtitle>Nothing here yet. Add a session to get started.</subtitle>
   {/if}
 </div>
 
@@ -255,7 +320,7 @@
     flex-direction: column;
     align-items: center;
     text-align: left;
-    padding: 5rem 1rem;
+    padding: 4rem 1rem;
     overflow-y: scroll;
   }
 

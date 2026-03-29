@@ -50,7 +50,7 @@
 </script>
 
 <header>
-  <h1 class="exercise-title">
+  <h1>
     {namev}
     <Icon icon="material-symbols:info-outline-rounded" width={24} color="gray" onclick={showInfo} />
   </h1>
