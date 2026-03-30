@@ -61,6 +61,9 @@ function statusToasterHandler(code: number) {
     case 403:
       toast.error("You don't have permission to access this feature.");
       break;
+    case 429:
+      toast.error('Too many statistics requests. Please wait a moment and try again.');
+      break;
 
     default:
       toast.error('Network response was not ok. Try again.');

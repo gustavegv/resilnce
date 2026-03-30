@@ -2,6 +2,7 @@ package sessions
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -13,6 +14,10 @@ type SessionData struct {
 }
 
 func sessKey(sessionID string) string { return "sess:" + sessionID }
+
+func rateLimitKey(scope string, identifier string) string {
+	return fmt.Sprintf("ratelimit:%s:%s", scope, identifier)
+}
 
 func (s *Store) SaveSession(ctx context.Context, sessionID string, data SessionData, ttl time.Duration) error {
 	key := sessKey(sessionID)
@@ -89,4 +94,40 @@ func (s *Store) IncrAICalls(ctx context.Context, sessionID string, delta int64) 
 		return -3, err
 	}
 	return val, nil
+}
+
+func (s *Store) AllowRateLimit(
+	ctx context.Context,
+	scope string,
+	identifier string,
+	limit int64,
+	window time.Duration,
+) (bool, int64, time.Duration, error) {
+	key := rateLimitKey(scope, identifier)
+
+	count, err := s.rdb.Incr(ctx, key).Result()
+	if err != nil {
+		return false, 0, 0, err
+	}
+
+	if count == 1 {
+		if err := s.rdb.Expire(ctx, key, window).Err(); err != nil {
+			return false, 0, 0, err
+		}
+	}
+
+	ttl, err := s.rdb.TTL(ctx, key).Result()
+	if err != nil {
+		return false, 0, 0, err
+	}
+	if ttl < 0 {
+		ttl = window
+	}
+
+	remaining := limit - count
+	if remaining < 0 {
+		remaining = 0
+	}
+
+	return count <= limit, remaining, ttl, nil
 }
