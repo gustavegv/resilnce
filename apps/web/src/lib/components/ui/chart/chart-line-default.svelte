@@ -46,6 +46,19 @@
     return 'all time';
   }
 
+  function formatYAxisValue(value: number) {
+    if (Math.abs(value) >= 1000) {
+      return new Intl.NumberFormat('en-US', {
+        notation: 'compact',
+        maximumFractionDigits: 1,
+      }).format(value);
+    }
+
+    return new Intl.NumberFormat('en-US', {
+      maximumFractionDigits: Number.isInteger(value) ? 0 : 1,
+    }).format(value);
+  }
+
   const rangeMonths = $derived(getRangeMonths(range));
   const rangeLabel = $derived(getRangeLabel(range));
 
@@ -251,7 +264,7 @@
       xScale={scaleUtc()}
       {yDomain}
       series={visibleSeries}
-      axis="x"
+      axis
       props={{
         area: {
           curve: curveBumpX,
@@ -261,6 +274,10 @@
         },
         xAxis: {
           format: (v: Date) => v.toLocaleDateString('en-US', { dateStyle: 'short' }),
+        },
+        yAxis: {
+          ticks: 5,
+          format: formatYAxisValue,
         },
       }}
     >
