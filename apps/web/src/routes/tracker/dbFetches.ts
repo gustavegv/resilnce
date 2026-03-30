@@ -186,3 +186,7 @@ export async function SetActiveSession(sesID: string) {
 export async function DeleteSession(sesID: number): Promise<boolean> {
   return await postDB(`deleteSession?sesID=${sesID}`, null);
 }
+
+export async function EditSessionName(sesID: number, name: string): Promise<boolean> {
+  return await postDB(`editSession?sesID=${sesID}`, { name });
+}

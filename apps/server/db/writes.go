@@ -626,3 +626,21 @@ func (supa *SupabaseCFG) DeleteSession(userMail string, sessionID int, ctx conte
 
 	return nil
 }
+
+func (supa *SupabaseCFG) EditSessionName(userMail string, sessionID int, name string, ctx context.Context) error {
+	const query = `
+		update "Session"
+		set ses_name = $1
+		where mail = $2 and ses_id = $3;
+	`
+
+	_, err := supa.DB.Exec(ctx, query, name, userMail, sessionID)
+
+	if err != nil {
+		println("DB query fail (Write: Edit Session)")
+		println(err.Error())
+		return err
+	}
+
+	return nil
+}

@@ -439,3 +439,41 @@ func (supa *SupabaseCFG) DeleteSessionH(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 }
+
+func (supa *SupabaseCFG) EditSessionH(w http.ResponseWriter, r *http.Request) {
+	sesID := getSesID(w, r)
+	if sesID == -1 {
+		return
+	}
+
+	userMail := supa.getValidatedMail(w, r)
+	if userMail == "" {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	var data struct {
+		Name string `json:"name"`
+	}
+
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&data); err != nil {
+		http.Error(w, "Invalid JSON: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	data.Name = strings.TrimSpace(data.Name)
+	if data.Name == "" || len(data.Name) > 100 {
+		http.Error(w, "Invalid session name", http.StatusBadRequest)
+		return
+	}
+
+	err := supa.EditSessionName(userMail, sesID, data.Name, r.Context())
+	if err != nil {
+		http.Error(w, "Edit session failed", http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+}

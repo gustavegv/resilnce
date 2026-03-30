@@ -10,8 +10,16 @@
   import { resolve } from '$app/paths';
 
   import type { SessionMetaData } from './dbFetches';
-  import { CheckActiveSession, DeleteSession, GetSessions, SetActiveSession } from './dbFetches';
+  import {
+    CheckActiveSession,
+    DeleteSession,
+    EditSessionName,
+    GetSessions,
+    SetActiveSession,
+  } from './dbFetches';
   import { toast, Toaster } from 'svelte-sonner';
+  import InputField from '../../components/InputField.svelte';
+
 
   let slugs: SessionMetaData[] = $state([]);
   let activeSlugs: SessionMetaData[] = $state([]);
@@ -21,11 +29,19 @@
   let isAnotherSessionActive: boolean = $state(false);
   let sessionsLoaded: boolean = $state(false);
 
-  let deletePopupShowing: boolean = $state(false);
   let itemToRemove: [string, number] = $state(['', 0]);
-
-  let activeSessionPopupShowing: boolean = $state(false);
+  
   let sessionToStart: number = $state(-1);
+  let sessionToEditID: number = $state(-1);
+  
+  let activeSessionPopupShowing: boolean = $state(false);
+  let deletePopupShowing: boolean = $state(false);
+  let editSessionPopupShowing: boolean = $state(false);
+
+  let toEditSessionName: string = $state("sessiontoedit")
+  let newSessionName: string = $state("")
+
+
 
   const activeTimespan = new Date();
   activeTimespan.setDate(activeTimespan.getDate() - 14);
@@ -71,9 +87,56 @@
     }
   }
 
+  async function confirmEdit(){
+    const trimmedSessionName = newSessionName.trim();
+
+    if (!trimmedSessionName){
+      toast.error("New title cannot be empty")
+      return
+    }
+
+    if (sessionToEditID == -1) {
+      toast.error('Session to edit not found')
+      return
+    }
+
+    if (!(await EditSessionName(sessionToEditID, trimmedSessionName))) {
+      toast.error('Could not edit session name. Try again later.', {
+        duration: 5000,
+        style: 'background: red;',
+      });
+      return
+    }
+
+    const editedSlug = getSlugFromID(sessionToEditID);
+    if (editedSlug) {
+      editedSlug.name = trimmedSessionName;
+      sortByCategory(activeCategory);
+    }
+    
+    editSessionPopupShowing = false;
+    toast.success(`Session name edited to ${trimmedSessionName}!`)
+    toEditSessionName = trimmedSessionName
+    newSessionName = ""
+    sessionToEditID = -1
+  }
+
+  function getSlugFromID(id: number): SessionMetaData | null {
+    return slugs.find(slug => slug.id === id) || null;
+  }
+
   function editSes(id: number) {
-    console.log(id, 'edited');
-    alert('Edit not yet implemented.');
+
+    let editSlug:SessionMetaData | null = getSlugFromID(id)
+
+    if (editSlug == null) {
+      toast.error('Session to edit not found')
+      return
+    }
+    toEditSessionName = editSlug.name
+    newSessionName = editSlug.name
+    sessionToEditID = editSlug.id
+    editSessionPopupShowing = true
   }
 
   function deleteSession(SessionTitle: string, SesID: number) {
@@ -256,6 +319,24 @@
         <Alert.Action class="bg-accent" onclick={() => confirmStartSession()}>
           Start new session!
         </Alert.Action>
+      </div>
+    </Alert.Content>
+  </Alert.Root>
+
+  <Alert.Root bind:open={editSessionPopupShowing}>
+    <Alert.Content title="Edit session title" class="border-border border">
+      <Alert.Description>
+        What do you want to change <strong>{toEditSessionName}</strong> to?
+      </Alert.Description>
+      <div class="mt-5 flex justify-end gap-3 flex-col">
+        <InputField label={'New session title'} bind:value={newSessionName} type={'text'}/>
+
+        <div class="mt-5 flex justify-end gap-3">
+          <Alert.Cancel>Cancel edit</Alert.Cancel>
+          <Alert.Action class="bg-accent" onclick={() => confirmEdit()}>
+            Edit name
+          </Alert.Action>
+        </div>
       </div>
     </Alert.Content>
   </Alert.Root>
