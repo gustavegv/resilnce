@@ -249,6 +249,7 @@
       range,
     })
   );
+  const showDataPoints = $derived(chartData.length > 0 && chartData.length < 5);
   const trend = $derived(selectedWPS ? getTrend(chartData) : null);
 </script>
 
@@ -265,12 +266,18 @@
       {yDomain}
       series={visibleSeries}
       axis
+      points={showDataPoints}
       props={{
         area: {
           curve: curveBumpX,
           'fill-opacity': 0.2,
           line: { class: 'stroke-1' },
           motion: 'tween',
+        },
+        points: {
+          r: 4,
+          fillOpacity: 0.5,
+          class: 'stroke-background stroke-1',
         },
         xAxis: {
           format: (v: Date) => v.toLocaleDateString('en-US', { dateStyle: 'short' }),
