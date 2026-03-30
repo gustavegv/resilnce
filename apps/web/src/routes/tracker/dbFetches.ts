@@ -132,13 +132,16 @@ export async function GetSessionExercises(sesID: number): Promise<ExerciseInfo[]
   console.log('From DB:');
   console.log(data);
   for (let i = 0; data[i] != undefined; i++) {
-    var ex: ExerciseInfo = data[i];
-    ex.name = data[i].ex_name;
-    ex.currentProgress = {
-      sets: data[i].set_count,
-      repsPerSet: data[i].rep_per_set,
-      weightPerSet: data[i].weight_per_set,
-      restSeconds: 0,
+    const ex: ExerciseInfo = {
+      ...data[i],
+      id: Number(data[i].id),
+      name: data[i].ex_name,
+      currentProgress: {
+        sets: data[i].set_count,
+        repsPerSet: data[i].rep_per_set,
+        weightPerSet: data[i].weight_per_set,
+        restSeconds: 0,
+      },
     };
 
     exs.push(ex);
