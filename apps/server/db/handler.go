@@ -115,6 +115,32 @@ func (supa *SupabaseCFG) GetSessionExercises(w http.ResponseWriter, r *http.Requ
 	json.NewEncoder(w).Encode(exInfo)
 }
 
+func (supa *SupabaseCFG) GetExerciseHistory(w http.ResponseWriter, r *http.Request) {
+	exID := getExID(w, r)
+	if exID == -1 {
+		return
+	}
+
+	userMail := supa.getValidatedMail(w, r)
+	if userMail == "" {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+
+	history, err := supa.ExerciseHistory(userMail, exID, ctx)
+	if err != nil {
+		println("Error (GetExerciseHistory):", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(history)
+}
+
 func (supa *SupabaseCFG) GetActiveSession(w http.ResponseWriter, r *http.Request) {
 	userMail := supa.getValidatedMail(w, r)
 	if userMail == "" {

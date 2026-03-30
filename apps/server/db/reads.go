@@ -25,6 +25,14 @@ type ExInfo struct {
 	Finished bool      `json:"finished"`
 }
 
+type HistoricData struct {
+	SaveDate  time.Time `json:"save_date"`
+	AvgRep    int       `json:"avg_rep"`
+	AvgWeight float64   `json:"avg_weight"`
+	NoOfSets  int       `json:"no_of_sets"`
+	ExID      int       `json:"ex_id"`
+}
+
 func (supa *SupabaseCFG) UserSessions(userMail string, ctx context.Context) ([]SessionMetaData, error) {
 	const query = `
 		select ses_id, ses_name, date_last_ran from "Session"
@@ -96,6 +104,52 @@ func (supa *SupabaseCFG) SessionExercises(userMail string, sesID int, ctx contex
 		exs = append(exs, ex)
 	}
 	return exs, nil
+}
+
+func (supa *SupabaseCFG) ExerciseHistory(userMail string, exID int, ctx context.Context) ([]HistoricData, error) {
+	const query = `
+		select
+			h.save_date,
+			coalesce(h.avg_rep, 0)::int,
+			coalesce(h.avg_weight, 0)::float8,
+			coalesce(h.no_of_sets, 0)::int,
+			h.ex_id
+		from "History" h
+		join "Exercise" ex on ex.ex_id = h.ex_id
+		where h.ex_id = $1 and ex.mail = $2
+		order by h.save_date asc
+	`
+
+	rows, err := supa.DB.Query(ctx, query, exID, userMail)
+	if err != nil {
+		return nil, fmt.Errorf("ExerciseHistory query: %w", err)
+	}
+	defer rows.Close()
+
+	history := []HistoricData{}
+
+	for rows.Next() {
+		var entry HistoricData
+
+		err := rows.Scan(
+			&entry.SaveDate,
+			&entry.AvgRep,
+			&entry.AvgWeight,
+			&entry.NoOfSets,
+			&entry.ExID,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("ExerciseHistory scan: %w", err)
+		}
+
+		history = append(history, entry)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("ExerciseHistory rows: %w", err)
+	}
+
+	return history, nil
 }
 
 func (supa *SupabaseCFG) CheckIfActive(userMail string, ctx context.Context) (string, string, error) {

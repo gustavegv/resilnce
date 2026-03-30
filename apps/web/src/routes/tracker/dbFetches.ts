@@ -34,6 +34,14 @@ export interface SessionMetaData {
   deleted?: boolean;
 }
 
+export interface HistoricEntry {
+  exID: number;
+  saveDate: Date;
+  avgRep: number;
+  avgWeight: number;
+  noOfSets: number;
+}
+
 const baseURL: string = PUBLIC_BACKEND_BASE_URL;
 
 function address(dir: string): string {
@@ -137,6 +145,23 @@ export async function GetSessionExercises(sesID: number): Promise<ExerciseInfo[]
   }
 
   return exs;
+}
+
+export async function GetExerciseHistory(exID: number): Promise<HistoricEntry[]> {
+  const data = await fetchDB(`history?exID=${exID}`);
+  const history: HistoricEntry[] = [];
+
+  for (let i = 0; data[i] != undefined; i++) {
+    history.push({
+      exID: data[i].ex_id,
+      saveDate: new Date(data[i].save_date),
+      avgRep: Number(data[i].avg_rep ?? 0),
+      avgWeight: Number(data[i].avg_weight ?? 0),
+      noOfSets: Number(data[i].no_of_sets ?? 0),
+    });
+  }
+
+  return history;
 }
 
 export async function GetFinishedExercises(sesID: string): Promise<{
