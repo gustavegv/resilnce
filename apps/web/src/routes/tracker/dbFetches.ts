@@ -34,6 +34,15 @@ export interface SessionMetaData {
   deleted?: boolean;
 }
 
+export interface ExerciseEdit {
+  id: string;
+  name?: string;
+  sets?: number;
+  weight?: number;
+  repThreshold?: number;
+  autoIncrease?: number;
+}
+
 const baseURL: string = PUBLIC_BACKEND_BASE_URL;
 
 function address(dir: string): string {
@@ -159,7 +168,11 @@ export async function SendUpdate(
   },
   sesID: string
 ) {
-  const success = await postDB(`update?sesID=${sesID}`, info);
+  return await postDB(`update?sesID=${sesID}`, info);
+}
+
+export async function SendEdit(info: ExerciseEdit, sesID: string) {
+  return await postDB(`edit?sesID=${sesID}`, info);
 }
 
 export async function CompleteSession(sesID: string) {

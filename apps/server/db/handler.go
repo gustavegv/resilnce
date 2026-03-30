@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	sessions "github.com/gustavegv/resilnce/apps/server/redis"
@@ -179,6 +180,15 @@ type CompactExercise struct {
 	ExID    string    `json:"id"`
 }
 
+type ExerciseEdit struct {
+	ExID         string   `json:"id"`
+	Name         *string  `json:"name,omitempty"`
+	Sets         *int     `json:"sets,omitempty"`
+	Weight       *float64 `json:"weight,omitempty"`
+	RepThreshold *int     `json:"repThreshold,omitempty"`
+	AutoIncrease *float64 `json:"autoIncrease,omitempty"`
+}
+
 func (supa *SupabaseCFG) CallUpdateExercise(w http.ResponseWriter, r *http.Request) {
 	var exercise CompactExercise
 
@@ -219,6 +229,97 @@ func (supa *SupabaseCFG) CallUpdateExercise(w http.ResponseWriter, r *http.Reque
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Update received successfully"))
+}
+
+func validateExerciseEdit(edit *ExerciseEdit) error {
+	const maxSets = 20
+	const maxWeight = 9999
+	const maxNameLen = 100
+	const maxRepThreshold = 99
+	const maxAutoIncrease = 99
+
+	if edit.ExID == "" {
+		return errors.New("missing exercise id")
+	}
+
+	if edit.Name != nil {
+		trimmedName := strings.TrimSpace(*edit.Name)
+		if trimmedName == "" {
+			return errors.New("exercise name cannot be empty")
+		}
+		if len(trimmedName) > maxNameLen {
+			return errors.New("exercise name cannot be longer than 100 characters")
+		}
+		edit.Name = &trimmedName
+	}
+
+	if edit.Sets != nil {
+		if *edit.Sets < 1 || *edit.Sets > maxSets {
+			return errors.New("sets must be between 1 and 20")
+		}
+	}
+
+	if edit.Weight != nil {
+		if *edit.Weight < 0 || *edit.Weight > maxWeight {
+			return errors.New("weight must be between 0 and 9999")
+		}
+	}
+
+	if edit.RepThreshold != nil {
+		if *edit.RepThreshold < 1 || *edit.RepThreshold > maxRepThreshold {
+			return errors.New("rep threshold must be between 1 and 99")
+		}
+	}
+
+	if edit.AutoIncrease != nil {
+		if *edit.AutoIncrease < 0.25 || *edit.AutoIncrease > maxAutoIncrease {
+			return errors.New("auto increase must be between 0.25 and 99")
+		}
+	}
+
+	if edit.Name == nil &&
+		edit.Sets == nil &&
+		edit.Weight == nil &&
+		edit.RepThreshold == nil &&
+		edit.AutoIncrease == nil {
+		return errors.New("no edit fields were provided")
+	}
+
+	return nil
+}
+
+func (supa *SupabaseCFG) CallEditExercise(w http.ResponseWriter, r *http.Request) {
+	var edit ExerciseEdit
+
+	sesID := getSesID(w, r)
+	if sesID == -1 {
+		return
+	}
+	userMail := supa.getValidatedMail(w, r)
+	if userMail == "" || sesID == -1 {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&edit); err != nil {
+		http.Error(w, "Invalid JSON: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+
+	if err := validateExerciseEdit(&edit); err != nil {
+		http.Error(w, "Edit validation failed: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := supa.EditExercise(userMail, sesID, edit, r.Context()); err != nil {
+		http.Error(w, "Edit failed: "+err.Error(), http.StatusExpectationFailed)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Edit received successfully"))
 }
 
 func (supa *SupabaseCFG) CallCompleteExercise(w http.ResponseWriter, r *http.Request) {
