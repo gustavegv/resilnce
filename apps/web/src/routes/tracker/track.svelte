@@ -26,6 +26,7 @@
   import {
     applyExerciseEdit,
     buildExerciseEdit,
+    createEditFieldsFromExercise,
     createEmptyEditFields,
     hasEditChanges,
     validateExerciseEdit,
@@ -49,6 +50,16 @@
   let editFields = $state(createEmptyEditFields());
   let editSubmitting = $state(false);
   // Derived variabler
+
+  type ComparableField = 'name' | 'sets' | 'weight' | 'reps' | 'auto';
+
+  const comparableFieldMap = {
+    name: 'name',
+    sets: 'sets',
+    weight: 'weight',
+    reps: 'repThreshold',
+    auto: 'autoIncrease',
+  } as const;
 
   const currentExercise = $derived(exercises[currentExerciseIndex]);
   const prevExists = $derived(currentExerciseIndex > 0);
@@ -228,7 +239,19 @@
   }
 
   function resetEditFields() {
-    editFields = createEmptyEditFields();
+    editFields = createEditFieldsFromExercise(currentExercise);
+  }
+
+  function compareFields(field: ComparableField): boolean {
+    const editField = comparableFieldMap[field];
+    const currentValues = createEditFieldsFromExercise(currentExercise);
+    return editFields[editField] == currentValues[editField];
+  }
+
+  function revertEditField(field: ComparableField) {
+    const editField = comparableFieldMap[field];
+    const currentValues = createEditFieldsFromExercise(currentExercise);
+    editFields[editField] = currentValues[editField];
   }
 
   function cancelEditMode() {
@@ -395,35 +418,71 @@
               <Icon icon="material-symbols:edit-outline-rounded" width={20} />
               Edit exercise
             </p>
-            <p class="edit-help">Leave a field empty to keep its current value.</p>
+            <p class="edit-help">Update any field and save to apply only the changed values.</p>
           </div>
 
           <div class="edit-current-values">
-            <p>Current name: <strong>{currentExercise.name}</strong></p>
-            <p>Current sets: <strong>{currentExercise.currentProgress.sets}</strong></p>
-            <p>
-              Current weight: <strong
-                >{currentExercise.currentProgress.weightPerSet[0] ?? 0} kg</strong
-              >
-            </p>
-            <p>Current rep threshold: <strong>{currentExercise.rep_threshold ?? 12}</strong></p>
-            <p>Current auto increase: <strong>{currentExercise.auto_increase ?? 2.5} kg</strong></p>
+
           </div>
 
           <div class="edit-fields">
             <InputField label={'Exercise name'} bind:value={editFields.name} type={'text'} />
+            <button
+              type="button"
+              class="edit-undo"
+              class:off={compareFields('name')}
+              onclick={() => revertEditField('name')}
+            >
+              <Icon icon="ic:round-undo" />
+            </button>
+
             <InputField label={'Sets'} bind:value={editFields.sets} type={'number'} />
+            <button
+              type="button"
+              class="edit-undo"
+              class:off={compareFields('sets')}
+              onclick={() => revertEditField('sets')}
+            >
+              <Icon icon="ic:round-undo" />
+            </button>
+
             <InputField label={'Weight'} bind:value={editFields.weight} type={'number'} />
+            <button
+              type="button"
+              class="edit-undo"
+              class:off={compareFields('weight')}
+              onclick={() => revertEditField('weight')}
+            >
+              <Icon icon="ic:round-undo" />
+            </button>
+
             <InputField
               label={'Rep threshold'}
               bind:value={editFields.repThreshold}
               type={'number'}
             />
+            <button
+              type="button"
+              class="edit-undo"
+              class:off={compareFields('reps')}
+              onclick={() => revertEditField('reps')}
+            >
+              <Icon icon="ic:round-undo" />
+            </button>
+
             <InputField
               label={'Auto increase'}
               bind:value={editFields.autoIncrease}
               type={'number'}
             />
+            <button
+              type="button"
+              class="edit-undo"
+              class:off={compareFields('auto')}
+              onclick={() => revertEditField('auto')}
+            >
+              <Icon icon="ic:round-undo" />
+            </button>
           </div>
 
           <div class="edit-actions">
@@ -620,7 +679,18 @@
 
   .edit-fields {
     display: grid;
+    grid-template-columns: 4fr 1fr;
     gap: 0.75rem;
+  }
+
+  .edit-undo {
+    background-color: transparent;
+  }
+
+  .edit-undo.off {
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
   }
 
   .edit-actions {

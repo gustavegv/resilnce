@@ -18,6 +18,22 @@ export function createEmptyEditFields(): EditFieldValues {
   };
 }
 
+export function createEditFieldsFromExercise(
+  currentExercise: ExerciseInfo | undefined
+): EditFieldValues {
+  if (!currentExercise) {
+    return createEmptyEditFields();
+  }
+
+  return {
+    name: currentExercise.name,
+    sets: String(currentExercise.currentProgress.sets),
+    weight: String(currentExercise.currentProgress.weightPerSet[0] ?? 0),
+    repThreshold: String(currentExercise.rep_threshold ?? 12),
+    autoIncrease: String(currentExercise.auto_increase ?? 2.5),
+  };
+}
+
 export function buildExerciseEdit(
   currentExercise: ExerciseInfo | undefined,
   fields: EditFieldValues
@@ -26,27 +42,28 @@ export function buildExerciseEdit(
     return null;
   }
 
+  const currentFields = createEditFieldsFromExercise(currentExercise);
   const edit: ExerciseEdit = {
     id: String(currentExercise.id),
   };
 
-  if (fields.name !== '') {
+  if (fields.name !== currentFields.name) {
     edit.name = fields.name;
   }
 
-  if (fields.sets !== '') {
+  if (fields.sets !== currentFields.sets) {
     edit.sets = Number(fields.sets);
   }
 
-  if (fields.weight !== '') {
+  if (fields.weight !== currentFields.weight) {
     edit.weight = Number(fields.weight);
   }
 
-  if (fields.repThreshold !== '') {
+  if (fields.repThreshold !== currentFields.repThreshold) {
     edit.repThreshold = Number(fields.repThreshold);
   }
 
-  if (fields.autoIncrease !== '') {
+  if (fields.autoIncrease !== currentFields.autoIncrease) {
     edit.autoIncrease = Number(fields.autoIncrease);
   }
 
