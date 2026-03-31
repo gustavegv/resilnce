@@ -21,6 +21,11 @@ type SupabaseCFG struct {
 	RedisStore *sessions.Store
 }
 
+const (
+	statsHistoryRateLimit       int64 = 100
+	statsHistoryRateLimitWindow       = time.Hour
+)
+
 func (supa *SupabaseCFG) getValidatedMail(w http.ResponseWriter, r *http.Request) string {
 
 	userMail := r.URL.Query().Get("mail")
@@ -70,6 +75,48 @@ func getExID(w http.ResponseWriter, r *http.Request) int {
 	return id
 }
 
+func (supa *SupabaseCFG) enforceHistoryRateLimit(
+	w http.ResponseWriter,
+	r *http.Request,
+	userMail string,
+) bool {
+	if supa == nil || supa.RedisStore == nil || userMail == "" {
+		return true
+	}
+
+	allowed, remaining, resetAfter, err := supa.RedisStore.AllowRateLimit(
+		r.Context(),
+		"stats-history",
+		userMail,
+		statsHistoryRateLimit,
+		statsHistoryRateLimitWindow,
+	)
+	if err != nil {
+		log.Printf("history rate limit failed: %v", err)
+		return true
+	}
+
+	w.Header().Set("X-RateLimit-Limit", strconv.FormatInt(statsHistoryRateLimit, 10))
+	w.Header().Set("X-RateLimit-Remaining", strconv.FormatInt(remaining, 10))
+
+	retryAfter := int(resetAfter.Seconds())
+	if retryAfter < 1 {
+		retryAfter = 1
+	}
+	w.Header().Set("Retry-After", strconv.Itoa(retryAfter))
+
+	if !allowed {
+		http.Error(
+			w,
+			"Too many statistics requests. Please wait a moment and try again.",
+			http.StatusTooManyRequests,
+		)
+		return false
+	}
+
+	return true
+}
+
 func (supa *SupabaseCFG) GetUserSessions(w http.ResponseWriter, r *http.Request) {
 	userMail := supa.getValidatedMail(w, r)
 	if userMail == "" {
@@ -113,6 +160,35 @@ func (supa *SupabaseCFG) GetSessionExercises(w http.ResponseWriter, r *http.Requ
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(exInfo)
+}
+
+func (supa *SupabaseCFG) GetExerciseHistory(w http.ResponseWriter, r *http.Request) {
+	exID := getExID(w, r)
+	if exID == -1 {
+		return
+	}
+
+	userMail := supa.getValidatedMail(w, r)
+	if userMail == "" {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+	if !supa.enforceHistoryRateLimit(w, r, userMail) {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+
+	history, err := supa.ExerciseHistory(userMail, exID, ctx)
+	if err != nil {
+		println("Error (GetExerciseHistory):", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(history)
 }
 
 func (supa *SupabaseCFG) GetActiveSession(w http.ResponseWriter, r *http.Request) {
