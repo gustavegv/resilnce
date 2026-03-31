@@ -18,8 +18,7 @@
     SetActiveSession,
   } from './dbFetches';
   import { toast, Toaster } from 'svelte-sonner';
-  import InputField from '../../components/InputField.svelte';
-
+  import EditScreen from './EditScreen.svelte';
 
   let slugs: SessionMetaData[] = $state([]);
   let activeSlugs: SessionMetaData[] = $state([]);
@@ -30,18 +29,16 @@
   let sessionsLoaded: boolean = $state(false);
 
   let itemToRemove: [string, number] = $state(['', 0]);
-  
+
   let sessionToStart: number = $state(-1);
   let sessionToEditID: number = $state(-1);
-  
+
   let activeSessionPopupShowing: boolean = $state(false);
   let deletePopupShowing: boolean = $state(false);
   let editSessionPopupShowing: boolean = $state(false);
 
-  let toEditSessionName: string = $state("sessiontoedit")
-  let newSessionName: string = $state("")
-
-
+  let toEditSessionName: string = $state('sessiontoedit');
+  let newSessionName: string = $state('');
 
   const activeTimespan = new Date();
   activeTimespan.setDate(activeTimespan.getDate() - 14);
@@ -87,17 +84,17 @@
     }
   }
 
-  async function confirmEdit(){
+  async function confirmEdit() {
     const trimmedSessionName = newSessionName.trim();
 
-    if (!trimmedSessionName){
-      toast.error("New title cannot be empty")
-      return
+    if (!trimmedSessionName) {
+      toast.error('New title cannot be empty');
+      return;
     }
 
     if (sessionToEditID == -1) {
-      toast.error('Session to edit not found')
-      return
+      toast.error('Session to edit not found');
+      return;
     }
 
     if (!(await EditSessionName(sessionToEditID, trimmedSessionName))) {
@@ -105,7 +102,7 @@
         duration: 5000,
         style: 'background: red;',
       });
-      return
+      return;
     }
 
     const editedSlug = getSlugFromID(sessionToEditID);
@@ -113,30 +110,29 @@
       editedSlug.name = trimmedSessionName;
       sortByCategory(activeCategory);
     }
-    
+
     editSessionPopupShowing = false;
-    toast.success(`Session name edited to ${trimmedSessionName}!`)
-    toEditSessionName = trimmedSessionName
-    newSessionName = ""
-    sessionToEditID = -1
+    toast.success(`Session name edited to ${trimmedSessionName}!`);
+    toEditSessionName = trimmedSessionName;
+    newSessionName = '';
+    sessionToEditID = -1;
   }
 
   function getSlugFromID(id: number): SessionMetaData | null {
-    return slugs.find(slug => slug.id === id) || null;
+    return slugs.find((slug) => slug.id === id) || null;
   }
 
   function editSes(id: number) {
-
-    let editSlug:SessionMetaData | null = getSlugFromID(id)
+    let editSlug: SessionMetaData | null = getSlugFromID(id);
 
     if (editSlug == null) {
-      toast.error('Session to edit not found')
-      return
+      toast.error('Session to edit not found');
+      return;
     }
-    toEditSessionName = editSlug.name
-    newSessionName = editSlug.name
-    sessionToEditID = editSlug.id
-    editSessionPopupShowing = true
+    toEditSessionName = editSlug.name;
+    newSessionName = editSlug.name;
+    sessionToEditID = editSlug.id;
+    editSessionPopupShowing = true;
   }
 
   function deleteSession(SessionTitle: string, SesID: number) {
@@ -323,23 +319,13 @@
     </Alert.Content>
   </Alert.Root>
 
-  <Alert.Root bind:open={editSessionPopupShowing}>
-    <Alert.Content title="Edit session title" class="border-border border">
-      <Alert.Description>
-        What do you want to change <strong>{toEditSessionName}</strong> to?
-      </Alert.Description>
-      <div class="mt-5 flex justify-end gap-3 flex-col">
-        <InputField label={'New session title'} bind:value={newSessionName} type={'text'}/>
-
-        <div class="mt-5 flex justify-end gap-3">
-          <Alert.Cancel>Cancel edit</Alert.Cancel>
-          <Alert.Action class="bg-accent" onclick={() => confirmEdit()}>
-            Edit name
-          </Alert.Action>
-        </div>
-      </div>
-    </Alert.Content>
-  </Alert.Root>
+  <EditScreen
+    bind:open={editSessionPopupShowing}
+    bind:newSessionName
+    {sessionToEditID}
+    sessionName={toEditSessionName}
+    onConfirm={confirmEdit}
+  />
 
   <hr />
 
