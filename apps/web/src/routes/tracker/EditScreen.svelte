@@ -3,7 +3,7 @@
   import * as Alert from '$lib/components/alert/index.js';
 
   import { GetSessionExercises, type ExerciseInfo } from './dbFetches';
-    import Icon from '@iconify/svelte';
+  import Icon from '@iconify/svelte';
 
   let {
     open = $bindable(false),
@@ -22,34 +22,62 @@
   let exercises: ExerciseInfo[] = $state([]);
   let exercisesLoading = $state(false);
   let exercisesError: string | null = $state(null);
+  let oldSessionName: string = $state('');
+  let loadedSessionID = $state(-1);
+  let adding = $state(false)
 
   $effect(() => {
     if (!open || sessionToEditID <= 0) {
-        exercises = [];
+      exercises = [];
       exercisesLoading = false;
       exercisesError = null;
+      loadedSessionID = -1;
       return;
     }
 
-    void init()
-
-    });
-
-
-    async function init(){
-            console.log("init")
-
-        try {
-            exercises = await GetSessionExercises(sessionToEditID);
-            console.log(exercises)
-            } catch (err) {
-            exercisesError = err instanceof Error ? err.message : 'Failed to load session.';
-            console.error(err);
-            } finally {
-            exercisesLoading = false;
-        }
-  
+    if (loadedSessionID === sessionToEditID) {
+      return;
     }
+
+    loadedSessionID = sessionToEditID;
+    oldSessionName = sessionName;
+    newSessionName = sessionName;
+    exercisesLoading = true;
+    exercisesError = null;
+
+    void init(sessionToEditID);
+  });
+
+  async function init(id: number) {
+    try {
+      exercises = await GetSessionExercises(id);
+    } catch (err) {
+      exercisesError = err instanceof Error ? err.message : 'Failed to load session.';
+      console.error(err);
+    } finally {
+      exercisesLoading = false;
+    }
+  }
+
+  let titleInput: HTMLInputElement;
+
+  function focusTitle() {
+    titleInput.focus();
+  }
+
+  function handleDelete(exercise: ExerciseInfo){
+    // todo
+    confirm(`Delete ${exercise.name}?`)
+  }
+
+  function handleAdd(){
+    // todo
+  }
+
+  function checkChangesMade():boolean{
+    return oldSessionName == newSessionName
+  }
+
 </script>
 
 <Alert.Root bind:open>
@@ -59,10 +87,34 @@
     </Alert.Description>
 
     <div class="mt-5 flex flex-col gap-3">
-      <input bind:value={newSessionName} 
-      type={'text'} class="clean-input"
-      class:unedited={true}
-      />
+      <div class="flex gap-4">
+        <input
+          bind:this={titleInput}
+          bind:value={newSessionName}
+          type={'text'}
+          class="clean-input"
+          class:unedited={oldSessionName == newSessionName}
+        />
+        {#if oldSessionName != newSessionName}
+        <button
+          type="button"
+          class="title-input-icon"
+          onclick={() => {
+            newSessionName = oldSessionName;
+          }}
+        >
+          <Icon icon="material-symbols:undo-rounded" width={24}/>
+        </button> 
+        {:else}
+        <button
+          type="button"
+          class="title-input-icon off"
+          onclick={() => focusTitle()}
+        >
+          <Icon icon="material-symbols:edit-outline-rounded" width={24}/>
+        </button>
+        {/if}
+      </div>
 
       <section class="exercise-overview">
         <p class="exercise-overview-title">Exercises in this session</p>
@@ -85,14 +137,31 @@
                   kg
                 </p>
               </div>
-              <button class="flex justify-center">
-                <Icon icon="material-symbols:delete-outline-rounded" width={30} color="gray"/>
+              <button class="flex justify-center" onclick={() => handleDelete(exercise)}>
+                <Icon icon="material-symbols:delete-outline-rounded" width={30} color="gray" />
               </button>
             {/each}
           </div>
-          <button class="flex justify-center">
-                <Icon icon="material-symbols:add-circle-outline-rounded" width={30}/>
-              </button>
+          {#if !adding}
+          <button class="flex justify-center" onclick={() => adding = true}>
+            <Icon icon="material-symbols:add-circle-outline-rounded" width={30} color="grey" />
+          </button>
+          {:else}
+            <p class="exercise-overview-title">Add an exercise</p>
+            
+            <div class="exercise-row flex-col">
+                <div>
+                    <input class="adding-input" type="text" placeholder="Exercise name">
+                    <input class="adding-input" type="number" placeholder="Weight">
+                    <input class="adding-input" type="number" placeholder="Sets">
+                </div>
+                <div class="flex justify-evenly w-full">
+                    <button class="adding-button cancel" onclick={() => adding = false}>Cancel</button>
+                    <button class="adding-button" onclick={() => handleAdd()}>Add</button>
+                </div>
+
+            </div>
+          {/if}
         {:else}
           <p class="exercise-overview-copy">No exercises found for this session.</p>
         {/if}
@@ -100,7 +169,9 @@
 
       <div class="mt-5 flex justify-end gap-3">
         <Alert.Cancel>Cancel</Alert.Cancel>
-        <Alert.Action class="bg-accent" onclick={() => onConfirm()}>Confirm edits</Alert.Action>
+        <div class="w-full" class:inactive={checkChangesMade()}>
+            <Alert.Action class="bg-accent" onclick={() => onConfirm()}>Confirm edits</Alert.Action>
+        </div>
       </div>
     </div>
   </Alert.Content>
@@ -196,4 +267,50 @@
   .exercise-overview-copy--error {
     color: var(--destructive);
   }
+
+  .title-input-icon {
+    background-color: transparent;
+  }
+
+  .adding-input {
+    background: var(--surface-middle);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    width: 220px;
+    outline: none;
+    transition: all 0.2s ease;
+    margin-bottom: 0.5rem;
+    width: 100%;
+  }
+
+  .adding-input::placeholder {
+    color: var(--placeholder);
+  }
+  
+  .adding-input:focus {
+    border-color: var(--focus);
+    box-shadow: 0 0 0 2px rgba(91, 156, 255, 0.15);
+  }
+
+  .adding-button {
+    background-color: var(--card);
+    padding: 0.2rem 0;
+    font-size: 14px;
+    width: 7rem;
+    border-radius: 6px;
+    opacity: 80%
+  }
+
+  .adding-button.cancel {
+    background-color: var(--destructive);
+  }
+
+  .inactive {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
 </style>
