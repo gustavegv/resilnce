@@ -1,6 +1,5 @@
 import { PUBLIC_BACKEND_BASE_URL } from '$env/static/public';
 import { toast } from 'svelte-sonner';
-import { extendTailwindMerge } from 'tailwind-merge';
 
 /**
  * export interface SessionMetaData {
@@ -21,7 +20,7 @@ export interface ExerciseInfo {
     restSeconds: number;
   };
   order?: number;
-  id?: number;
+  id?: string | number;
   finished?: boolean;
   auto_increase?: number;
   rep_threshold?: number;
@@ -34,6 +33,13 @@ export interface SessionMetaData {
   deleted?: boolean;
 }
 
+export interface ExerciseEdit {
+  id: string;
+  name?: string;
+  sets?: number;
+  weight?: number;
+  repThreshold?: number;
+  autoIncrease?: number;
 export interface HistoricEntry {
   exID: number;
   saveDate: Date;
@@ -190,7 +196,11 @@ export async function SendUpdate(
   },
   sesID: string
 ) {
-  const success = await postDB(`update?sesID=${sesID}`, info);
+  return await postDB(`update?sesID=${sesID}`, info);
+}
+
+export async function SendEdit(info: ExerciseEdit, sesID: string) {
+  return await postDB(`edit?sesID=${sesID}`, info);
 }
 
 export async function CompleteSession(sesID: string) {
@@ -203,4 +213,58 @@ export async function SetActiveSession(sesID: string) {
 
 export async function DeleteSession(sesID: number): Promise<boolean> {
   return await postDB(`deleteSession?sesID=${sesID}`, null);
+}
+
+export async function EditSessionName(sesID: number, name: string): Promise<boolean> {
+  return await postDB(`editSession?sesID=${sesID}`, { name });
+}
+
+export async function AddSessionExercises(
+  sesID: number,
+  exercises: ExerciseInfo[]
+): Promise<boolean> {
+  if (!exercises.length) {
+    return true;
+  }
+
+  return await postDB(`addSessionExercises?sesID=${sesID}`, { exercises });
+}
+
+function getExerciseIDs(exercises: ExerciseInfo[]): number[] | null {
+  const exerciseIDs = exercises
+    .map((exercise) => exercise.id)
+    .filter((id): id is string | number => id != null)
+    .map((id) => Number(id));
+
+  if (exerciseIDs.length !== exercises.length) {
+    console.error(
+      'One or more exercises were missing ids when trying to remove them from a session.'
+    );
+    return null;
+  }
+
+  if (exerciseIDs.some((id) => !Number.isInteger(id) || id <= 0)) {
+    console.error(
+      'One or more exercise ids were invalid when trying to remove them from a session.'
+    );
+    return null;
+  }
+
+  return exerciseIDs;
+}
+
+export async function RemoveSessionExercises(
+  sesID: number,
+  exercises: ExerciseInfo[]
+): Promise<boolean> {
+  if (!exercises.length) {
+    return true;
+  }
+
+  const exerciseIDs = getExerciseIDs(exercises);
+  if (!exerciseIDs) {
+    return false;
+  }
+
+  return await postDB(`removeSessionExercises?sesID=${sesID}`, { exerciseIDs });
 }

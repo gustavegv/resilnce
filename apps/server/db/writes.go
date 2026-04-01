@@ -33,6 +33,235 @@ func (supa *SupabaseCFG) UpdateExercise(userMail string, sesID int, ex CompactEx
 	return nil
 }
 
+type exerciseState struct {
+	Reps    []int
+	Weights []float64
+}
+
+func (supa *SupabaseCFG) EditExercise(userMail string, sesID int, edit ExerciseEdit, ctx context.Context) error {
+	if edit.Name != nil {
+		if err := supa.updateExerciseName(userMail, edit.ExID, *edit.Name, ctx); err != nil {
+			return err
+		}
+	}
+
+	if edit.AutoIncrease != nil {
+		if err := supa.updateExerciseAutoIncrease(userMail, edit.ExID, *edit.AutoIncrease, ctx); err != nil {
+			return err
+		}
+	}
+
+	if edit.Sets != nil {
+		if err := supa.updateSessionSetCount(userMail, sesID, edit.ExID, *edit.Sets, ctx); err != nil {
+			return err
+		}
+	}
+
+	if edit.Weight != nil {
+		if err := supa.updateSessionWeight(userMail, sesID, edit.ExID, *edit.Weight, ctx); err != nil {
+			return err
+		}
+	}
+
+	if edit.RepThreshold != nil {
+		if err := supa.updateSessionRepThreshold(userMail, sesID, edit.ExID, *edit.RepThreshold, ctx); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (supa *SupabaseCFG) updateExerciseName(userMail string, exID string, name string, ctx context.Context) error {
+	const query = `
+		update "Exercise"
+		set
+			ex_name = $1
+		where mail = $2
+			and ex_id = $3
+	`
+
+	_, err := supa.DB.Exec(ctx, query, name, userMail, exID)
+	if err != nil {
+		println("DB query fail (Write: Edit exercise name)")
+		println(err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func (supa *SupabaseCFG) loadExerciseState(userMail string, sesID int, exID string, ctx context.Context) (exerciseState, error) {
+	const query = `
+		select sx.rep_per_set, sx.weight_per_set
+		from "SesExercise" sx
+		join "Session" se on se.ses_id = sx.ses_id
+		where se.mail = $1
+			and sx.ses_id = $2
+			and sx.ex_id = $3
+	`
+
+	var state exerciseState
+	err := supa.DB.QueryRow(ctx, query, userMail, sesID, exID).Scan(&state.Reps, &state.Weights)
+	if err != nil {
+		println("DB query fail (Write: Load edit state)")
+		println(err.Error())
+		return exerciseState{}, err
+	}
+
+	return state, nil
+}
+
+func (supa *SupabaseCFG) updateExerciseAutoIncrease(userMail string, exID string, autoIncrease float64, ctx context.Context) error {
+	const query = `
+		update "Exercise"
+		set
+			auto_inc = $1
+		where mail = $2
+			and ex_id = $3
+	`
+
+	_, err := supa.DB.Exec(ctx, query, autoIncrease, userMail, exID)
+	if err != nil {
+		println("DB query fail (Write: Edit exercise auto increase)")
+		println(err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func resizeIntSlice(values []int, nextLength int) []int {
+	resized := append([]int{}, values...)
+
+	if len(resized) > nextLength {
+		return resized[:nextLength]
+	}
+
+	for len(resized) < nextLength {
+		resized = append(resized, 0)
+	}
+
+	return resized
+}
+
+func buildWeightArray(weight float64, setCount int) []float64 {
+	weights := make([]float64, setCount)
+	for i := range weights {
+		weights[i] = weight
+	}
+	return weights
+}
+
+func baseWeightFromState(state exerciseState) float64 {
+	if len(state.Weights) == 0 {
+		return 0
+	}
+	return state.Weights[0]
+}
+
+func (supa *SupabaseCFG) updateSessionSetCount(
+	userMail string,
+	sesID int,
+	exID string,
+	setCount int,
+	ctx context.Context,
+) error {
+	state, err := supa.loadExerciseState(userMail, sesID, exID, ctx)
+	if err != nil {
+		return err
+	}
+
+	reps := resizeIntSlice(state.Reps, setCount)
+	weights := buildWeightArray(baseWeightFromState(state), setCount)
+
+	const query = `
+		update "SesExercise" sx
+		set
+			set_count = $1,
+			rep_per_set = $2,
+			weight_per_set = $3
+		from "Session" se
+		where se.ses_id = sx.ses_id
+			and se.mail = $4
+			and sx.ses_id = $5
+			and sx.ex_id = $6
+	`
+
+	_, err = supa.DB.Exec(ctx, query, setCount, reps, weights, userMail, sesID, exID)
+	if err != nil {
+		println("DB query fail (Write: Edit session set count)")
+		println(err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func (supa *SupabaseCFG) updateSessionWeight(
+	userMail string,
+	sesID int,
+	exID string,
+	weight float64,
+	ctx context.Context,
+) error {
+	state, err := supa.loadExerciseState(userMail, sesID, exID, ctx)
+	if err != nil {
+		return err
+	}
+
+	setCount := len(state.Reps)
+	weights := buildWeightArray(weight, setCount)
+
+	const query = `
+		update "SesExercise" sx
+		set
+			weight_per_set = $1
+		from "Session" se
+		where se.ses_id = sx.ses_id
+			and se.mail = $2
+			and sx.ses_id = $3
+			and sx.ex_id = $4
+	`
+
+	_, err = supa.DB.Exec(ctx, query, weights, userMail, sesID, exID)
+	if err != nil {
+		println("DB query fail (Write: Edit session weight)")
+		println(err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func (supa *SupabaseCFG) updateSessionRepThreshold(
+	userMail string,
+	sesID int,
+	exID string,
+	repThreshold int,
+	ctx context.Context,
+) error {
+	const query = `
+		update "SesExercise" sx
+		set
+			rep_threshold = $1
+		from "Session" se
+		where se.ses_id = sx.ses_id
+			and se.mail = $2
+			and sx.ses_id = $3
+			and sx.ex_id = $4
+	`
+
+	_, err := supa.DB.Exec(ctx, query, repThreshold, userMail, sesID, exID)
+	if err != nil {
+		println("DB query fail (Write: Edit session rep threshold)")
+		println(err.Error())
+		return err
+	}
+
+	return nil
+}
+
 func avg(arr []int) float64 {
 	var sum int = 0
 	for i := 0; i < len(arr); i++ {
@@ -337,6 +566,105 @@ func (supa *SupabaseCFG) AddSesExercise(sesID int, newInfo []ExInfo, ctx context
 	return nil
 }
 
+func (supa *SupabaseCFG) sessionExists(userMail string, sesID int, ctx context.Context) (bool, error) {
+	const query = `
+		select exists(
+			select 1
+			from "Session"
+			where mail = $1
+				and ses_id = $2
+		)
+	`
+
+	var exists bool
+	err := supa.DB.QueryRow(ctx, query, userMail, sesID).Scan(&exists)
+	if err != nil {
+		println("DB query fail (Write: Check session exists)")
+		println(err.Error())
+		return false, err
+	}
+
+	return exists, nil
+}
+
+func (supa *SupabaseCFG) nextSessionExerciseOrder(userMail string, sesID int, ctx context.Context) (int, error) {
+	const query = `
+		select coalesce(max(("order")::int), 0) + 1
+		from "SesExercise" sx
+		join "Session" se on se.ses_id = sx.ses_id
+		where se.mail = $1
+			and sx.ses_id = $2
+	`
+
+	var order int
+	err := supa.DB.QueryRow(ctx, query, userMail, sesID).Scan(&order)
+	if err != nil {
+		println("DB query fail (Write: Next session exercise order)")
+		println(err.Error())
+		return 0, err
+	}
+
+	return order, nil
+}
+
+func (supa *SupabaseCFG) AddExercisesToSession(userMail string, sesID int, info []ExInfo, ctx context.Context) error {
+	if len(info) == 0 {
+		return nil
+	}
+
+	exists, err := supa.sessionExists(userMail, sesID, ctx)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return errors.New("session not found")
+	}
+
+	nextOrder, err := supa.nextSessionExerciseOrder(userMail, sesID, ctx)
+	if err != nil {
+		return err
+	}
+
+	for i := range info {
+		info[i].Order = strconv.Itoa(nextOrder + i)
+	}
+
+	newInfo, err := supa.AddMultipleExercises(userMail, info, ctx)
+	if err != nil {
+		return err
+	}
+
+	return supa.AddSesExercise(sesID, newInfo, ctx)
+}
+
+func (supa *SupabaseCFG) RemoveExercisesFromSession(userMail string, sesID int, exIDs []int, ctx context.Context) error {
+	if len(exIDs) == 0 {
+		return nil
+	}
+
+	const query = `
+		delete from "SesExercise" sx
+		using "Session" se
+		where se.ses_id = sx.ses_id
+			and se.mail = $1
+			and sx.ses_id = $2
+			and sx.ex_id = any($3::int[])
+	`
+
+	tag, err := supa.DB.Exec(ctx, query, userMail, sesID, exIDs)
+	if err != nil {
+		println("DB query fail (Write: Remove session exercises)")
+		println(err.Error())
+		return err
+	}
+
+	if int(tag.RowsAffected()) != len(exIDs) {
+		return fmt.Errorf("expected to remove %d exercises, removed %d", len(exIDs), tag.RowsAffected())
+	}
+
+	return nil
+}
+
 func (supa *SupabaseCFG) NewSession(userMail string, sesName string, info []ExInfo, ctx context.Context) error {
 	fmt.Println("\nBeginning NewSession struct:")
 	fmt.Printf("data = %#v\n", info)
@@ -391,6 +719,24 @@ func (supa *SupabaseCFG) DeleteSession(userMail string, sessionID int, ctx conte
 
 	if err != nil {
 		println("DB query fail (Write: Delete Session)")
+		println(err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func (supa *SupabaseCFG) EditSessionName(userMail string, sessionID int, name string, ctx context.Context) error {
+	const query = `
+		update "Session"
+		set ses_name = $1
+		where mail = $2 and ses_id = $3;
+	`
+
+	_, err := supa.DB.Exec(ctx, query, name, userMail, sessionID)
+
+	if err != nil {
+		println("DB query fail (Write: Edit Session)")
 		println(err.Error())
 		return err
 	}

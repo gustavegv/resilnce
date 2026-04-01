@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	sessions "github.com/gustavegv/resilnce/apps/server/redis"
@@ -255,6 +256,30 @@ type CompactExercise struct {
 	ExID    string    `json:"id"`
 }
 
+type ExerciseEdit struct {
+	ExID         string   `json:"id"`
+	Name         *string  `json:"name,omitempty"`
+	Sets         *int     `json:"sets,omitempty"`
+	Weight       *float64 `json:"weight,omitempty"`
+	RepThreshold *int     `json:"repThreshold,omitempty"`
+	AutoIncrease *float64 `json:"autoIncrease,omitempty"`
+}
+
+type ExerciseDraft struct {
+	Name            string   `json:"name"`
+	CurrentProgress progress `json:"currentProgress"`
+	RepThreshold    *int     `json:"rep_threshold,omitempty"`
+	AutoIncrease    *float64 `json:"auto_increase,omitempty"`
+	Finished        bool     `json:"finished,omitempty"`
+}
+
+type progress struct {
+	Sets         int       `json:"sets"`
+	RepsPerSet   []int     `json:"repsPerSet"`
+	WeightPerSet []float64 `json:"weightPerSet"`
+	RestSeconds  int       `json:"restSeconds"`
+}
+
 func (supa *SupabaseCFG) CallUpdateExercise(w http.ResponseWriter, r *http.Request) {
 	var exercise CompactExercise
 
@@ -295,6 +320,97 @@ func (supa *SupabaseCFG) CallUpdateExercise(w http.ResponseWriter, r *http.Reque
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Update received successfully"))
+}
+
+func validateExerciseEdit(edit *ExerciseEdit) error {
+	const maxSets = 20
+	const maxWeight = 9999
+	const maxNameLen = 100
+	const maxRepThreshold = 99
+	const maxAutoIncrease = 99
+
+	if edit.ExID == "" {
+		return errors.New("missing exercise id")
+	}
+
+	if edit.Name != nil {
+		trimmedName := strings.TrimSpace(*edit.Name)
+		if trimmedName == "" {
+			return errors.New("exercise name cannot be empty")
+		}
+		if len(trimmedName) > maxNameLen {
+			return errors.New("exercise name cannot be longer than 100 characters")
+		}
+		edit.Name = &trimmedName
+	}
+
+	if edit.Sets != nil {
+		if *edit.Sets < 1 || *edit.Sets > maxSets {
+			return errors.New("sets must be between 1 and 20")
+		}
+	}
+
+	if edit.Weight != nil {
+		if *edit.Weight < 0 || *edit.Weight > maxWeight {
+			return errors.New("weight must be between 0 and 9999")
+		}
+	}
+
+	if edit.RepThreshold != nil {
+		if *edit.RepThreshold < 1 || *edit.RepThreshold > maxRepThreshold {
+			return errors.New("rep threshold must be between 1 and 99")
+		}
+	}
+
+	if edit.AutoIncrease != nil {
+		if *edit.AutoIncrease < 0.25 || *edit.AutoIncrease > maxAutoIncrease {
+			return errors.New("auto increase must be between 0.25 and 99")
+		}
+	}
+
+	if edit.Name == nil &&
+		edit.Sets == nil &&
+		edit.Weight == nil &&
+		edit.RepThreshold == nil &&
+		edit.AutoIncrease == nil {
+		return errors.New("no edit fields were provided")
+	}
+
+	return nil
+}
+
+func (supa *SupabaseCFG) CallEditExercise(w http.ResponseWriter, r *http.Request) {
+	var edit ExerciseEdit
+
+	sesID := getSesID(w, r)
+	if sesID == -1 {
+		return
+	}
+	userMail := supa.getValidatedMail(w, r)
+	if userMail == "" || sesID == -1 {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&edit); err != nil {
+		http.Error(w, "Invalid JSON: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+
+	if err := validateExerciseEdit(&edit); err != nil {
+		http.Error(w, "Edit validation failed: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := supa.EditExercise(userMail, sesID, edit, r.Context()); err != nil {
+		http.Error(w, "Edit failed: "+err.Error(), http.StatusExpectationFailed)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Edit received successfully"))
 }
 
 func (supa *SupabaseCFG) CallCompleteExercise(w http.ResponseWriter, r *http.Request) {
@@ -411,6 +527,224 @@ func (supa *SupabaseCFG) DeleteSessionH(w http.ResponseWriter, r *http.Request) 
 	err := supa.DeleteSession(userMail, sesID, r.Context())
 	if err != nil {
 		http.Error(w, "Delete failed", http.StatusBadRequest)
+		return
+	}
+}
+
+func (supa *SupabaseCFG) EditSessionH(w http.ResponseWriter, r *http.Request) {
+	sesID := getSesID(w, r)
+	if sesID == -1 {
+		return
+	}
+
+	userMail := supa.getValidatedMail(w, r)
+	if userMail == "" {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	var data struct {
+		Name string `json:"name"`
+	}
+
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&data); err != nil {
+		http.Error(w, "Invalid JSON: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	data.Name = strings.TrimSpace(data.Name)
+	if data.Name == "" || len(data.Name) > 100 {
+		http.Error(w, "Invalid session name", http.StatusBadRequest)
+		return
+	}
+
+	err := supa.EditSessionName(userMail, sesID, data.Name, r.Context())
+	if err != nil {
+		http.Error(w, "Edit session failed", http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+}
+
+func validateExerciseDrafts(drafts []ExerciseDraft) error {
+	const maxExercises = 100
+	const maxSets = 20
+	const maxWeight = 9999
+	const maxNameLen = 100
+	const maxRepThreshold = 99
+	const maxAutoIncrease = 99
+
+	if len(drafts) == 0 {
+		return errors.New("no exercises were provided")
+	}
+
+	if len(drafts) > maxExercises {
+		return errors.New("too many exercises were provided")
+	}
+
+	for _, draft := range drafts {
+		draft.Name = strings.TrimSpace(draft.Name)
+		if draft.Name == "" {
+			return errors.New("exercise name cannot be empty")
+		}
+		if len(draft.Name) > maxNameLen {
+			return errors.New("exercise name cannot be longer than 100 characters")
+		}
+
+		if draft.CurrentProgress.Sets < 1 || draft.CurrentProgress.Sets > maxSets {
+			return errors.New("sets must be between 1 and 20")
+		}
+
+		if len(draft.CurrentProgress.RepsPerSet) != draft.CurrentProgress.Sets {
+			return errors.New("rep counts must match the provided set count")
+		}
+
+		if len(draft.CurrentProgress.WeightPerSet) != draft.CurrentProgress.Sets {
+			return errors.New("weights must match the provided set count")
+		}
+
+		for _, weight := range draft.CurrentProgress.WeightPerSet {
+			if weight < 0 || weight > maxWeight {
+				return errors.New("weight must be between 0 and 9999")
+			}
+		}
+
+		if draft.RepThreshold != nil {
+			if *draft.RepThreshold < 1 || *draft.RepThreshold > maxRepThreshold {
+				return errors.New("rep threshold must be between 1 and 99")
+			}
+		}
+
+		if draft.AutoIncrease != nil {
+			if *draft.AutoIncrease < 0.25 || *draft.AutoIncrease > maxAutoIncrease {
+				return errors.New("auto increase must be between 0.25 and 99")
+			}
+		}
+	}
+
+	return nil
+}
+
+func normalizeExerciseDrafts(drafts []ExerciseDraft) []ExInfo {
+	info := make([]ExInfo, 0, len(drafts))
+
+	for _, draft := range drafts {
+		repThreshold := 12
+		if draft.RepThreshold != nil {
+			repThreshold = *draft.RepThreshold
+		}
+
+		autoIncrease := 2.5
+		if draft.AutoIncrease != nil {
+			autoIncrease = *draft.AutoIncrease
+		}
+
+		info = append(info, ExInfo{
+			ExName:   strings.TrimSpace(draft.Name),
+			RepThres: strconv.Itoa(repThreshold),
+			AutoInc:  strconv.FormatFloat(autoIncrease, 'f', -1, 64),
+			SetCount: strconv.Itoa(draft.CurrentProgress.Sets),
+			Weights:  draft.CurrentProgress.WeightPerSet,
+			Reps:     draft.CurrentProgress.RepsPerSet,
+			Finished: false,
+		})
+	}
+
+	return info
+}
+
+func validateExerciseIDs(exerciseIDs []int) ([]int, error) {
+	const maxExercises = 100
+
+	if len(exerciseIDs) == 0 {
+		return nil, errors.New("no exercise ids were provided")
+	}
+
+	if len(exerciseIDs) > maxExercises {
+		return nil, errors.New("too many exercise ids were provided")
+	}
+
+	normalized := make([]int, 0, len(exerciseIDs))
+	for _, id := range exerciseIDs {
+		if id <= 0 {
+			return nil, errors.New("exercise id must be a positive integer")
+		}
+		normalized = append(normalized, id)
+	}
+
+	return normalized, nil
+}
+
+func (supa *SupabaseCFG) AddSessionExercisesH(w http.ResponseWriter, r *http.Request) {
+	sesID := getSesID(w, r)
+	if sesID == -1 {
+		return
+	}
+
+	userMail := supa.getValidatedMail(w, r)
+	if userMail == "" {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	var data struct {
+		Exercises []ExerciseDraft `json:"exercises"`
+	}
+
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&data); err != nil {
+		http.Error(w, "Invalid JSON: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	if err := validateExerciseDrafts(data.Exercises); err != nil {
+		http.Error(w, "Exercise data invalid: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := supa.AddExercisesToSession(userMail, sesID, normalizeExerciseDrafts(data.Exercises), r.Context()); err != nil {
+		http.Error(w, "Add exercises failed: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+}
+
+func (supa *SupabaseCFG) RemoveSessionExercisesH(w http.ResponseWriter, r *http.Request) {
+	sesID := getSesID(w, r)
+	if sesID == -1 {
+		return
+	}
+
+	userMail := supa.getValidatedMail(w, r)
+	if userMail == "" {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	var data struct {
+		ExerciseIDs []int `json:"exerciseIDs"`
+	}
+
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&data); err != nil {
+		http.Error(w, "Invalid JSON: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	exerciseIDs, err := validateExerciseIDs(data.ExerciseIDs)
+	if err != nil {
+		http.Error(w, "Exercise ids invalid: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := supa.RemoveExercisesFromSession(userMail, sesID, exerciseIDs, r.Context()); err != nil {
+		http.Error(w, "Remove exercises failed: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 }

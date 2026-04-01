@@ -12,6 +12,7 @@
   import type { SessionMetaData } from './dbFetches';
   import { CheckActiveSession, DeleteSession, GetSessions, SetActiveSession } from './dbFetches';
   import { toast, Toaster } from 'svelte-sonner';
+  import EditScreen from './EditScreen.svelte';
 
   let slugs: SessionMetaData[] = $state([]);
   let activeSlugs: SessionMetaData[] = $state([]);
@@ -21,11 +22,17 @@
   let isAnotherSessionActive: boolean = $state(false);
   let sessionsLoaded: boolean = $state(false);
 
-  let deletePopupShowing: boolean = $state(false);
   let itemToRemove: [string, number] = $state(['', 0]);
 
-  let activeSessionPopupShowing: boolean = $state(false);
   let sessionToStart: number = $state(-1);
+  let sessionToEditID: number = $state(-1);
+
+  let activeSessionPopupShowing: boolean = $state(false);
+  let deletePopupShowing: boolean = $state(false);
+  let editSessionPopupShowing: boolean = $state(false);
+
+  let toEditSessionName: string = $state('sessiontoedit');
+  let newSessionName: string = $state('');
 
   const activeTimespan = new Date();
   activeTimespan.setDate(activeTimespan.getDate() - 14);
@@ -71,9 +78,21 @@
     }
   }
 
+  function getSlugFromID(id: number): SessionMetaData | null {
+    return slugs.find((slug) => slug.id === id) || null;
+  }
+
   function editSes(id: number) {
-    console.log(id, 'edited');
-    alert('Edit not yet implemented.');
+    let editSlug: SessionMetaData | null = getSlugFromID(id);
+
+    if (editSlug == null) {
+      toast.error('Session to edit not found');
+      return;
+    }
+    toEditSessionName = editSlug.name;
+    newSessionName = editSlug.name;
+    sessionToEditID = editSlug.id;
+    editSessionPopupShowing = true;
   }
 
   function deleteSession(SessionTitle: string, SesID: number) {
@@ -106,6 +125,22 @@
         break;
       }
     }
+  }
+
+  function shuffleEdit() {
+    const trimmedSessionName = newSessionName.trim();
+
+    const editedSlug = getSlugFromID(sessionToEditID);
+    if (editedSlug) {
+      editedSlug.name = trimmedSessionName;
+      sortByCategory(activeCategory);
+    }
+
+    // cleanup
+    editSessionPopupShowing = false;
+    toEditSessionName = trimmedSessionName;
+    newSessionName = '';
+    sessionToEditID = -1;
   }
 
   const keywordsByCategory: Record<string, readonly string[]> = {
@@ -259,6 +294,14 @@
       </div>
     </Alert.Content>
   </Alert.Root>
+
+  <EditScreen
+    bind:open={editSessionPopupShowing}
+    bind:newSessionName
+    {sessionToEditID}
+    sessionName={toEditSessionName}
+    onConfirm={shuffleEdit}
+  />
 
   <hr />
 
