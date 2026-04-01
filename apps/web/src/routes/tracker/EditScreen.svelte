@@ -1,9 +1,11 @@
 <script lang="ts">
   import InputField from '../../components/InputField.svelte';
   import * as Alert from '$lib/components/alert/index.js';
+  import { fade, scale, slide } from 'svelte/transition';
 
   import { GetSessionExercises, type ExerciseInfo } from './dbFetches';
   import Icon from '@iconify/svelte';
+  import { toast } from 'svelte-sonner';
 
   let {
     open = $bindable(false),
@@ -20,11 +22,18 @@
   } = $props();
 
   let exercises: ExerciseInfo[] = $state([]);
+  let deletedExercises: ExerciseInfo[] = $state([]);
+  let addedExercises: ExerciseInfo[] = $state([]);
+
+
   let exercisesLoading = $state(false);
   let exercisesError: string | null = $state(null);
   let oldSessionName: string = $state('');
   let loadedSessionID = $state(-1);
-  let adding = $state(false)
+  let adding = $state(false);
+  let addedExerciseName = $state('');
+  let addedExerciseWeight = $state('');
+  let addedExerciseSets = $state('');
 
   $effect(() => {
     if (!open || sessionToEditID <= 0) {
@@ -65,25 +74,118 @@
     titleInput.focus();
   }
 
-  function handleDelete(exercise: ExerciseInfo){
-    // todo
-    confirm(`Delete ${exercise.name}?`)
+  function sameExercise(a: ExerciseInfo, b: ExerciseInfo): boolean {
+    if (a.id != null && b.id != null) {
+      return a.id === b.id;
+    }
+
+    return (
+      a.name === b.name &&
+      a.currentProgress.sets === b.currentProgress.sets &&
+      a.currentProgress.weightPerSet[0] === b.currentProgress.weightPerSet[0]
+    );
   }
 
-  function handleAdd(){
-    // todo
+  function handleDelete(exercise: ExerciseInfo) {
+    if (!confirm(`Delete ${exercise.name}?`)) {
+      return;
+    }
+
+    const addedIndex = addedExercises.findIndex((candidate) => sameExercise(candidate, exercise));
+
+    if (addedIndex !== -1) {
+      addedExercises.splice(addedIndex, 1);
+    } else if (!deletedExercises.some((candidate) => sameExercise(candidate, exercise))) {
+      deletedExercises.push(exercise);
+    }
+
+    const exerciseIndex = exercises.findIndex((candidate) => sameExercise(candidate, exercise));
+    if (exerciseIndex !== -1) {
+      exercises.splice(exerciseIndex, 1);
+    }
+
+    toast.success(`${exercise.name} removed.`);
   }
 
-  function checkChangesMade():boolean{
-    return oldSessionName == newSessionName
+  function handleAdd() {
+    const name = addedExerciseName.trim();
+    const weight = Number(addedExerciseWeight);
+    const sets = Number(addedExerciseSets);
+
+    if (!name) {
+      toast.error('Exercise name is required.');
+      return;
+    }
+
+    if (!Number.isFinite(weight) || weight < 0) {
+      toast.error('Weight must be a valid number.');
+      return;
+    }
+
+    if (!Number.isInteger(sets) || sets <= 0) {
+      toast.error('Sets must be a whole number greater than 0.');
+      return;
+    }
+
+    // fixed constants
+    const reps = 7;
+    const repth = 12;
+    const auto = 2.5;
+
+    const rps = new Array(sets).fill(reps);
+    const wps = new Array(sets).fill(weight);
+    const cp = {
+      sets: sets,
+      repsPerSet: rps,
+      weightPerSet: wps,
+      restSeconds: 0,
+    };
+    const newExercise: ExerciseInfo = {
+      name: name,
+      currentProgress: cp,
+      auto_increase: auto,
+      rep_threshold: repth,
+      finished: true // only used to mark a session as newly added in this case
+    };
+
+    addedExercises.push(newExercise);
+    // add to exercises to render on the screen
+    exercises.push(newExercise);
+    toast.success(`${name} added!`);
+    addedExerciseName = '';
+    addedExerciseWeight = '';
+    addedExerciseSets = '';
+    adding = false;
+  }
+
+  function checkChangesMade(): boolean {
+
+    return (
+        oldSessionName == newSessionName &&
+        addedExercises.length == 0 &&
+        deletedExercises.length == 0
+    );
+  }
+
+  function handleCancelEdit(){
+    addedExercises = []
+    deletedExercises = []
+    exercises = []
+    addedExerciseName = ''
+    addedExerciseWeight = ''
+    addedExerciseSets = ''
+    loadedSessionID = -1
+
+    toast.info("Edit cancelled, no changes were made.")
   }
 
 </script>
 
 <Alert.Root bind:open>
+    <div in:fade={{duration:200}}>
   <Alert.Content title="Edit session" class="border-border border">
     <Alert.Description>
-      What do you want to change with <strong>{sessionName}</strong>?
+      No changes are made until you press confirm. What do you want to change with <strong>{sessionName}</strong>?
     </Alert.Description>
 
     <div class="mt-5 flex flex-col gap-3">
@@ -123,10 +225,18 @@
           <p class="exercise-overview-copy">Loading exercises...</p>
         {:else if exercisesError}
           <p class="exercise-overview-copy exercise-overview-copy--error">{exercisesError}</p>
-        {:else if exercises.length}
+        {:else}
           <div class="exercise-list">
             {#each exercises as exercise, index}
-              <div class="exercise-row">
+
+              <div
+                class="exercise-row"
+                class:new-exercise={exercise.finished}
+                in:slide={{ duration: 700, axis: "y", delay:350}}
+                out:slide={{ duration: 440, axis: "y" }}
+
+              >
+                
                 <div>
                   <p class="exercise-order">Exercise {index + 1}</p>
                   <p class="exercise-name">{exercise.name}</p>
@@ -137,44 +247,104 @@
                   kg
                 </p>
               </div>
-              <button class="flex justify-center" onclick={() => handleDelete(exercise)}>
+              <button
+                class="flex justify-center"
+                in:fade={{ duration: 300, delay: 650 }}
+                out:fade={{ duration: 140 }}
+                onclick={() => handleDelete(exercise)}
+              >
                 <Icon icon="material-symbols:delete-outline-rounded" width={30} color="gray" />
               </button>
             {/each}
           </div>
+          {#if !exercises.length}
+          <p
+            class="exercise-overview-copy w-full text-center text-italic"
+            in:fade={{ duration: 480, delay:280 }}
+            out:fade={{ duration: 140 }}
+          >No exercises in this session.</p>
+          {/if}
           {#if !adding}
-          <button class="flex justify-center" onclick={() => adding = true}>
+          <button
+            class="flex justify-center"
+            in:fade={{ duration: 280, delay: 180 }}
+            onclick={() => adding = true}
+          >
             <Icon icon="material-symbols:add-circle-outline-rounded" width={30} color="grey" />
           </button>
           {:else}
-            <p class="exercise-overview-title">Add an exercise</p>
+          <div in:slide={{ duration: 280, axis: 'y' }}
+              out:slide={{ duration: 280, axis: 'y' }}
+              >
+            <p
+              class="exercise-overview-title"
+            >Add an exercise</p>
             
-            <div class="exercise-row flex-col">
+            <div
+              class="exercise-row flex-col mt-2"
+              
+            >
                 <div>
-                    <input class="adding-input" type="text" placeholder="Exercise name">
-                    <input class="adding-input" type="number" placeholder="Weight">
-                    <input class="adding-input" type="number" placeholder="Sets">
+                    <input
+                      class="adding-input"
+                      type="text"
+                      placeholder="Exercise name"
+                      bind:value={addedExerciseName}
+                    >
+                    <input
+                      class="adding-input"
+                      type="number"
+                      placeholder="Weight"
+                      min="0"
+                      step="0.5"
+                      bind:value={addedExerciseWeight}
+                    >
+                    <input
+                      class="adding-input"
+                      type="number"
+                      placeholder="Sets"
+                      min="1"
+                      step="1"
+                      bind:value={addedExerciseSets}
+                    >
                 </div>
+                
                 <div class="flex justify-evenly w-full">
                     <button class="adding-button cancel" onclick={() => adding = false}>Cancel</button>
                     <button class="adding-button" onclick={() => handleAdd()}>Add</button>
                 </div>
 
             </div>
+            </div>
           {/if}
-        {:else}
-          <p class="exercise-overview-copy">No exercises found for this session.</p>
+            
         {/if}
-      </section>
+    </section>
+    <div class="grid grid-cols-[max-content_max-content] w-full gap-y-2 gap-2">
+        {#if addedExercises.length}
+        <p class="text-sm text-green-300 px-2 bg-green-300/10 rounded-md" in:fade={{ duration: 250 }}>+{addedExercises.length} Exercises added</p>
+        {/if}
+        {#if deletedExercises.length}
+        <p class="text-sm text-red-400 px-2 bg-red-400/10 rounded-md" in:fade={{ duration: 250 }}>-{deletedExercises.length} Exercises removed</p>
+        {/if}
+        {#if newSessionName != oldSessionName}
+        <p class="text-sm text-neutral-300 px-2 bg-neutral-300/10 rounded-md w-fit" in:fade={{ duration: 250 }}>Title edited to {newSessionName}</p>
+        {/if}
+        {#if !addedExercises.length && !deletedExercises.length && newSessionName == oldSessionName}
+        <p class="text-sm text-neutral-300 px-2 bg-neutral-300/10 rounded-md w-fit" in:fade={{ duration: 250 }}>No edits made</p>
+        {/if}
+    </div>
+        
 
-      <div class="mt-5 flex justify-end gap-3">
-        <Alert.Cancel>Cancel</Alert.Cancel>
+      <div class="mt-4 flex justify-end gap-3">
+        <Alert.Cancel onclick={() => handleCancelEdit()}>Cancel</Alert.Cancel>
         <div class="w-full" class:inactive={checkChangesMade()}>
             <Alert.Action class="bg-accent" onclick={() => onConfirm()}>Confirm edits</Alert.Action>
         </div>
       </div>
     </div>
   </Alert.Content>
+  </div>
 </Alert.Root>
 
 <style>
@@ -185,7 +355,7 @@
     gap: 0.75rem;
     padding: 1rem;
     border-radius: 0.75rem;
-    background: var(--surface-low);
+    background: var(--card);
   }
 
   .clean-input {
@@ -198,6 +368,9 @@
     font-family: inherit;
     margin: 1rem 0;
     border-radius: 10px;
+    transition:
+      color 0.18s ease,
+      opacity 0.18s ease;
   }
 
   .clean-input.unedited {
@@ -223,6 +396,7 @@
   }
 
   .exercise-row {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -230,7 +404,19 @@
     padding: 0.75rem 0.9rem;
     border-radius: 0.75rem;
     background: var(--surface-middle);
+    border: 1px solid var(--border);
+    transition:
+      border-color 0.18s ease,
+      background-color 0.18s ease,
+      box-shadow 0.18s ease;
   }
+
+  .exercise-row.new-exercise{
+    border: 1px solid rgba(96, 255, 96, 0.243);
+    background-color: color-mix(in srgb, var(--surface-middle), rgb(96, 255, 96) 5%);
+  }
+
+
 
   .exercise-order,
   .exercise-name,
@@ -270,6 +456,9 @@
 
   .title-input-icon {
     background-color: transparent;
+    transition:
+      opacity 0.18s ease,
+      transform 0.18s ease;
   }
 
   .adding-input {
@@ -301,7 +490,11 @@
     font-size: 14px;
     width: 7rem;
     border-radius: 6px;
-    opacity: 80%
+    opacity: 80%;
+    transition:
+      opacity 0.18s ease,
+      transform 0.18s ease,
+      background-color 0.18s ease;
   }
 
   .adding-button.cancel {
