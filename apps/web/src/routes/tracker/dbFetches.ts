@@ -40,6 +40,8 @@ export interface ExerciseEdit {
   weight?: number;
   repThreshold?: number;
   autoIncrease?: number;
+}
+
 export interface HistoricEntry {
   exID: number;
   saveDate: Date;
