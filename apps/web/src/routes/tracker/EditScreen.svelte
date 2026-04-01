@@ -1,9 +1,14 @@
 <script lang="ts">
-  import InputField from '../../components/InputField.svelte';
   import * as Alert from '$lib/components/alert/index.js';
-  import { fade, scale, slide } from 'svelte/transition';
+  import { fade, slide } from 'svelte/transition';
 
-  import { GetSessionExercises, type ExerciseInfo } from './dbFetches';
+  import {
+    AddSessionExercises,
+    EditSessionName,
+    GetSessionExercises,
+    RemoveSessionExercises,
+    type ExerciseInfo,
+  } from './dbFetches';
   import Icon from '@iconify/svelte';
   import { toast } from 'svelte-sonner';
 
@@ -25,12 +30,12 @@
   let deletedExercises: ExerciseInfo[] = $state([]);
   let addedExercises: ExerciseInfo[] = $state([]);
 
-
   let exercisesLoading = $state(false);
   let exercisesError: string | null = $state(null);
   let oldSessionName: string = $state('');
   let loadedSessionID = $state(-1);
   let adding = $state(false);
+  let savingEdit = $state(false);
   let addedExerciseName = $state('');
   let addedExerciseWeight = $state('');
   let addedExerciseSets = $state('');
@@ -145,7 +150,7 @@
       currentProgress: cp,
       auto_increase: auto,
       rep_threshold: repth,
-      finished: true // only used to mark a session as newly added in this case
+      finished: true, // only used to mark a session as newly added in this case
     };
 
     addedExercises.push(newExercise);
@@ -159,138 +164,218 @@
   }
 
   function checkChangesMade(): boolean {
-
     return (
-        oldSessionName == newSessionName &&
-        addedExercises.length == 0 &&
-        deletedExercises.length == 0
+      oldSessionName == newSessionName.trim() &&
+      addedExercises.length == 0 &&
+      deletedExercises.length == 0
     );
   }
 
-  function handleCancelEdit(){
-    addedExercises = []
-    deletedExercises = []
-    exercises = []
-    addedExerciseName = ''
-    addedExerciseWeight = ''
-    addedExerciseSets = ''
-    loadedSessionID = -1
-
-    toast.info("Edit cancelled, no changes were made.")
+  function clearEditScreen() {
+    addedExercises = [];
+    deletedExercises = [];
+    exercises = [];
+    adding = false;
+    addedExerciseName = '';
+    addedExerciseWeight = '';
+    addedExerciseSets = '';
+    exercisesLoading = false;
+    exercisesError = null;
+    loadedSessionID = -1;
   }
 
+  function handleCancelEdit() {
+    clearEditScreen();
+    toast.info('Edit cancelled, no changes were made.');
+  }
+
+  async function handleConfirm(event: MouseEvent) {
+    event.preventDefault();
+
+    if (savingEdit || checkChangesMade()) {
+      return;
+    }
+
+    savingEdit = true;
+
+    try {
+      if (!(await confirmEdit(addedExercises, deletedExercises))) {
+        return;
+      }
+
+      await onConfirm();
+      open = false;
+      clearEditScreen();
+    } finally {
+      savingEdit = false;
+    }
+  }
+
+  async function confirmEdit(
+    exsToAdd: ExerciseInfo[],
+    exsToRemove: ExerciseInfo[]
+  ): Promise<boolean> {
+    const trimmedSessionName = newSessionName.trim();
+
+    if (!trimmedSessionName) {
+      toast.error('New title cannot be empty');
+      return false;
+    }
+
+    if (sessionToEditID == -1) {
+      toast.error('Session to edit not found');
+      return false;
+    }
+
+    if (exsToAdd.length && !(await AddSessionExercises(sessionToEditID, exsToAdd))) {
+      toast.error('Could not add exercises. Try again later.', {
+        duration: 5000,
+        style: 'background: red;',
+      });
+      return false;
+    }
+
+    if (exsToRemove.length && !(await RemoveSessionExercises(sessionToEditID, exsToRemove))) {
+      toast.error('Could not remove exercises. Try again later.', {
+        duration: 5000,
+        style: 'background: red;',
+      });
+      return false;
+    }
+
+    if (trimmedSessionName != oldSessionName) {
+      if (!(await EditSessionName(sessionToEditID, trimmedSessionName))) {
+        toast.error('Could not edit session name. Try again later.', {
+          duration: 5000,
+          style: 'background: red;',
+        });
+        return false;
+      }
+    }
+
+    const completedChanges: string[] = [];
+    if (trimmedSessionName != oldSessionName) {
+      completedChanges.push(`renamed to ${trimmedSessionName}`);
+    }
+    if (exsToAdd.length) {
+      completedChanges.push(`added ${exsToAdd.length} exercise${exsToAdd.length === 1 ? '' : 's'}`);
+    }
+    if (exsToRemove.length) {
+      completedChanges.push(
+        `removed ${exsToRemove.length} exercise${exsToRemove.length === 1 ? '' : 's'}`
+      );
+    }
+
+    toast.success(
+      completedChanges.length
+        ? `Session updated: ${completedChanges.join(', ')}.`
+        : 'No edits made.'
+    );
+
+    return true;
+  }
 </script>
 
 <Alert.Root bind:open>
-    <div in:fade={{duration:200}}>
-  <Alert.Content title="Edit session" class="border-border border">
-    <Alert.Description>
-      No changes are made until you press confirm. What do you want to change with <strong>{sessionName}</strong>?
-    </Alert.Description>
+  <div in:fade={{ duration: 200 }}>
+    <Alert.Content title="Edit session" class="border-border border">
+      <Alert.Description>
+        No changes are made until you press confirm. What do you want to change with <strong
+          >{sessionName}</strong
+        >?
+      </Alert.Description>
 
-    <div class="mt-5 flex flex-col gap-3">
-      <div class="flex gap-4">
-        <input
-          bind:this={titleInput}
-          bind:value={newSessionName}
-          type={'text'}
-          class="clean-input"
-          class:unedited={oldSessionName == newSessionName}
-        />
-        {#if oldSessionName != newSessionName}
-        <button
-          type="button"
-          class="title-input-icon"
-          onclick={() => {
-            newSessionName = oldSessionName;
-          }}
-        >
-          <Icon icon="material-symbols:undo-rounded" width={24}/>
-        </button> 
-        {:else}
-        <button
-          type="button"
-          class="title-input-icon off"
-          onclick={() => focusTitle()}
-        >
-          <Icon icon="material-symbols:edit-outline-rounded" width={24}/>
-        </button>
-        {/if}
-      </div>
+      <div class="mt-5 flex flex-col gap-3">
+        <div class="flex gap-4">
+          <input
+            bind:this={titleInput}
+            bind:value={newSessionName}
+            type={'text'}
+            class="clean-input"
+            class:unedited={oldSessionName == newSessionName.trim()}
+          />
+          {#if oldSessionName != newSessionName.trim()}
+            <button
+              type="button"
+              class="title-input-icon"
+              onclick={() => {
+                newSessionName = oldSessionName;
+              }}
+            >
+              <Icon icon="material-symbols:undo-rounded" width={24} />
+            </button>
+          {:else}
+            <button type="button" class="title-input-icon off" onclick={() => focusTitle()}>
+              <Icon icon="material-symbols:edit-outline-rounded" width={24} />
+            </button>
+          {/if}
+        </div>
 
-      <section class="exercise-overview">
-        <p class="exercise-overview-title">Exercises in this session</p>
+        <section class="exercise-overview">
+          <p class="exercise-overview-title">Exercises in this session</p>
 
-        {#if exercisesLoading}
-          <p class="exercise-overview-copy">Loading exercises...</p>
-        {:else if exercisesError}
-          <p class="exercise-overview-copy exercise-overview-copy--error">{exercisesError}</p>
-        {:else}
-          <div class="exercise-list">
-            {#each exercises as exercise, index}
-
-              <div
-                class="exercise-row"
-                class:new-exercise={exercise.finished}
-                in:slide={{ duration: 700, axis: "y", delay:350}}
-                out:slide={{ duration: 440, axis: "y" }}
-
-              >
-                
-                <div>
-                  <p class="exercise-order">Exercise {index + 1}</p>
-                  <p class="exercise-name">{exercise.name}</p>
+          {#if exercisesLoading}
+            <p class="exercise-overview-copy">Loading exercises...</p>
+          {:else if exercisesError}
+            <p class="exercise-overview-copy exercise-overview-copy--error">{exercisesError}</p>
+          {:else}
+            <div class="exercise-list">
+              {#each exercises as exercise, index}
+                <div
+                  class="exercise-row"
+                  class:new-exercise={exercise.finished}
+                  in:slide={{ duration: 700, axis: 'y', delay: 350 }}
+                  out:slide={{ duration: 440, axis: 'y' }}
+                >
+                  <div>
+                    <p class="exercise-order">Exercise {index + 1}</p>
+                    <p class="exercise-name">{exercise.name}</p>
+                  </div>
+                  <p class="exercise-meta">
+                    {exercise.currentProgress.sets} sets · {exercise.currentProgress
+                      .weightPerSet[0] ?? 0}
+                    kg
+                  </p>
                 </div>
-                <p class="exercise-meta">
-                  {exercise.currentProgress.sets} sets · {exercise.currentProgress
-                    .weightPerSet[0] ?? 0}
-                  kg
-                </p>
-              </div>
+                <button
+                  class="flex justify-center"
+                  in:fade={{ duration: 300, delay: 650 }}
+                  out:fade={{ duration: 140 }}
+                  onclick={() => handleDelete(exercise)}
+                >
+                  <Icon icon="material-symbols:delete-outline-rounded" width={30} color="gray" />
+                </button>
+              {/each}
+            </div>
+            {#if !exercises.length}
+              <p
+                class="exercise-overview-copy text-italic w-full text-center"
+                in:fade={{ duration: 480, delay: 280 }}
+                out:fade={{ duration: 140 }}
+              >
+                No exercises in this session.
+              </p>
+            {/if}
+            {#if !adding}
               <button
                 class="flex justify-center"
-                in:fade={{ duration: 300, delay: 650 }}
-                out:fade={{ duration: 140 }}
-                onclick={() => handleDelete(exercise)}
+                in:fade={{ duration: 280, delay: 180 }}
+                onclick={() => (adding = true)}
               >
-                <Icon icon="material-symbols:delete-outline-rounded" width={30} color="gray" />
+                <Icon icon="material-symbols:add-circle-outline-rounded" width={30} color="grey" />
               </button>
-            {/each}
-          </div>
-          {#if !exercises.length}
-          <p
-            class="exercise-overview-copy w-full text-center text-italic"
-            in:fade={{ duration: 480, delay:280 }}
-            out:fade={{ duration: 140 }}
-          >No exercises in this session.</p>
-          {/if}
-          {#if !adding}
-          <button
-            class="flex justify-center"
-            in:fade={{ duration: 280, delay: 180 }}
-            onclick={() => adding = true}
-          >
-            <Icon icon="material-symbols:add-circle-outline-rounded" width={30} color="grey" />
-          </button>
-          {:else}
-          <div in:slide={{ duration: 280, axis: 'y' }}
-              out:slide={{ duration: 280, axis: 'y' }}
-              >
-            <p
-              class="exercise-overview-title"
-            >Add an exercise</p>
-            
-            <div
-              class="exercise-row flex-col mt-2"
-              
-            >
-                <div>
+            {:else}
+              <div in:slide={{ duration: 280, axis: 'y' }} out:slide={{ duration: 280, axis: 'y' }}>
+                <p class="exercise-overview-title">Add an exercise</p>
+
+                <div class="exercise-row mt-2 flex-col">
+                  <div>
                     <input
                       class="adding-input"
                       type="text"
                       placeholder="Exercise name"
                       bind:value={addedExerciseName}
-                    >
+                    />
                     <input
                       class="adding-input"
                       type="number"
@@ -298,7 +383,7 @@
                       min="0"
                       step="0.5"
                       bind:value={addedExerciseWeight}
-                    >
+                    />
                     <input
                       class="adding-input"
                       type="number"
@@ -306,44 +391,69 @@
                       min="1"
                       step="1"
                       bind:value={addedExerciseSets}
+                    />
+                  </div>
+
+                  <div class="flex w-full justify-evenly">
+                    <button class="adding-button cancel" onclick={() => (adding = false)}
+                      >Cancel</button
                     >
-                </div>
-                
-                <div class="flex justify-evenly w-full">
-                    <button class="adding-button cancel" onclick={() => adding = false}>Cancel</button>
                     <button class="adding-button" onclick={() => handleAdd()}>Add</button>
+                  </div>
                 </div>
-
-            </div>
-            </div>
+              </div>
+            {/if}
           {/if}
-            
-        {/if}
-    </section>
-    <div class="grid grid-cols-[max-content_max-content] w-full gap-y-2 gap-2">
-        {#if addedExercises.length}
-        <p class="text-sm text-green-300 px-2 bg-green-300/10 rounded-md" in:fade={{ duration: 250 }}>+{addedExercises.length} Exercises added</p>
-        {/if}
-        {#if deletedExercises.length}
-        <p class="text-sm text-red-400 px-2 bg-red-400/10 rounded-md" in:fade={{ duration: 250 }}>-{deletedExercises.length} Exercises removed</p>
-        {/if}
-        {#if newSessionName != oldSessionName}
-        <p class="text-sm text-neutral-300 px-2 bg-neutral-300/10 rounded-md w-fit" in:fade={{ duration: 250 }}>Title edited to {newSessionName}</p>
-        {/if}
-        {#if !addedExercises.length && !deletedExercises.length && newSessionName == oldSessionName}
-        <p class="text-sm text-neutral-300 px-2 bg-neutral-300/10 rounded-md w-fit" in:fade={{ duration: 250 }}>No edits made</p>
-        {/if}
-    </div>
-        
+        </section>
+        <div class="grid w-full grid-cols-[max-content_max-content] gap-2 gap-y-2">
+          {#if addedExercises.length}
+            <p
+              class="rounded-md bg-green-300/10 px-2 text-sm text-green-300"
+              in:fade={{ duration: 250 }}
+            >
+              +{addedExercises.length} Exercises added
+            </p>
+          {/if}
+          {#if deletedExercises.length}
+            <p
+              class="rounded-md bg-red-400/10 px-2 text-sm text-red-400"
+              in:fade={{ duration: 250 }}
+            >
+              -{deletedExercises.length} Exercises removed
+            </p>
+          {/if}
+          {#if newSessionName.trim() != oldSessionName}
+            <p
+              class="w-fit rounded-md bg-neutral-300/10 px-2 text-sm text-neutral-300"
+              in:fade={{ duration: 250 }}
+            >
+              Title edited to {newSessionName}
+            </p>
+          {/if}
+          {#if !addedExercises.length && !deletedExercises.length && newSessionName.trim() == oldSessionName}
+            <p
+              class="w-fit rounded-md bg-neutral-300/10 px-2 text-sm text-neutral-300"
+              in:fade={{ duration: 250 }}
+            >
+              No edits made
+            </p>
+          {/if}
+        </div>
 
-      <div class="mt-4 flex justify-end gap-3">
-        <Alert.Cancel onclick={() => handleCancelEdit()}>Cancel</Alert.Cancel>
-        <div class="w-full" class:inactive={checkChangesMade()}>
-            <Alert.Action class="bg-accent" onclick={() => onConfirm()}>Confirm edits</Alert.Action>
+        <div class="mt-4 flex justify-end gap-3">
+          <Alert.Cancel onclick={() => handleCancelEdit()}>Cancel</Alert.Cancel>
+          <div class="w-full" class:inactive={checkChangesMade() || savingEdit}>
+            <Alert.Action
+              class="bg-accent"
+              disabled={checkChangesMade() || savingEdit}
+              onclick={handleConfirm}
+            >
+              {savingEdit ? 'Saving...' : 'Confirm edits'}
+            </Alert.Action>
+          </div>
         </div>
       </div>
-    </div>
-  </Alert.Content>
+    </Alert.Content>
   </div>
 </Alert.Root>
 
@@ -411,12 +521,10 @@
       box-shadow 0.18s ease;
   }
 
-  .exercise-row.new-exercise{
+  .exercise-row.new-exercise {
     border: 1px solid rgba(96, 255, 96, 0.243);
     background-color: color-mix(in srgb, var(--surface-middle), rgb(96, 255, 96) 5%);
   }
-
-
 
   .exercise-order,
   .exercise-name,
@@ -478,7 +586,7 @@
   .adding-input::placeholder {
     color: var(--placeholder);
   }
-  
+
   .adding-input:focus {
     border-color: var(--focus);
     box-shadow: 0 0 0 2px rgba(91, 156, 255, 0.15);
@@ -505,5 +613,4 @@
     opacity: 0.3;
     pointer-events: none;
   }
-
 </style>

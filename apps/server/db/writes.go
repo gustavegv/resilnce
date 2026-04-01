@@ -566,6 +566,105 @@ func (supa *SupabaseCFG) AddSesExercise(sesID int, newInfo []ExInfo, ctx context
 	return nil
 }
 
+func (supa *SupabaseCFG) sessionExists(userMail string, sesID int, ctx context.Context) (bool, error) {
+	const query = `
+		select exists(
+			select 1
+			from "Session"
+			where mail = $1
+				and ses_id = $2
+		)
+	`
+
+	var exists bool
+	err := supa.DB.QueryRow(ctx, query, userMail, sesID).Scan(&exists)
+	if err != nil {
+		println("DB query fail (Write: Check session exists)")
+		println(err.Error())
+		return false, err
+	}
+
+	return exists, nil
+}
+
+func (supa *SupabaseCFG) nextSessionExerciseOrder(userMail string, sesID int, ctx context.Context) (int, error) {
+	const query = `
+		select coalesce(max(("order")::int), 0) + 1
+		from "SesExercise" sx
+		join "Session" se on se.ses_id = sx.ses_id
+		where se.mail = $1
+			and sx.ses_id = $2
+	`
+
+	var order int
+	err := supa.DB.QueryRow(ctx, query, userMail, sesID).Scan(&order)
+	if err != nil {
+		println("DB query fail (Write: Next session exercise order)")
+		println(err.Error())
+		return 0, err
+	}
+
+	return order, nil
+}
+
+func (supa *SupabaseCFG) AddExercisesToSession(userMail string, sesID int, info []ExInfo, ctx context.Context) error {
+	if len(info) == 0 {
+		return nil
+	}
+
+	exists, err := supa.sessionExists(userMail, sesID, ctx)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return errors.New("session not found")
+	}
+
+	nextOrder, err := supa.nextSessionExerciseOrder(userMail, sesID, ctx)
+	if err != nil {
+		return err
+	}
+
+	for i := range info {
+		info[i].Order = strconv.Itoa(nextOrder + i)
+	}
+
+	newInfo, err := supa.AddMultipleExercises(userMail, info, ctx)
+	if err != nil {
+		return err
+	}
+
+	return supa.AddSesExercise(sesID, newInfo, ctx)
+}
+
+func (supa *SupabaseCFG) RemoveExercisesFromSession(userMail string, sesID int, exIDs []int, ctx context.Context) error {
+	if len(exIDs) == 0 {
+		return nil
+	}
+
+	const query = `
+		delete from "SesExercise" sx
+		using "Session" se
+		where se.ses_id = sx.ses_id
+			and se.mail = $1
+			and sx.ses_id = $2
+			and sx.ex_id = any($3::int[])
+	`
+
+	tag, err := supa.DB.Exec(ctx, query, userMail, sesID, exIDs)
+	if err != nil {
+		println("DB query fail (Write: Remove session exercises)")
+		println(err.Error())
+		return err
+	}
+
+	if int(tag.RowsAffected()) != len(exIDs) {
+		return fmt.Errorf("expected to remove %d exercises, removed %d", len(exIDs), tag.RowsAffected())
+	}
+
+	return nil
+}
+
 func (supa *SupabaseCFG) NewSession(userMail string, sesName string, info []ExInfo, ctx context.Context) error {
 	fmt.Println("\nBeginning NewSession struct:")
 	fmt.Printf("data = %#v\n", info)

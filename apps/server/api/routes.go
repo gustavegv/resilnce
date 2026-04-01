@@ -42,6 +42,8 @@ func RoutingCreation() http.Handler {
 	mux.HandleFunc("/db/setActive", service.SBDB.CallSetActiveSession)
 	mux.HandleFunc("/db/newSession", service.SBDB.MakeNewSession)
 	mux.HandleFunc("/db/editSession", service.SBDB.EditSessionH)
+	mux.HandleFunc("/db/addSessionExercises", service.SBDB.AddSessionExercisesH)
+	mux.HandleFunc("/db/removeSessionExercises", service.SBDB.RemoveSessionExercisesH)
 	mux.HandleFunc("/db/deleteSession", service.SBDB.DeleteSessionH)
 
 	// Other

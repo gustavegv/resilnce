@@ -10,13 +10,7 @@
   import { resolve } from '$app/paths';
 
   import type { SessionMetaData } from './dbFetches';
-  import {
-    CheckActiveSession,
-    DeleteSession,
-    EditSessionName,
-    GetSessions,
-    SetActiveSession,
-  } from './dbFetches';
+  import { CheckActiveSession, DeleteSession, GetSessions, SetActiveSession } from './dbFetches';
   import { toast, Toaster } from 'svelte-sonner';
   import EditScreen from './EditScreen.svelte';
 
@@ -84,40 +78,6 @@
     }
   }
 
-  async function confirmEdit() {
-    const trimmedSessionName = newSessionName.trim();
-
-    if (!trimmedSessionName) {
-      toast.error('New title cannot be empty');
-      return;
-    }
-
-    if (sessionToEditID == -1) {
-      toast.error('Session to edit not found');
-      return;
-    }
-
-    if (!(await EditSessionName(sessionToEditID, trimmedSessionName))) {
-      toast.error('Could not edit session name. Try again later.', {
-        duration: 5000,
-        style: 'background: red;',
-      });
-      return;
-    }
-
-    const editedSlug = getSlugFromID(sessionToEditID);
-    if (editedSlug) {
-      editedSlug.name = trimmedSessionName;
-      sortByCategory(activeCategory);
-    }
-
-    editSessionPopupShowing = false;
-    toast.success(`Session name edited to ${trimmedSessionName}!`);
-    toEditSessionName = trimmedSessionName;
-    newSessionName = '';
-    sessionToEditID = -1;
-  }
-
   function getSlugFromID(id: number): SessionMetaData | null {
     return slugs.find((slug) => slug.id === id) || null;
   }
@@ -165,6 +125,22 @@
         break;
       }
     }
+  }
+
+  function shuffleEdit() {
+    const trimmedSessionName = newSessionName.trim();
+
+    const editedSlug = getSlugFromID(sessionToEditID);
+    if (editedSlug) {
+      editedSlug.name = trimmedSessionName;
+      sortByCategory(activeCategory);
+    }
+
+    // cleanup
+    editSessionPopupShowing = false;
+    toEditSessionName = trimmedSessionName;
+    newSessionName = '';
+    sessionToEditID = -1;
   }
 
   const keywordsByCategory: Record<string, readonly string[]> = {
@@ -324,7 +300,7 @@
     bind:newSessionName
     {sessionToEditID}
     sessionName={toEditSessionName}
-    onConfirm={confirmEdit}
+    onConfirm={shuffleEdit}
   />
 
   <hr />
