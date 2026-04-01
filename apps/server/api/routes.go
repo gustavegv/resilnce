@@ -34,6 +34,7 @@ func RoutingCreation() http.Handler {
 	// DB (supabase)
 	mux.HandleFunc("/db/mySessions", service.SBDB.GetUserSessions)
 	mux.HandleFunc("/db/getExercises", service.SBDB.GetSessionExercises)
+	mux.HandleFunc("/db/history", service.SBDB.GetExerciseHistory)
 	mux.HandleFunc("/db/active", service.SBDB.GetActiveSession)
 	mux.HandleFunc("/db/finished", service.SBDB.GetFinishedExercises)
 	mux.HandleFunc("/db/update", service.SBDB.CallUpdateExercise)

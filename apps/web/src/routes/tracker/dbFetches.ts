@@ -40,6 +40,12 @@ export interface ExerciseEdit {
   weight?: number;
   repThreshold?: number;
   autoIncrease?: number;
+export interface HistoricEntry {
+  exID: number;
+  saveDate: Date;
+  avgRep: number;
+  avgWeight: number;
+  noOfSets: number;
 }
 
 const baseURL: string = PUBLIC_BACKEND_BASE_URL;
@@ -60,6 +66,9 @@ function statusToasterHandler(code: number) {
       break;
     case 403:
       toast.error("You don't have permission to access this feature.");
+      break;
+    case 429:
+      toast.error('Too many statistics requests. Please wait a moment and try again.');
       break;
 
     default:
@@ -132,19 +141,39 @@ export async function GetSessionExercises(sesID: number): Promise<ExerciseInfo[]
   console.log('From DB:');
   console.log(data);
   for (let i = 0; data[i] != undefined; i++) {
-    var ex: ExerciseInfo = data[i];
-    ex.name = data[i].ex_name;
-    ex.currentProgress = {
-      sets: data[i].set_count,
-      repsPerSet: data[i].rep_per_set,
-      weightPerSet: data[i].weight_per_set,
-      restSeconds: 0,
+    const ex: ExerciseInfo = {
+      ...data[i],
+      id: Number(data[i].id),
+      name: data[i].ex_name,
+      currentProgress: {
+        sets: data[i].set_count,
+        repsPerSet: data[i].rep_per_set,
+        weightPerSet: data[i].weight_per_set,
+        restSeconds: 0,
+      },
     };
 
     exs.push(ex);
   }
 
   return exs;
+}
+
+export async function GetExerciseHistory(exID: number): Promise<HistoricEntry[]> {
+  const data = await fetchDB(`history?exID=${exID}`);
+  const history: HistoricEntry[] = [];
+
+  for (let i = 0; data[i] != undefined; i++) {
+    history.push({
+      exID: data[i].ex_id,
+      saveDate: new Date(data[i].save_date),
+      avgRep: Number(data[i].avg_rep ?? 0),
+      avgWeight: Number(data[i].avg_weight ?? 0),
+      noOfSets: Number(data[i].no_of_sets ?? 0),
+    });
+  }
+
+  return history;
 }
 
 export async function GetFinishedExercises(sesID: string): Promise<{

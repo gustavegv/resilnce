@@ -14,6 +14,8 @@
   import Icon from '@iconify/svelte';
   import { PUBLIC_BACKEND_BASE_URL } from '$env/static/public';
   import { onMount } from 'svelte';
+    import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
 
   let username = $state('');
   let cooldown = false;
@@ -208,6 +210,25 @@
         {/if}
       </Card.Content>
     </Card.Root>
+
+    <Card.Root class="border-border w-[100%] px-2 mt-2">
+      <Card.Header class="border-neutral-700">
+      <div class="flex justify-between w-full">
+        <Card.Title>Statistics</Card.Title>
+      </div>
+
+      </Card.Header>
+      <p class="mx-8 text-neutral-400 text-sm">Compare your previous sessions with one another to track your progress.</p>
+      <Button 
+        variant="outline" class="flex m-8 mt-0 mb-0 py-5 text-m" 
+        onclick={() => goto(resolve('/stats'))}
+        >
+        Go to statistics page
+        <Icon icon="gridicons:stats" width={40}/>
+      </Button>
+
+    </Card.Root>
+
   {/if}
 </main>
 

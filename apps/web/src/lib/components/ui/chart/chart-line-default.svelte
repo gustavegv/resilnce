@@ -1,52 +1,171 @@
 <script lang="ts">
   import { AreaChart } from 'layerchart';
   import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
-  import { curveBumpX, curveNatural } from 'd3-shape';
-  import { scaleLinear, scaleUtc } from 'd3-scale';
+  import { curveBumpX } from 'd3-shape';
+  import { scaleUtc } from 'd3-scale';
   import * as Chart from '$lib/components/ui/chart/index.js';
   import * as Card from '$lib/components/ui/card/index.js';
-  import { max } from 'd3-array';
   import type { DomainType } from 'layerchart/utils/scales.svelte';
 
   let {
     title,
     desc,
     data,
+    range,
+    selectedWPS,
+    selected1RM,
+    selectedTVL,
+    montComp,
   }: {
     title: string;
     desc: string;
     data: ChartData[];
+    range: string;
+    selectedWPS: boolean;
+    selected1RM: boolean;
+    selectedTVL: boolean;
+    montComp: boolean;
   } = $props();
 
   export interface ChartData {
     date: Date;
     oneRM: number;
-    second: number;
+    weightPerSet: number;
+    totalVolume: number;
   }
 
-  const chartData: ChartData[] = data;
+  function getRangeMonths(range: string) {
+    if (range === '1m') return 1;
+    if (range === '6m') return 6;
+    return 100;
+  }
+
+  function getRangeLabel(range: string) {
+    if (range === '1m') return 'this month';
+    if (range === '6m') return 'during the last 6 months';
+    return 'all time';
+  }
+
+  function formatYAxisValue(value: number) {
+    if (Math.abs(value) >= 1000) {
+      return new Intl.NumberFormat('en-US', {
+        notation: 'compact',
+        maximumFractionDigits: 1,
+      }).format(value);
+    }
+
+    return new Intl.NumberFormat('en-US', {
+      maximumFractionDigits: Number.isInteger(value) ? 0 : 1,
+    }).format(value);
+  }
+
+  const rangeMonths = $derived(getRangeMonths(range));
+  const rangeLabel = $derived(getRangeLabel(range));
 
   const chartConfig = {
-    oneRM: { label: 'oneRM', color: 'var(--chart-1)' },
-    second: { label: 'Weight', color: 'var(--chart-2)' },
+    oneRM: { label: 'EST 1RM', color: 'var(--color-secondary)' },
+    weightPerSet: { label: 'Weight per set', color: 'var(--chart-2)' },
+    totalVolume: { label: 'Total volume lifted', color: 'var(--chart-4)' },
+    monthComparison: { label: 'Last month weight per set', color: 'var(--chart-5)' },
   } satisfies Chart.ChartConfig;
 
-  const yDomain: DomainType = getYDomain(data);
+  function filterChartDataByRange(data: ChartData[], range: string) {
+    if (range === 'all' || !data.length) return data;
 
-  function getYDomain(data: ChartData[]): DomainType {
-    let lower: number | undefined = undefined;
-    let upper: number = 0;
+    const latestDate = data.reduce(
+      (latest, entry) => (entry.date > latest ? entry.date : latest),
+      data[0].date
+    );
+    const cutoffDate = new Date(latestDate);
 
-    data.forEach((d) => {
-      if (!lower) {
-        lower = d.second;
-      } else {
-        lower = Math.min(d.second, lower);
+    if (range === '6m') {
+      cutoffDate.setMonth(cutoffDate.getMonth() - 6);
+    }
+
+    if (range === '1m') {
+      cutoffDate.setMonth(cutoffDate.getMonth() - 1);
+    }
+
+    return data.filter((item) => item.date >= cutoffDate);
+  }
+
+  function getClosestEntry(entries: ChartData[], targetDate: Date) {
+    let closestEntry = entries[0];
+    let closestDiff = Math.abs(entries[0].date.getTime() - targetDate.getTime());
+
+    for (const entry of entries) {
+      const diff = Math.abs(entry.date.getTime() - targetDate.getTime());
+      if (diff < closestDiff) {
+        closestDiff = diff;
+        closestEntry = entry;
       }
-      upper = Math.max(d.oneRM, upper);
+    }
+
+    return closestEntry;
+  }
+
+  function getMonthComparisonData(data: ChartData[], visibleData: ChartData[]) {
+    if (range !== '1m' || !visibleData.length || !data.length) {
+      return [];
+    }
+
+    return visibleData.map((entry) => {
+      const targetDate = new Date(entry.date);
+      targetDate.setMonth(targetDate.getMonth() - 1);
+
+      const comparisonEntry = getClosestEntry(data, targetDate);
+
+      return {
+        ...comparisonEntry,
+        date: entry.date,
+      };
     });
-    const avg = upper - (lower ?? 0);
-    return [(lower ?? 0) - 10, upper + avg / 2];
+  }
+
+  function getYDomain(
+    visibleData: ChartData[],
+    comparisonData: ChartData[],
+    {
+      selectedWPS,
+      selected1RM,
+      selectedTVL,
+      montComp,
+      range,
+    }: {
+      selectedWPS: boolean;
+      selected1RM: boolean;
+      selectedTVL: boolean;
+      montComp: boolean;
+      range: string;
+    }
+  ): DomainType {
+    const values: number[] = [];
+
+    if (selectedWPS) {
+      values.push(...visibleData.map((entry) => entry.weightPerSet));
+    }
+
+    if (selected1RM) {
+      values.push(...visibleData.map((entry) => entry.oneRM));
+    }
+
+    if (selectedTVL) {
+      values.push(...visibleData.map((entry) => entry.totalVolume));
+    }
+
+    if (range === '1m' && montComp) {
+      values.push(...comparisonData.map((entry) => entry.weightPerSet));
+    }
+
+    if (!values.length) {
+      return [0, 100];
+    }
+
+    const lower = Math.min(...values);
+    const upper = Math.max(...values);
+    const span = upper - lower || Math.max(upper, 10);
+
+    return [Math.max(0, lower - span * 0.15), upper + span * 0.2];
   }
 
   export function getTrend(data: ChartData[]) {
@@ -54,47 +173,84 @@
       return null;
     }
 
-    // 1. Sort ascending by date
     const sorted = data.slice().sort((a, b) => a.date.getTime() - b.date.getTime());
-
-    // 2. Latest entry
     const latestEntry = sorted[sorted.length - 1];
     const latestDate = latestEntry.date;
-    const latestValue = latestEntry.oneRM;
+    const latestValue = latestEntry.weightPerSet;
 
-    // 3. Build a “one month ago” target date, anchored to latestDate
     const targetDate = new Date(
       latestDate.getFullYear(),
-      latestDate.getMonth() - 1,
+      latestDate.getMonth() - rangeMonths,
       latestDate.getDate(),
       latestDate.getHours()
     );
 
-    // 4. Find the entry closest in time to targetDate
-    let pastEntry = sorted[0];
-    let closestDiff = Math.abs(pastEntry.date.getTime() - targetDate.getTime());
-    for (const entry of sorted) {
-      const diff = Math.abs(entry.date.getTime() - targetDate.getTime());
-      if (diff < closestDiff) {
-        closestDiff = diff;
-        pastEntry = entry;
-      }
-    }
+    const pastEntry = getClosestEntry(sorted, targetDate);
 
-    const pastValue = pastEntry.oneRM;
+    const pastValue = pastEntry.weightPerSet;
 
-    // 5. Compute % change (guarding against division by zero)
     const percentageChange = pastValue === 0 ? null : ((latestValue - pastValue) / pastValue) * 100;
     const rounded = Math.round((percentageChange ?? 1) * 10) / 10;
 
     if (!percentageChange || percentageChange < 0) {
       return null;
     } else {
-      return `Trending up by ${rounded}% this month`;
+      return `Weight per set trending up by ${rounded}% ${rangeLabel}`;
     }
   }
 
-  const trend: string | null = 'getTrend(data)';
+  const chartData = $derived.by(() => filterChartDataByRange(data, range));
+  const monthComparisonData = $derived.by(() => getMonthComparisonData(data, chartData));
+  const visibleSeries = $derived.by(() => {
+    const series = [];
+
+    if (selected1RM) {
+      series.push({
+        key: 'oneRM',
+        label: '1RM',
+        color: chartConfig.oneRM.color,
+      });
+    }
+
+    if (selectedWPS) {
+      series.push({
+        key: 'weightPerSet',
+        label: 'Weight per set',
+        color: chartConfig.weightPerSet.color,
+      });
+    }
+
+    if (selectedTVL) {
+      series.push({
+        key: 'totalVolume',
+        label: 'Total volume lifted',
+        color: chartConfig.totalVolume.color,
+      });
+    }
+
+    if (range === '1m' && montComp) {
+      series.push({
+        key: 'monthComparison',
+        label: 'Last month 1RM',
+        color: chartConfig.monthComparison.color,
+        value: (entry: ChartData) => entry.weightPerSet,
+        data: monthComparisonData,
+      });
+    }
+
+    return series;
+  });
+  const yDomain = $derived(
+    getYDomain(chartData, monthComparisonData, {
+      selectedWPS,
+      selected1RM,
+      selectedTVL,
+      montComp,
+      range,
+    })
+  );
+  const showDataPoints = $derived(chartData.length > 0 && chartData.length < 5);
+  const trend = $derived(selectedWPS ? getTrend(chartData) : null);
 </script>
 
 <Card.Header>
@@ -108,19 +264,9 @@
       x="date"
       xScale={scaleUtc()}
       {yDomain}
-      series={[
-        {
-          key: 'second',
-          label: 'Weight',
-          color: chartConfig.second.color,
-        },
-        {
-          key: 'oneRM',
-          label: '1RM',
-          color: chartConfig.oneRM.color,
-        },
-      ]}
-      axis="x"
+      series={visibleSeries}
+      axis
+      points={showDataPoints}
       props={{
         area: {
           curve: curveBumpX,
@@ -128,14 +274,28 @@
           line: { class: 'stroke-1' },
           motion: 'tween',
         },
+        points: {
+          r: 4,
+          fillOpacity: 0.5,
+          class: 'stroke-background stroke-1',
+        },
         xAxis: {
           format: (v: Date) => v.toLocaleDateString('en-US', { dateStyle: 'short' }),
+        },
+        yAxis: {
+          ticks: 5,
+          format: formatYAxisValue,
         },
       }}
     >
       {#snippet tooltip()}
         <Chart.Tooltip
-          labelFormatter={(v: Date) => v.toLocaleDateString('en-US', { day: 'numeric' })}
+          labelFormatter={(v: Date) =>
+            v.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })}
           indicator="line"
         />
       {/snippet}
