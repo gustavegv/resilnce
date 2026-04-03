@@ -8,10 +8,27 @@
   import Icon from '@iconify/svelte';
 
   import { asset, resolve } from '$app/paths';
+    import { onMount } from 'svelte';
+    import LandscapeLanding from './LandscapeLanding.svelte';
 
   let home = $derived(page.url.pathname === resolve('/'));
 
   let { children } = $props();
+
+  let isLandscape = $state(false);
+
+  onMount(() => {
+    const mq = window.matchMedia('(orientation: landscape)');
+
+    const update = () => {
+      isLandscape = mq.matches;
+    };
+
+    update();
+    mq.addEventListener('change', update);
+
+    return () => mq.removeEventListener('change', update);
+  });
 
   function go(destination: string) {
     switch (destination) {
@@ -32,8 +49,9 @@
 </script>
 
 <Toaster />
+{#if isLandscape}
 
-{#if home}
+{:else if home}
   <div class="abs">
     <CustomHeader size={3} />
   </div>
