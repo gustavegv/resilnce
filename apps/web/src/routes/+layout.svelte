@@ -10,9 +10,10 @@
   import { asset, resolve } from '$app/paths';
     import { onMount } from 'svelte';
     import LandscapeLanding from './LandscapeLanding.svelte';
+    import { isMobileNotWebapp, setHelpOpen, toggleHelpOpen } from './webapp.svelte';
 
   let home = $derived(page.url.pathname === resolve('/'));
-
+  let showHelp = $state(false)
   let { children } = $props();
 
   let isLandscape = $state(false);
@@ -23,6 +24,9 @@
     const update = () => {
       isLandscape = mq.matches;
     };
+    
+    showHelp = isMobileNotWebapp()
+    setHelpOpen(showHelp)
 
     update();
     mq.addEventListener('change', update);
@@ -57,8 +61,18 @@
   </div>
 
   <div class="head">
-    <g class="function-button hide">
-      <Icon icon="mdi:user" />
+    <g 
+      class="function-button" 
+      class:hide={!showHelp}
+      onclick={() => toggleHelpOpen()}
+      onkeydown={(e: any) => {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') toggleHelpOpen();
+      }}
+      aria-label="Help with webapp"
+      tabindex="0"
+      role="button"
+    >
+      <Icon icon="material-symbols:help-outline" color="gray"/>
     </g>
 
     <div class="icon">
@@ -71,10 +85,10 @@
       aria-label="Account"
       onclick={() => go('account')}
       onkeydown={(e: any) => {
-        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') go('back');
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') go('account');
       }}
     >
-      <Icon icon="mdi:user" color="grey" />
+      <Icon icon="material-symbols:account-circle" color="grey" />
     </r>
   </div>
 {:else}
@@ -163,6 +177,7 @@
 
   .hide {
     opacity: 0;
+    pointer-events: none;
     height: 0px;
     width: 24px;
   }

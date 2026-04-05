@@ -156,8 +156,7 @@
   onMount(() => {
     const savedTheme = localStorage.getItem('landscape-landing-theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    theme =
-      savedTheme === 'dark' || savedTheme === 'light' ? savedTheme : prefersDark ? 'dark' : 'light';
+    theme = "dark";
     reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     scrollContainer = getScrollContainer(section);
 

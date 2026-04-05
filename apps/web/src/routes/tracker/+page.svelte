@@ -410,7 +410,7 @@
   .category-carousel {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
     width: 100%;
     overflow-x: auto;
     padding: 0.25rem 1rem 0.75rem 1rem;
@@ -428,13 +428,13 @@
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    padding: 0.5rem 1rem;
+    padding: 0.4rem 0.5rem;
     min-width: max(5rem);
     border: 0;
     border-radius: var(--border-middle);
     font: inherit;
     font-weight: 500;
-    font-size: 14px;
+    font-size: 12px;
     color: #fff;
     white-space: nowrap;
     cursor: pointer;
