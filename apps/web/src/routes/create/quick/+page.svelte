@@ -30,7 +30,7 @@
     const choices: boolean[] = [cbSpellcheck, cbRestart, cbAutoChoose, cbStrength];
 
     // load
-    // dataPromise = QuickGeneration(prompt, choices);
+    dataPromise = QuickGeneration(prompt, choices);
     // finish loading
     console.log(await dataPromise);
   }
