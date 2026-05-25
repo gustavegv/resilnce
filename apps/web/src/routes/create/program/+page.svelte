@@ -2,127 +2,45 @@
   import { base } from '$app/paths';
   import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 
+
   import Icon from '@iconify/svelte';
+    import { advancedPrograms, hypertrophyPrograms } from './programs';
+    import { Button } from '$lib/components/ui/button';
 
-  type Program = {
-    id: string;
-    slug: string;
-    name: string;
-    tagline: string;
-    blockLength: string;
-    cadence: string;
-    level: string;
-    type: string;
-    focus: string;
-    tags: string[];
-    accent: 'violet' | 'sky' | 'emerald' | 'amber';
-    overview: string;
-    howItRuns: string[];
-    bestFor: string[];
-  };
+ import { LineChart } from "layerchart";
+  import { curveLinearClosed } from "d3-shape";
+  import { scaleBand } from "d3-scale";
+  import * as Chart from "$lib/components/ui/chart/index.js";
+  import * as Card from "$lib/components/ui/card/index.js";
 
-  const programs: Program[] = [
-    {
-      id: '531',
-      slug: '531',
-      name: '5/3/1',
-      tagline: 'Steady long-term strength progression',
-      blockLength: '4-week block',
-      cadence: '3-4 days / week',
-      level: 'Beginner',
-      type: 'Complete',
-      focus: 'Main lifts + sustainable progress',
-      tags: ['Strength', 'Classic'],
-      accent: 'violet',
-      overview:
-        'A classic strength template built around squat, bench, deadlift, and press using conservative training maxes and repeatable monthly progression.',
-      howItRuns: [
-        'Each block runs across four weeks, with the main work progressing through 5s, 3s, and 5/3/1 style loading before a lighter reset or transition week.',
-        'You train one main lift each session, then add supplemental work and a small amount of assistance based on your goal.',
-        'The pace is intentionally sustainable, which makes it easy to run for multiple blocks without burning out.',
-      ],
-      bestFor: [
-        'Building strength over months, not just one peak',
-        'Lifters who want structure without excessive complexity',
-      ],
-    },
-    {
-      id: 'bbb',
-      slug: 'boring-but-big',
-      name: '5/3/1 Boring But Big',
-      tagline: '5/3/1 with a big hypertrophy push',
-      blockLength: '12-week block',
-      cadence: '4 days / week',
-      level: 'Intermediate',
-      type: 'Complete',
-      focus: 'Strength + size',
-      tags: ['Hypertrophy', 'High volume', '5/3/1'],
-      accent: 'sky',
-      overview:
-        'A higher-volume 5/3/1 variation that keeps the main strength work and adds 5 sets of 10 on supplemental lifts to drive muscle gain.',
-      howItRuns: [
-        'Each session starts with the regular 5/3/1 main lift work.',
-        'After that, you perform 5x10 on the same lift or a paired lift depending on the setup you choose.',
-        'Accessories stay simple so the extra volume can do the heavy lifting for growth and work capacity.',
-      ],
-      bestFor: [
-        'Lifters who want size without abandoning strength work',
-        'People who tolerate moderate to high barbell volume well',
-      ],
-    },
-    {
-      id: 'russian-squat',
-      slug: 'russian-squat',
-      name: 'Russian Strength Program',
-      tagline: 'Short overreach cycle focused on one main lift',
-      blockLength: '6-week block',
-      cadence: '3 sessions / week',
-      level: 'Intermediate',
-      type: 'Partial',
-      focus: 'Rapid peak for a chosen lift',
-      tags: ['Strength', 'Specialization', 'Intensity'],
-      accent: 'amber',
-      overview:
-        'A concentrated six-week strength cycle that can be applied to a single main lift, such as squat or bench, starting with repeated work around 80% and then tapering volume while intensity climbs toward a max test.',
-      howItRuns: [
-        'The first half builds a lot of volume on one chosen lift, commonly through repeated sets at roughly the same percentage while reps increase session to session.',
-        'The second half shifts toward heavier, lower-rep work so you can express the strength built during the volume wave.',
-        'Because the frequency and specificity are high, the rest of training usually needs to stay simple and fatigue-aware.',
-      ],
-      bestFor: [
-        'Short-term specialization on a single lift',
-        'Lifters who recover well from frequent practice on the same movement',
-      ],
-    },
-    {
-      id: 'candito-6-week',
-      slug: 'candito-6-week',
-      name: 'Candito 6 Week',
-      tagline: 'Block-style strength cycle with changing weekly emphasis',
-      blockLength: '6-week block',
-      cadence: '4 days / week',
-      level: 'Intermediate',
-      type: 'Complete',
-      focus: 'Strength peak across the big three',
-      tags: ['Powerlifting', 'Periodized', '6 weeks'],
-      accent: 'emerald',
-      overview:
-        'A six-week strength cycle that rotates emphasis from conditioning and hypertrophy into heavier strength and peaking work.',
-      howItRuns: [
-        'Each week has a distinct role, moving from higher workload into heavier, more specific strength work.',
-        'The structure is more block-oriented than a static weekly template, so the feel of training changes across the cycle.',
-        'It works well when you want a defined short block with a clear performance focus at the end.',
-      ],
-      bestFor: [
-        'Intermediates who want a sharper peak',
-        'Lifters who enjoy week-to-week variation',
-      ],
-    },
-  ];
 
-  let openPrograms = $state<Record<string, boolean>>(
-    Object.fromEntries(programs.map((program, index) => [program.id, index === -1]))
-  );
+  const chartConfig = {
+    volume: {
+      label: "Training Volume",
+      color: "var(--color-secondary)",
+    },
+  } satisfies Chart.ChartConfig;
+
+  let hypActv = $state(true)
+
+  function getSessions(){
+    return hypActv ? hypertrophyPrograms : advancedPrograms
+  }
+
+  let programs = $derived(getSessions())
+
+let openOverrides = $state<Record<string, boolean>>({});
+
+let openPrograms = $derived.by(() =>
+  Object.fromEntries(
+    programs.map((p) => [p.id, openOverrides[p.id] ?? false])
+  )
+);
+
+  function setProgramOpen(id: string, open: boolean) {
+    openOverrides[id] = open;
+  }
+
 </script>
 
 <section class="program-page">
@@ -145,14 +63,32 @@
     </div>
   </header>
 
-  <div class="program-list" role="list">
+  <div class="program-type-selector">
+    <button class="program-type" class:selected={hypActv} onclick={() => {hypActv = true}}>
+      Hyperthrophy programs
+    </button>
+    <button class="program-type" class:selected={!hypActv} onclick={() => {hypActv = false}}>
+      Powerlifting programs
+    </button>
+  </div>
+  
+  {#if !hypActv}
+  <div class="bg-yellow-500/10 border border-yellow-500/15 rounded-lg py-4 px-2 w-full">
+    <p class="w-full text-yellow-100 text-sm text-center"> Powerlifting programs are not availible yet...</p>
+  </div>
+  {/if}
+
+  <div class="program-list" role="list" class:inactive={!hypActv}>
     {#each programs as program (program.id)}
       <article
         class={`program-card program-card--${program.accent}`}
         class:program-card--expanded={openPrograms[program.id]}
         role="listitem"
       >
-        <Collapsible.Root bind:open={openPrograms[program.id]}>
+        <Collapsible.Root 
+          open={openPrograms[program.id]} 
+          onOpenChange={(open) => setProgramOpen(program.id, open)}>
+          
           <Collapsible.Trigger class="program-card__trigger w-[100%]">
             <div class="program-card__main">
               <div class="program-card__row program-card__row--top">
@@ -187,47 +123,156 @@
             </div>
           </Collapsible.Trigger>
 
-          <Collapsible.Content>
-            <div class="program-card__panel">
-              <div class="program-card__panel-grid">
-                <div class="program-card__section">
-                  <h3>Overview</h3>
-                  <p>{program.overview}</p>
+
+        <Collapsible.Content>
+          <div class="program-card__panel pt-3">
+            <div class="program-card__panel-grid grid gap-3.5">
+              <!-- Overview -->
+                <p class="p-card__section">
+                  {program.overview}
+                </p>
+
+              <!-- Sessions -->
+              <section class="grid gap-2.5">
+                <div class="flex items-end justify-between gap-3 px-0.5">
+                  <div>
+                    <h3 class="text-[0.95rem] font-[650] tracking-[-0.01em]">
+                      Sessions
+                    </h3>
+
+                    <p class="text-[var(--text-muted)] text-[0.8rem]">
+                      This program consists of {program.sessions?.length} sessions.
+                    </p>
+                  </div>
                 </div>
 
-                <div class="program-card__section">
-                  <h3>How it runs</h3>
-                  <ul>
-                    {#each program.howItRuns as item}
-                      <li>{item}</li>
-                    {/each}
-                  </ul>
-                </div>
+                <div class="grid gap-2 bg-[hsl(var(--muted)/0.2)] rounded-2xl">
+                  {#each program.sessions as item, index}
+                    <Card.Root class="border border-border py-4">
+                      <Card.Content class="grid gap-3 p-3">
+                        <div class="flex items-start justify-between gap-3">
+                          <div class="flex min-w-0 gap-2.5">
+                            <span class="grid place-items-center w-8 h-8 min-w-8 rounded-full bg-[hsl(var(--background))] text-[hsl(var(--foreground))] p-0 text-[0.8rem] font-semibold leading-none whitespace-nowrap">
+                              {index + 1}
+                            </span>
 
-                <div class="program-card__section">
-                  <h3>Best for</h3>
-                  <ul>
-                    {#each program.bestFor as item}
-                      <li>{item}</li>
-                    {/each}
-                  </ul>
-                </div>
-              </div>
+                            <div class="min-w-0">
+                              <Card.Title class="text-[0.925rem] leading-[1.25] tracking-[-0.01em]">
+                                {item}
+                              </Card.Title>
 
-              <div class="program-card__actions">
-                <button class="program-card__cta program-card__cta--ghost" type="button">
-                  Preview week 1
-                </button>
-                <a
-                  class="program-card__cta program-card__cta--primary"
-                  href={`${base}/create/program/${program.slug}`}
-                >
-                  Use template
-                </a>
-              </div>
+                              <Card.Description class="mt-1 text-[0.775rem] leading-[1.35]">
+                                Session {index + 1}
+                              </Card.Description>
+                            </div>
+                          </div>
+
+                          <Button
+                            variant="outline"
+                            disabled
+                            size="sm"
+                            type="button"
+                            class="h-8 px-2.5 rounded-full text-[0.8rem]"
+                          >
+                            <Icon icon="mdi:eye" fill="white"/>
+                          </Button>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                          <Button
+                            disabled
+
+                            variant="outline"
+                            size="sm"
+                            class="text-[0.825rem] font-semibold"
+                          >
+                            <a href={`${base}/create/program/${program.slug}`}>
+                              Edit and add
+                            </a>
+                          </Button>
+
+                          <Button
+                          disabled
+                            size="sm"
+                            class="text-[0.825rem] font-semibold"
+                          >
+                            <a href={`${base}/create/program/${program.slug}`}>
+                              Quick add
+                            </a>
+                          </Button>
+                        </div>
+                      </Card.Content>
+                    </Card.Root>
+                  {/each}
+                </div>
+              </section>
             </div>
-          </Collapsible.Content>
-        </Collapsible.Root>
+          </div>
+
+<Card.Root class="border-border mt-4">
+  <Card.Header class="items-center">
+    <Card.Title>Radar Chart - Muscle Groups</Card.Title>
+    <Card.Description>
+      Showing relative training volume across major muscle groups
+    </Card.Description>
+  </Card.Header>
+
+  <Card.Content class="flex-1 ">
+    <Chart.Container config={chartConfig} class="mx-auto aspect-square max-h-[320px] w-[70%]">
+      <LineChart
+        data={program.chartData}
+        series={[
+          {
+            key: "volume",
+            label: "Training Volume",
+            color: chartConfig.volume.color,
+          },
+        ]}
+        radial
+        x="muscleGroup"
+        xScale={scaleBand()}
+        points={{ r: 4 }}
+        padding={12}
+        props={{
+          spline: {
+            curve: curveLinearClosed,
+            fill: "var(--color-volume)",
+            fillOpacity: 0.6,
+            stroke: "0",
+            motion: "tween",
+          },
+          xAxis: {
+            tickLength: 0,
+          },
+          yAxis: {
+            format: () => "",
+          },
+          grid: {
+            radialY: "linear",
+          },
+          tooltip: {
+            context: {
+              mode: "voronoi",
+            },
+          },
+          highlight: {
+            lines: false,
+            points: false,
+          },
+        }}
+      >
+        {#snippet tooltip()}
+          <Chart.Tooltip />
+        {/snippet}
+      </LineChart>
+    </Chart.Container>
+  </Card.Content>
+</Card.Root>
+
+
+
+        </Collapsible.Content>
+      </Collapsible.Root>
       </article>
     {/each}
   </div>
@@ -267,6 +312,28 @@
     padding: 1rem;
     padding-top: 4rem;
     overflow-x: auto;
+    padding-bottom: 10rem;
+  }
+
+  .program-type-selector {
+    display: flex;
+    width: 100%; 
+    gap: 1rem;
+  }
+
+  .program-type {
+    padding: 0.3rem 1rem;
+    background-color: var(--surface-low);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    text-align: center;
+    font-size: 14px;
+  }
+
+  .program-type.selected {
+    background-color: var(--surface-middle);
+    box-shadow: var(--shadow-dark);
+    font-weight: 600;
   }
 
   .program-page__header {
@@ -331,6 +398,12 @@
   .program-list {
     display: grid;
     gap: 0.9rem;
+  }
+
+  .program-list.inactive {
+    opacity: 0.6;
+    pointer-events: none;
+    cursor: not-allowed;
   }
 
   .program-card {
@@ -504,6 +577,13 @@
     padding: 0.9rem 0.95rem;
   }
 
+  h3 {
+    margin: 1rem 0 0 0;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
   .program-card__section h3 {
     margin: 0 0 0.55rem;
     font-size: 0.82rem;
@@ -513,8 +593,10 @@
     color: var(--program-text-muted);
   }
 
+
   .program-card__section p,
-  .program-card__section li {
+  .program-card__section li,
+  .p-card__section {
     margin: 0;
     font-size: 0.92rem;
     line-height: 1.6;
@@ -539,11 +621,10 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 2.8rem;
+    min-height: 2rem;
     border-radius: 999px;
-    padding: 0.72rem 1rem;
     text-decoration: none;
-    font-size: 0.9rem;
+    font-size: 0.7rem;
     font-weight: 700;
     transition:
       transform 180ms ease,
@@ -551,14 +632,20 @@
       border-color 180ms ease;
   }
 
-  .program-card__cta:hover {
-    transform: translateY(-1px);
-  }
-
   .program-card__cta--primary {
     color: var(--program-text-primary);
     border: 1px solid var(--program-line-soft);
     background: var(--program-surface-strong);
+    border-radius: 100px;
+    box-shadow: var(--shadow-liquid);
+  }
+
+  .program-content-holder {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem;
+    background-color: var(--surface-middle);
+    border-radius: 10px;
   }
 
   .program-card__cta--ghost {
