@@ -1,6 +1,8 @@
 <script lang="ts">
   import Icon from '@iconify/svelte';
   import type { ExerciseInfo } from '../routes/tracker/dbFetches';
+  import { CheckRepThresholdMet } from '../routes/tracker/saving';
+
   import { fade, scale } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
 
@@ -27,17 +29,11 @@
     };
   }
 
-  function checkPR(setList: number[], index: number): boolean {
+  function checkPR(repsPerSet: number[], index: number): boolean {
     const repThreshold = exercises[index].rep_threshold ?? 12;
 
-    let totalReps = 0;
+    return CheckRepThresholdMet(repsPerSet, repThreshold)
 
-    setList.forEach((set) => {
-      totalReps += set;
-    });
-
-    let avgRepsPerSet = totalReps / setList.length;
-    return avgRepsPerSet > repThreshold;
   }
 
   function toTwoDigit(num: number): string {

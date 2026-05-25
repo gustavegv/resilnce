@@ -133,6 +133,7 @@
     error = null;
 
     try {
+      console.log(update)
       const success = await SendUpdate(update, sesID);
       if (!success) {
         throw new Error('Failed to save progress.');
