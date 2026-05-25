@@ -15,6 +15,12 @@
   import { cubicOut } from 'svelte/easing';
   import { toast } from 'svelte-sonner';
 
+  import { Button, buttonVariants } from "$lib/components/ui/button/index.js";
+  import * as Dialog from "$lib/components/ui/dialog/index.js";
+  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
+
+ 
+
   import {
     CompleteSession,
     GetSessionExercises,
@@ -107,6 +113,7 @@
   }
 
   function loadNextExercise() {
+    editMode = false
     goToExercise(currentExerciseIndex + 1);
   }
 
@@ -190,35 +197,21 @@
     };
   }
 
-  function toggleActionMenu() {
-    showActionMenu = !showActionMenu;
-  }
 
-  function closeActionMenu() {
-    showActionMenu = false;
-  }
 
-  function handleWindowKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape' && showActionMenu) {
-      closeActionMenu();
-    }
-  }
 
   let alertVisible = $state(false);
 
   async function handleQuitAction() {
-    closeActionMenu();
     alertVisible = true;
   }
 
   function handleEditAction() {
-    closeActionMenu();
     resetEditFields();
     editMode = true;
   }
 
   async function finishSessionNow() {
-    closeActionMenu();
 
     if (confirm('Finish the session now?\nYou will go to the session summary.')) {
     }
@@ -317,7 +310,7 @@
   </Alert.Content>
 </Alert.Root>
 
-<svelte:window onkeydown={handleWindowKeydown} />
+
 
 <main class="app-container">
   {#if loading || error}
@@ -333,7 +326,7 @@
           <div class="mt-1">
             <p class="text-left text-sm font-semibold text-red-50">Something went wrong</p>
             <p class="mt-1 text-left text-sm leading-6 text-red-100/75">
-              {error}. Please try again.
+              {error ? error + "." : ""} Please try again.
             </p>
           </div>
         </div>
@@ -341,6 +334,10 @@
     {/if}
     <LoadingSkeleton />
   {:else}
+    
+
+
+
     <div class="progress">
       <div class="progress-header">
         <span class="label">Session Progress</span>
@@ -361,63 +358,48 @@
         >Return to homepage</button
       >
     {:else}
-      <div class="session-menu-anchor z-1">
-        <button
-          type="button"
-          onclick={toggleActionMenu}
-          class="action-trigger"
-          aria-haspopup="menu"
-          aria-expanded={showActionMenu}
-          aria-controls="session-action-menu"
-        >
-          <Icon icon="material-symbols:more-horiz" color="grey" width={24} />
-        </button>
+        
+ 
 
-        {#if showActionMenu}
-          <div class="session-action-menu-shell">
-            <div
-              id="session-action-menu"
-              class="session-action-menu"
-              aria-label="Session actions"
-              transition:growDown
-            >
-              <button
-                type="button"
-                class="session-action"
-                aria-label="Quit session"
-                onclick={handleQuitAction}
-              >
-                <Icon icon="material-symbols:logout-rounded" width={20} />
-              </button>
 
-              <button
-                type="button"
-                class="session-action"
-                aria-label="Edit"
-                onclick={handleEditAction}
-              >
-                <Icon icon="material-symbols:edit-outline-rounded" width={20} />
-              </button>
 
-              <button
-                type="button"
-                class="session-action"
-                aria-label="Finish session"
-                onclick={finishSessionNow}
-              >
-                <Icon icon="material-symbols:check-circle-outline-rounded" width={20} />
-              </button>
-            </div>
-          </div>
-        {/if}
-      </div>
+<div class="session-menu-anchor z-1">
+<DropdownMenu.Root bind:open={showActionMenu}>
+      <DropdownMenu.Trigger style="font-size: 20px;"
+      > ...
+        
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content class="w-40" align="end">
+        <DropdownMenu.Label>Session Actions</DropdownMenu.Label>
+        <DropdownMenu.Group>
+          <DropdownMenu.Item onSelect={handleEditAction}>
+            Edit Exercise
+            <DropdownMenu.Shortcut><Icon icon="material-symbols:edit-outline-rounded"/></DropdownMenu.Shortcut>
+          </DropdownMenu.Item>
+
+        </DropdownMenu.Group>
+        <DropdownMenu.Separator />
+        <DropdownMenu.Group>
+          <DropdownMenu.Item onSelect={handleQuitAction}>
+            Quit Session
+            <DropdownMenu.Shortcut><Icon icon="material-symbols:logout-rounded"/></DropdownMenu.Shortcut>
+          </DropdownMenu.Item>
+
+          <DropdownMenu.Item disabled>
+            Force-finish session
+            <DropdownMenu.Shortcut><Icon icon="material-symbols:check-circle-outline-rounded" /></DropdownMenu.Shortcut>
+          </DropdownMenu.Item>
+
+        </DropdownMenu.Group>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+ </div>
 
       {#if editMode && currentExercise}
         <section class="edit-card">
           <div class="edit-copy">
             <p class="edit-label">
-              <Icon icon="material-symbols:edit-outline-rounded" width={20} />
-              Edit exercise
+              Editing exercise
             </p>
             <p class="edit-help">Update any field and save to apply only the changed values.</p>
           </div>
@@ -530,7 +512,6 @@
       type="button"
       class="menu-backdrop"
       aria-label="Close session actions"
-      onclick={closeActionMenu}
       transition:fade={{ duration: 140 }}
     ></button>
   {/if}
@@ -643,9 +624,9 @@
     display: inline-flex;
     align-items: center;
     gap: 1rem;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 1.5rem;
+    color: var(--text);
   }
 
   .edit-card {
@@ -654,7 +635,7 @@
     padding: 1rem;
     border: 1px solid var(--border);
     border-radius: 12px;
-    background: var(--card);
+    background: var(--surface-low);
     text-align: left;
   }
 
@@ -720,7 +701,7 @@
     border-radius: 20px;
     border: none;
     outline: none;
-    box-shadow: var(--shadow-dark);
+    box-shadow: var(--shadow-liquid);
     transition-property: opacity;
     transition-timing-function: ease;
     transition-duration: 700ms;
@@ -749,7 +730,6 @@
     border: none;
     padding: 0;
     margin: 0;
-    background: linear-gradient(180deg, var(--color-background), transparent);
     mask: linear-gradient(black, transparent);
     backdrop-filter: blur(4px);
 
@@ -758,13 +738,22 @@
 
   .session-menu-anchor {
     position: absolute;
-    right: 0;
-    top: 0;
+    right: 2rem;
+    top: 0.8rem;
+    color: grey;
     transform: translate(1rem, -1.3rem);
     display: flex;
     flex-direction: column;
     align-items: center;
     z-index: 20;
+  }
+
+  space{
+    width: 100%;
+    display: inline-flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
   }
 
   .action-trigger {

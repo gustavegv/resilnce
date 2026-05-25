@@ -455,8 +455,7 @@
     font-size: 12px;
     border-radius: 16px;
     min-height: 4rem;
-
-    box-shadow: none;
+    opacity: 90%;
   }
 
   .base-btn.alt:hover {

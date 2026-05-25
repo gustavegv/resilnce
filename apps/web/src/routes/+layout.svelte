@@ -103,7 +103,7 @@
         if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') go('back');
       }}
     >
-      <Icon icon="material-symbols:arrow-back-rounded" color="grey"></Icon>
+      <Icon icon="lets-icons:back" color="grey"></Icon>
     </g>
 
     <div
