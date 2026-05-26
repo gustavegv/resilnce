@@ -3,11 +3,10 @@
   import '../app.css';
   import { onMount } from 'svelte';
   import { previewLabelConfig, config, carouselSources } from './landscapePreviewConfig';
-    import Icon from '@iconify/svelte';
+  import Icon from '@iconify/svelte';
 
   const currentYear = new Date().getFullYear();
   const githubUrl = 'https://github.com/gustavegv/resilnce';
-
 
   const shellLayers = Array.from({ length: config.shellSteps }, (_, step) => {
     const t = step / (config.shellSteps - 1);
@@ -82,14 +81,12 @@
     const baseRadius = Math.max(210, Math.min(window.innerWidth * 0.25, 380));
     const radius = Math.min(baseRadius, 400);
 
-
-
     landingRoot.style.setProperty('--radius', `${radius}px`);
     if (window.innerWidth < 1150) {
-      const subt = (1 / window.innerWidth) * 10000 * 4
+      const subt = (1 / window.innerWidth) * 10000 * 4;
       landingRoot.style.setProperty('--phone-width', `${config.phoneWidth - subt}px`);
-      console.log("W:",window.innerWidth,"SB:",subt)
-      return
+      console.log('W:', window.innerWidth, 'SB:', subt);
+      return;
     }
     landingRoot.style.setProperty('--phone-width', `${config.phoneWidth}px`);
   }
@@ -156,7 +153,7 @@
   onMount(() => {
     const savedTheme = localStorage.getItem('landscape-landing-theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    theme = "dark";
+    theme = 'dark';
     reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     scrollContainer = getScrollContainer(section);
 
@@ -318,15 +315,15 @@
                         <div class="dynamic-island"></div>
                         <div class="top-bar-phone">
                           <div class="status-bar">
-                            <div class="flex w-[37%] justify-center items-center h-screen flex-row">
+                            <div class="flex h-screen w-[37%] flex-row items-center justify-center">
                               <p>09:40</p>
-
                             </div>
-                            <div class="flex w-[40%] justify-end items-center h-screen flex-row gap-1 pr-4">
-                              <Icon icon="material-symbols:wifi" width={9}/>
-                              <Icon icon="fluent:battery-9-20-regular" width={12}/>
+                            <div
+                              class="flex h-screen w-[40%] flex-row items-center justify-end gap-1 pr-4"
+                            >
+                              <Icon icon="material-symbols:wifi" width={9} />
+                              <Icon icon="fluent:battery-9-20-regular" width={12} />
                             </div>
-
                           </div>
                         </div>
                         <div class="screen-holder">
@@ -377,7 +374,8 @@
           <div>
             <div class="usage-panel-heading">
               <span class="material-symbols-outlined usage-panel-icon">smartphone</span>
-              <h3 class="usage-panel-title">Mobile 
+              <h3 class="usage-panel-title">
+                Mobile
                 <span>(iOS)</span>
               </h3>
             </div>
@@ -437,7 +435,7 @@
             <div class="usage-panel-heading">
               <span class="material-symbols-outlined usage-panel-icon">code</span>
               <h3 class="usage-panel-title">
-                Desktop Preview 
+                Desktop Preview
                 <span>(DevTools)</span>
               </h3>
             </div>
@@ -497,11 +495,10 @@
                   previous session statistics.
                 </p>
 
-                <a class="usage-simulator-link is-disabled"  aria-disabled="true">
+                <a class="usage-simulator-link is-disabled" aria-disabled="true">
                   Coming soon
                   <span class="material-symbols-outlined">open_in_new</span>
                 </a>
-
               </div>
             </div>
           </div>
@@ -765,10 +762,7 @@
     font: inherit;
     font-weight: 700;
     color: var(--landing-button-text);
-    background: linear-gradient(
-      135deg,
-      var(--landing-brand-color)
-    );
+    background: linear-gradient(135deg, var(--landing-brand-color));
     box-shadow: var(--landing-button-shadow);
     cursor: pointer;
     transition:
@@ -811,7 +805,7 @@
       background 200ms ease,
       border-color 200ms ease,
       box-shadow 200ms ease;
-      display: none;
+    display: none;
   }
 
   .theme-toggle:hover {
@@ -903,7 +897,6 @@
     scale: 0.9;
   }
 
-
   .phone-frame {
     position: absolute;
     overflow: hidden;
@@ -965,7 +958,6 @@
   .phone-left::after {
     background: rgba(84, 84, 84, 0.1);
   }
-
 
   .carousel-section {
     position: relative;
@@ -1167,12 +1159,11 @@
     -webkit-user-drag: none;
   }
 
-  .screen.no-top{
+  .screen.no-top {
     border-radius: 0 0 var(--screen-radius) var(--screen-radius);
     height: 100%;
-    object-fit:cover;
+    object-fit: cover;
   }
-
 
   .dynamic-island {
     position: absolute;
@@ -1315,7 +1306,7 @@
       margin-top: 0rem;
     }
 
-    .page{
+    .page {
       margin-top: 6rem;
     }
 
@@ -1557,8 +1548,6 @@
   .usage-simulator-link:active {
     transform: scale(0.95);
   }
-
-
 
   .usage-simulator-link.is-disabled {
     pointer-events: none;

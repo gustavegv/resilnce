@@ -223,9 +223,8 @@ button.mini {
     0 0.9px 1.5px hsla(0, 0%, 0%, 0.045), 0 3.5px 6px hsla(0, 0%, 0%, 0.09);
 
   --shadow-liquid:
-      inset 0 1px 0 rgb(255 255 255 / 0.22),
-      inset 0 -1px 0 rgb(0 0 0 / 0.08),
-      0 0.3px 0.4px hsla(0, 0%, 0%, 0.02);
+    inset 0 1px 0 rgb(255 255 255 / 0.22), inset 0 -1px 0 rgb(0 0 0 / 0.08),
+    0 0.3px 0.4px hsla(0, 0%, 0%, 0.02);
 
   --shadow-alt: rgba(149, 157, 165, 0.2) 0px 8px 24px;
 }

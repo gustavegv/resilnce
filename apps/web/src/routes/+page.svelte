@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import MobileLanding from './MobileLanding.svelte';
   import LandscapeLanding from './LandscapeLanding.svelte';
-    import { fade, slide } from 'svelte/transition';
+  import { fade, slide } from 'svelte/transition';
 
   let mounted = false;
   let isLandscape = false;
@@ -25,7 +25,7 @@
 {#if !mounted}
   <div style="height: 100dvh;" class=""></div>
 {:else if !isLandscape}
-<MobileLanding />
+  <MobileLanding />
 {:else}
-<LandscapeLanding />
+  <LandscapeLanding />
 {/if}

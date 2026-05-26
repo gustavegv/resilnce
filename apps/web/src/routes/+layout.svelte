@@ -8,12 +8,12 @@
   import Icon from '@iconify/svelte';
 
   import { asset, resolve } from '$app/paths';
-    import { onMount } from 'svelte';
-    import LandscapeLanding from './LandscapeLanding.svelte';
-    import { isMobileNotWebapp, setHelpOpen, toggleHelpOpen } from './webapp.svelte';
+  import { onMount } from 'svelte';
+  import LandscapeLanding from './LandscapeLanding.svelte';
+  import { isMobileNotWebapp, setHelpOpen, toggleHelpOpen } from './webapp.svelte';
 
   let home = $derived(page.url.pathname === resolve('/'));
-  let showHelp = $state(false)
+  let showHelp = $state(false);
   let { children } = $props();
 
   let isLandscape = $state(false);
@@ -24,9 +24,9 @@
     const update = () => {
       isLandscape = mq.matches;
     };
-    
-    showHelp = isMobileNotWebapp()
-    setHelpOpen(showHelp)
+
+    showHelp = isMobileNotWebapp();
+    setHelpOpen(showHelp);
 
     update();
     mq.addEventListener('change', update);
@@ -53,16 +53,14 @@
 </script>
 
 <Toaster />
-{#if isLandscape}
-
-{:else if home}
+{#if isLandscape}{:else if home}
   <div class="abs">
     <CustomHeader size={3} />
   </div>
 
   <div class="head">
-    <g 
-      class="function-button" 
+    <g
+      class="function-button"
       class:hide={!showHelp}
       onclick={() => toggleHelpOpen()}
       onkeydown={(e: any) => {
@@ -72,7 +70,7 @@
       tabindex="0"
       role="button"
     >
-      <Icon icon="material-symbols:help-outline" color="gray"/>
+      <Icon icon="material-symbols:help-outline" color="gray" />
     </g>
 
     <div class="icon">

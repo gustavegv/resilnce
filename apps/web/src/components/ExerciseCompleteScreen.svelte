@@ -32,8 +32,7 @@
   function checkPR(repsPerSet: number[], index: number): boolean {
     const repThreshold = exercises[index].rep_threshold ?? 12;
 
-    return CheckRepThresholdMet(repsPerSet, repThreshold)
-
+    return CheckRepThresholdMet(repsPerSet, repThreshold);
   }
 
   function toTwoDigit(num: number): string {

@@ -13,10 +13,10 @@
   import { greet } from './greeting';
   import { CheckActiveSession } from './tracker/dbFetches';
   import { getMe } from './me';
-    import {isHelpOpen, setHelpOpen, toggleHelpOpen } from './webapp.svelte';
+  import { isHelpOpen, setHelpOpen, toggleHelpOpen } from './webapp.svelte';
 
-  let isHelpOpened = $derived(isHelpOpen())
-  let introHelpOpening = $state(false)
+  let isHelpOpened = $derived(isHelpOpen());
+  let introHelpOpening = $state(false);
 
   const linkBase = import.meta.env.BASE_URL;
 
@@ -50,7 +50,6 @@
   let existingName = $state('');
   let greetMessage = $state('');
   let loading = $state(true);
-   
 
   onMount(async () => {
     const value = get(user);
@@ -58,19 +57,17 @@
     if (value?.name || (await getMe())) {
       loadUserHomepage(value);
 
-      setHelpOpen(false)
-      introHelpOpening = true
-
+      setHelpOpen(false);
+      introHelpOpening = true;
     } else {
       greetMessage = 'resilnce.';
 
       setTimeout(() => {
-        introHelpOpening = true
+        introHelpOpening = true;
       }, 2000);
     }
 
     loading = false;
-
   });
 
   async function loadUserHomepage(uData: { name: string; id: string } | null) {
@@ -102,9 +99,6 @@
     }
     greetMessage = greet(name, existingSession);
   }
-
-
-  
 </script>
 
 {#if loading}
@@ -179,59 +173,51 @@
     </cont>
   </div>
 
-
   {#if isHelpOpened && introHelpOpening}
-  <div class="tip-box" out:slide={{duration:300}} in:slide={{delay:100,duration:500}}>
-    <div class="usage-panel-heading">
-              <p class="usage-panel-title">Open resilnce as a webapp</p>
-              <button onclick={()=>toggleHelpOpen()} class="usage-panel-icon">
-                <Icon icon="material-symbols:close-small-rounded" />
-              </button>
-            </div>
+    <div class="tip-box" out:slide={{ duration: 300 }} in:slide={{ delay: 100, duration: 500 }}>
+      <div class="usage-panel-heading">
+        <p class="usage-panel-title">Open resilnce as a webapp</p>
+        <button onclick={() => toggleHelpOpen()} class="usage-panel-icon">
+          <Icon icon="material-symbols:close-small-rounded" />
+        </button>
+      </div>
 
-    <div class="usage-steps">
+      <div class="usage-steps">
+        <div class="usage-step">
+          <div class="usage-step-icon-box">
+            <Icon icon="material-symbols:explore-outline-rounded" />
+          </div>
+          <p class="usage-step-title">1. Visit the site on Safari</p>
+        </div>
 
-    <div class="usage-step">
-                <div class="usage-step-icon-box">
-                  <Icon icon="material-symbols:explore-outline-rounded"/>
-                </div>
-                  <p class="usage-step-title">1. Visit the site on Safari</p>
-
-              </div>
-
-              <div class="usage-step">
-                <div class="usage-step-icon-box">
-                  <Icon icon="material-symbols:ios-share-rounded"/>
-
-                </div>
-                <div>
-                  <p class="usage-step-title">2. Click the Share button</p>
-
-                </div>
-              </div>
-
-              <div class="usage-step">
-                <div class="usage-step-icon-box">
-                  <Icon icon="material-symbols:add-box-outline-rounded"/>
-
-                </div>
-                <div>
-                  <p class="usage-step-title">3. Select "Add to Home Screen"</p>
-
-                </div>
-              </div>
-
-              <div class="usage-step is-complete">
-                <div class="usage-step-icon-box">
-                  <Icon icon="material-symbols:check-circle-outline-rounded"/>
-
-                </div>
-                <div>
-                  <p class="usage-step-title">4. Added to your homescreen!</p>
-                </div>
-              </div>
+        <div class="usage-step">
+          <div class="usage-step-icon-box">
+            <Icon icon="material-symbols:ios-share-rounded" />
+          </div>
+          <div>
+            <p class="usage-step-title">2. Click the Share button</p>
           </div>
         </div>
+
+        <div class="usage-step">
+          <div class="usage-step-icon-box">
+            <Icon icon="material-symbols:add-box-outline-rounded" />
+          </div>
+          <div>
+            <p class="usage-step-title">3. Select "Add to Home Screen"</p>
+          </div>
+        </div>
+
+        <div class="usage-step is-complete">
+          <div class="usage-step-icon-box">
+            <Icon icon="material-symbols:check-circle-outline-rounded" />
+          </div>
+          <div>
+            <p class="usage-step-title">4. Added to your homescreen!</p>
+          </div>
+        </div>
+      </div>
+    </div>
   {/if}
 
   <img
@@ -467,7 +453,7 @@
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.03);
   }
 
-  .tip-box{
+  .tip-box {
     position: absolute;
     padding: 1rem;
     margin: 1.5rem;
@@ -479,9 +465,7 @@
     background-color: rgba(62, 62, 62, 0.253);
   }
 
-
-
-  .tip-box.hidden{
+  .tip-box.hidden {
     display: none;
   }
 
@@ -505,7 +489,6 @@
   .usage-panel-icon {
     font-size: 24px;
     color: gray;
-
   }
 
   .usage-panel-title {
@@ -559,18 +542,14 @@
     font-size: 12px;
     line-height: 1.55;
     color: var(--text-muted);
-
-
   }
 
   .usage-step.is-complete .usage-step-icon-box {
     background: var(--color-secondary);
     color: var(--landing-brand-color);
-
   }
 
   .usage-step.is-complete .usage-step-title {
     color: var(--landing-brand-color);
   }
-
 </style>
