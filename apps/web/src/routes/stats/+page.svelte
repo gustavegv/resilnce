@@ -14,8 +14,8 @@
   import type { SessionMetaData } from '../tracker/dbFetches';
   import { GetSessionExercises, GetSessions } from '../tracker/dbFetches';
   import { fetchHistoricData, hasDataOlderThan } from './statistics';
-    import Skeleton from '$lib/components/ui/skeleton/skeleton.svelte';
-    import { fade } from 'svelte/transition';
+  import Skeleton from '$lib/components/ui/skeleton/skeleton.svelte';
+  import { fade } from 'svelte/transition';
 
   type SessionExerciseChart = {
     id: number;
@@ -34,7 +34,7 @@
   let selectedTVL = $state(false);
   let montComp = $state(false);
 
-  let sessionsLoading = $state(true)
+  let sessionsLoading = $state(true);
 
   onMount(async () => {
     const value = get(user);
@@ -43,7 +43,7 @@
       isAuth = true;
       exDa = await GetSessions();
       selectedSessionID = exDa[0] ? String(exDa[0].id) : '';
-      sessionsLoading = false
+      sessionsLoading = false;
     } else {
       goto(resolve('/account'));
     }
@@ -133,11 +133,11 @@
     return charts.some((exercise) => hasDataOlderThan(exercise.data, 2, 'm'));
   }
 
-  function formatRange(range:string):string{
-    if (range == "all") return "(all time)"
-    if (range == "6m") return "(6 months)"
-    if (range == "1m") return "(1 month)"
-    return ""
+  function formatRange(range: string): string {
+    if (range == 'all') return '(all time)';
+    if (range == '6m') return '(6 months)';
+    if (range == '1m') return '(1 month)';
+    return '';
   }
 </script>
 
@@ -149,8 +149,7 @@
     Start by selecting a session below to inspect.
   </subtitle>
 
-{#if isAuth}
-
+  {#if isAuth}
     <Tabs.Root bind:value={selectedSessionID} class="mt-4 w-full max-w-[900px]">
       <div class="category-carousel">
         {#if sessionsLoading}
@@ -159,8 +158,6 @@
           <Skeleton class="h-4 w-[70px]" />
           <Skeleton class="h-4 w-[70px]" />
           <Skeleton class="h-4 w-[70px]" />
-
-
         {:else}
           {#each exDa as ex}
             <Tabs.Trigger class="bg-card" value={String(ex.id)}>{ex.name}</Tabs.Trigger>
@@ -170,80 +167,80 @@
 
       {#each exDa as ex}
         <Tabs.Content value={String(ex.id)}>
-        <div class="flex flex-col justify-center border border-border p-4 mb-4 mt-2 rounded-lg bg-card">
-          <p class="text-neutral-400 text-sm">Choose a time horizon</p>
-          <div class="flex w-full justify-baseline gap-2 mt-2">
-            <button
-              class:selected={selectedRange === 'all'}
-              class="selector-button"
-              onclick={() => adjustRange('all')}
-            >
-              All time
-            </button>
-
-            <button
-              class:selected={selectedRange === '6m'}
-              class="selector-button"
-              onclick={() => adjustRange('6m')}
-            >
-              6 months
-            </button>
-
-            <button
-              class:selected={selectedRange === '1m'}
-              class="selector-button"
-              onclick={() => adjustRange('1m')}
-            >
-              1 month
-            </button>
-          </div>
-
-          <p class="text-neutral-400 text-sm mt-4">Select graph overlays</p>
-
-          <div class="category-carousel mt-2">
-            <button
-              class:active={selectedWPS}
-              class="selector-button metric"
-              onclick={() => toggleMetric('wps')}
-            >
-              Weight per set
-            </button>
-
-            <button
-              class:active={selected1RM}
-              class="selector-button metric"
-              onclick={() => toggleMetric('1rm')}
-            >
-              1RM
-            </button>
-
-            <button
-              class:active={selectedTVL}
-              class="selector-button metric"
-              onclick={() => toggleMetric('tvl')}
-            >
-              Total volume lifted
-            </button>
-
-            {#if selectedRange == '1m' && tabHasMonthComparison(ex.id)}
+          <div
+            class="border-border bg-card mt-2 mb-4 flex flex-col justify-center rounded-lg border p-4"
+          >
+            <p class="text-sm text-neutral-400">Choose a time horizon</p>
+            <div class="mt-2 flex w-full justify-baseline gap-2">
               <button
-                class:active={montComp}
-                class="selector-button metric"
-                onclick={() => toggleMetric('monthComp')}
+                class:selected={selectedRange === 'all'}
+                class="selector-button"
+                onclick={() => adjustRange('all')}
               >
-                This month vs Last
+                All time
               </button>
-            {/if}
-          </div>
-        </div>
 
+              <button
+                class:selected={selectedRange === '6m'}
+                class="selector-button"
+                onclick={() => adjustRange('6m')}
+              >
+                6 months
+              </button>
+
+              <button
+                class:selected={selectedRange === '1m'}
+                class="selector-button"
+                onclick={() => adjustRange('1m')}
+              >
+                1 month
+              </button>
+            </div>
+
+            <p class="mt-4 text-sm text-neutral-400">Select graph overlays</p>
+
+            <div class="category-carousel mt-2">
+              <button
+                class:active={selectedWPS}
+                class="selector-button metric"
+                onclick={() => toggleMetric('wps')}
+              >
+                Weight per set
+              </button>
+
+              <button
+                class:active={selected1RM}
+                class="selector-button metric"
+                onclick={() => toggleMetric('1rm')}
+              >
+                1RM
+              </button>
+
+              <button
+                class:active={selectedTVL}
+                class="selector-button metric"
+                onclick={() => toggleMetric('tvl')}
+              >
+                Total volume lifted
+              </button>
+
+              {#if selectedRange == '1m' && tabHasMonthComparison(ex.id)}
+                <button
+                  class:active={montComp}
+                  class="selector-button metric"
+                  onclick={() => toggleMetric('monthComp')}
+                >
+                  This month vs Last
+                </button>
+              {/if}
+            </div>
+          </div>
 
           {#if loadingSessions[ex.id]}
             <Card.Root class="border-border w-full gap-4">
-                <Skeleton class="h-6 w-[100px] mx-4 bg-neutral-700"/>
-                <Skeleton class="h-4 w-[170px] mx-4 mt-0 bg-neutral-700"/>
-                <Skeleton class="h-50 w-[40] mx-4 bg-neutral-700"/>
-
+              <Skeleton class="mx-4 h-6 w-[100px] bg-neutral-700" />
+              <Skeleton class="mx-4 mt-0 h-4 w-[170px] bg-neutral-700" />
+              <Skeleton class="mx-4 h-50 w-[40] bg-neutral-700" />
             </Card.Root>
           {:else if (sessionExercises[ex.id]?.length ?? 0) === 0}
             <Card.Root class="border-border w-full">
@@ -254,27 +251,27 @@
           {:else}
             <div class="stats-grid">
               {#each sessionExercises[ex.id] ?? [] as exercise, index (exercise.id)}
-              <div in:fade={{delay:index*150}}>
-                <Card.Root class="border-border w-full">
-                  <ChartLineDefault
-                    title={exercise.name + ' statistics ' + formatRange(selectedRange)}
-                    desc="Toggle between weight per set, 1RM, total volume, and monthly comparison layers."
-                    data={exercise.data}
-                    range={selectedRange}
-                    {selectedWPS}
-                    {selected1RM}
-                    {selectedTVL}
-                    {montComp}
-                  />
-                </Card.Root>
-              </div>
+                <div in:fade={{ delay: index * 150 }}>
+                  <Card.Root class="border-border w-full">
+                    <ChartLineDefault
+                      title={exercise.name + ' statistics ' + formatRange(selectedRange)}
+                      desc="Toggle between weight per set, 1RM, total volume, and monthly comparison layers."
+                      data={exercise.data}
+                      range={selectedRange}
+                      {selectedWPS}
+                      {selected1RM}
+                      {selectedTVL}
+                      {montComp}
+                    />
+                  </Card.Root>
+                </div>
               {/each}
             </div>
           {/if}
         </Tabs.Content>
       {/each}
     </Tabs.Root>
-    {/if}
+  {/if}
 </main>
 
 <style>

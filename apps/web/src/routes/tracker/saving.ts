@@ -30,13 +30,12 @@ export function buildProgressUpdate(
   const threshold = currentExercise.rep_threshold ?? DEFAULT_REP_THRESHOLD;
   let nextWeight: number = currentExercise.currentProgress.weightPerSet[0] ?? 0;
 
-
   if (CheckRepThresholdMet(reps, threshold)) {
     const resetRepTarget = Math.round(threshold / REP_RESET_DIVISOR);
     reps.fill(resetRepTarget);
     let autoIncreaseWeight: number = Number(currentExercise.auto_increase) ?? DEFAULT_AUTO_INCREASE;
 
-    nextWeight = nextWeight + autoIncreaseWeight
+    nextWeight = nextWeight + autoIncreaseWeight;
   }
 
   return {

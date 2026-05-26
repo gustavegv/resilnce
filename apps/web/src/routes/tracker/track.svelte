@@ -15,11 +15,9 @@
   import { cubicOut } from 'svelte/easing';
   import { toast } from 'svelte-sonner';
 
-  import { Button, buttonVariants } from "$lib/components/ui/button/index.js";
-  import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-
- 
+  import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
+  import * as Dialog from '$lib/components/ui/dialog/index.js';
+  import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 
   import {
     CompleteSession,
@@ -113,7 +111,7 @@
   }
 
   function loadNextExercise() {
-    editMode = false
+    editMode = false;
     goToExercise(currentExerciseIndex + 1);
   }
 
@@ -140,7 +138,7 @@
     error = null;
 
     try {
-      console.log(update)
+      console.log(update);
       const success = await SendUpdate(update, sesID);
       if (!success) {
         throw new Error('Failed to save progress.');
@@ -197,9 +195,6 @@
     };
   }
 
-
-
-
   let alertVisible = $state(false);
 
   async function handleQuitAction() {
@@ -212,7 +207,6 @@
   }
 
   async function finishSessionNow() {
-
     if (confirm('Finish the session now?\nYou will go to the session summary.')) {
     }
   }
@@ -310,8 +304,6 @@
   </Alert.Content>
 </Alert.Root>
 
-
-
 <main class="app-container">
   {#if loading || error}
     {#if error}
@@ -326,7 +318,7 @@
           <div class="mt-1">
             <p class="text-left text-sm font-semibold text-red-50">Something went wrong</p>
             <p class="mt-1 text-left text-sm leading-6 text-red-100/75">
-              {error ? error + "." : ""} Please try again.
+              {error ? error + '.' : ''} Please try again.
             </p>
           </div>
         </div>
@@ -334,10 +326,6 @@
     {/if}
     <LoadingSkeleton />
   {:else}
-    
-
-
-
     <div class="progress">
       <div class="progress-header">
         <span class="label">Session Progress</span>
@@ -358,55 +346,49 @@
         >Return to homepage</button
       >
     {:else}
-        
- 
+      <div class="session-menu-anchor z-1">
+        <DropdownMenu.Root bind:open={showActionMenu}>
+          <DropdownMenu.Trigger class="p-4 text-xl">...</DropdownMenu.Trigger>
+          <DropdownMenu.Content class="w-40" align="end">
+            <DropdownMenu.Label>Session Actions</DropdownMenu.Label>
+            <DropdownMenu.Group>
+              <DropdownMenu.Item onSelect={handleEditAction}>
+                Edit Exercise
+                <DropdownMenu.Shortcut
+                  ><Icon icon="material-symbols:edit-outline-rounded" /></DropdownMenu.Shortcut
+                >
+              </DropdownMenu.Item>
+            </DropdownMenu.Group>
+            <DropdownMenu.Separator />
+            <DropdownMenu.Group>
+              <DropdownMenu.Item onSelect={handleQuitAction}>
+                Quit Session
+                <DropdownMenu.Shortcut
+                  ><Icon icon="material-symbols:logout-rounded" /></DropdownMenu.Shortcut
+                >
+              </DropdownMenu.Item>
 
-
-
-<div class="session-menu-anchor z-1">
-<DropdownMenu.Root bind:open={showActionMenu}>
-      <DropdownMenu.Trigger style="font-size: 20px;"
-      > ...
-        
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content class="w-40" align="end">
-        <DropdownMenu.Label>Session Actions</DropdownMenu.Label>
-        <DropdownMenu.Group>
-          <DropdownMenu.Item onSelect={handleEditAction}>
-            Edit Exercise
-            <DropdownMenu.Shortcut><Icon icon="material-symbols:edit-outline-rounded"/></DropdownMenu.Shortcut>
-          </DropdownMenu.Item>
-
-        </DropdownMenu.Group>
-        <DropdownMenu.Separator />
-        <DropdownMenu.Group>
-          <DropdownMenu.Item onSelect={handleQuitAction}>
-            Quit Session
-            <DropdownMenu.Shortcut><Icon icon="material-symbols:logout-rounded"/></DropdownMenu.Shortcut>
-          </DropdownMenu.Item>
-
-          <DropdownMenu.Item disabled>
-            Force-finish session
-            <DropdownMenu.Shortcut><Icon icon="material-symbols:check-circle-outline-rounded" /></DropdownMenu.Shortcut>
-          </DropdownMenu.Item>
-
-        </DropdownMenu.Group>
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
- </div>
+              <DropdownMenu.Item disabled>
+                Force-finish session
+                <DropdownMenu.Shortcut
+                  ><Icon
+                    icon="material-symbols:check-circle-outline-rounded"
+                  /></DropdownMenu.Shortcut
+                >
+              </DropdownMenu.Item>
+            </DropdownMenu.Group>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      </div>
 
       {#if editMode && currentExercise}
         <section class="edit-card">
           <div class="edit-copy">
-            <p class="edit-label">
-              Editing exercise
-            </p>
+            <p class="edit-label">Editing exercise</p>
             <p class="edit-help">Update any field and save to apply only the changed values.</p>
           </div>
 
-          <div class="edit-current-values">
-
-          </div>
+          <div class="edit-current-values"></div>
 
           <div class="edit-fields">
             <InputField label={'Exercise name'} bind:value={editFields.name} type={'text'} />
@@ -738,22 +720,14 @@
 
   .session-menu-anchor {
     position: absolute;
-    right: 2rem;
-    top: 0.8rem;
+    right: 1rem;
+    top: 0rem;
     color: grey;
     transform: translate(1rem, -1.3rem);
     display: flex;
     flex-direction: column;
     align-items: center;
     z-index: 20;
-  }
-
-  space{
-    width: 100%;
-    display: inline-flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
   }
 
   .action-trigger {

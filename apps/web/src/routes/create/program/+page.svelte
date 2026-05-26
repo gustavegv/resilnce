@@ -2,45 +2,101 @@
   import { base } from '$app/paths';
   import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 
-
   import Icon from '@iconify/svelte';
-    import { advancedPrograms, hypertrophyPrograms } from './programs';
-    import { Button } from '$lib/components/ui/button';
+  import { advancedPrograms, hypertrophyPrograms } from './programs';
+  import { Button } from '$lib/components/ui/button';
 
- import { LineChart } from "layerchart";
-  import { curveLinearClosed } from "d3-shape";
-  import { scaleBand } from "d3-scale";
-  import * as Chart from "$lib/components/ui/chart/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
+  import { LineChart } from 'layerchart';
+  import { curveLinearClosed } from 'd3-shape';
+  import { scaleBand } from 'd3-scale';
+  import * as Chart from '$lib/components/ui/chart/index.js';
+  import * as Card from '$lib/components/ui/card/index.js';
+  import { WorkoutPrograms } from './program-data';
+  import { toast } from 'svelte-sonner';
 
+  import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
 
   const chartConfig = {
     volume: {
-      label: "Training Volume",
-      color: "var(--color-secondary)",
+      label: 'Training Volume (%): ',
+      color: 'var(--color-secondary)',
     },
   } satisfies Chart.ChartConfig;
 
-  let hypActv = $state(true)
+  let hypActv = $state(true);
 
-  function getSessions(){
-    return hypActv ? hypertrophyPrograms : advancedPrograms
+  function getSessions() {
+    return hypActv ? hypertrophyPrograms : advancedPrograms;
   }
 
-  let programs = $derived(getSessions())
+  let programs = $derived(getSessions());
 
-let openOverrides = $state<Record<string, boolean>>({});
+  let openOverrides = $state<Record<string, boolean>>({});
 
-let openPrograms = $derived.by(() =>
-  Object.fromEntries(
-    programs.map((p) => [p.id, openOverrides[p.id] ?? false])
-  )
-);
+  let openPrograms = $derived.by(() =>
+    Object.fromEntries(programs.map((p) => [p.id, openOverrides[p.id] ?? false]))
+  );
 
   function setProgramOpen(id: string, open: boolean) {
     openOverrides[id] = open;
+
+    if (openPrograms[id]) {
+      chartReady[id] = false;
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          chartReady[id] = true;
+        });
+      });
+    }
   }
 
+  let chartReady = $state<Record<string, boolean>>({});
+
+  function existsData(id: string) {
+    if (id in WorkoutPrograms) {
+      return true;
+    }
+    return false;
+  }
+
+  type ProgramId = keyof typeof WorkoutPrograms;
+
+  function isProgramId(programId: string): programId is ProgramId {
+    return programId in WorkoutPrograms;
+  }
+
+  function editAndAdd(sessionIndex: number, programId: string) {
+    let program: any = null;
+    if (isProgramId(programId)) {
+      program = WorkoutPrograms[programId];
+    }
+    if (program == null) {
+      toast.error('Session not found in data');
+    }
+
+    const sessionData = program[sessionIndex];
+    const exercisesJson: string = JSON.stringify(sessionData.exercises);
+    sendToAddScreen(exercisesJson);
+  }
+
+  async function sendToAddScreen(jsonData: string) {
+    if (jsonData == null) {
+      toast.error('Data creation error. Try again');
+      console.error('JSON Data not loaded properly.');
+      return;
+    }
+    const STORAGE_KEY = 'workoutPayload';
+    sessionStorage.setItem(STORAGE_KEY, jsonData);
+    console.log('Storing...');
+
+    goto(`${resolve('/create/manual')}?quickload=1`);
+  }
+
+  function hasChart() {
+    return false;
+  }
 </script>
 
 <section class="program-page">
@@ -64,18 +120,32 @@ let openPrograms = $derived.by(() =>
   </header>
 
   <div class="program-type-selector">
-    <button class="program-type" class:selected={hypActv} onclick={() => {hypActv = true}}>
+    <button
+      class="program-type"
+      class:selected={hypActv}
+      onclick={() => {
+        hypActv = true;
+      }}
+    >
       Hyperthrophy programs
     </button>
-    <button class="program-type" class:selected={!hypActv} onclick={() => {hypActv = false}}>
+    <button
+      class="program-type"
+      class:selected={!hypActv}
+      onclick={() => {
+        hypActv = false;
+      }}
+    >
       Powerlifting programs
     </button>
   </div>
-  
+
   {#if !hypActv}
-  <div class="bg-yellow-500/10 border border-yellow-500/15 rounded-lg py-4 px-2 w-full">
-    <p class="w-full text-yellow-100 text-sm text-center"> Powerlifting programs are not availible yet...</p>
-  </div>
+    <div class="w-full rounded-lg border border-yellow-500/15 bg-yellow-500/10 px-2 py-4">
+      <p class="w-full text-center text-sm text-yellow-100">
+        Powerlifting programs are not availible yet...
+      </p>
+    </div>
   {/if}
 
   <div class="program-list" role="list" class:inactive={!hypActv}>
@@ -85,10 +155,10 @@ let openPrograms = $derived.by(() =>
         class:program-card--expanded={openPrograms[program.id]}
         role="listitem"
       >
-        <Collapsible.Root 
-          open={openPrograms[program.id]} 
-          onOpenChange={(open) => setProgramOpen(program.id, open)}>
-          
+        <Collapsible.Root
+          open={openPrograms[program.id]}
+          onOpenChange={(open) => setProgramOpen(program.id, open)}
+        >
           <Collapsible.Trigger class="program-card__trigger w-[100%]">
             <div class="program-card__main">
               <div class="program-card__row program-card__row--top">
@@ -123,156 +193,159 @@ let openPrograms = $derived.by(() =>
             </div>
           </Collapsible.Trigger>
 
-
-        <Collapsible.Content>
-          <div class="program-card__panel pt-3">
-            <div class="program-card__panel-grid grid gap-3.5">
-              <!-- Overview -->
+          <Collapsible.Content>
+            <div class="program-card__panel pt-3">
+              <div class="program-card__panel-grid grid gap-3.5">
+                <!-- Overview -->
                 <p class="p-card__section">
                   {program.overview}
                 </p>
 
-              <!-- Sessions -->
-              <section class="grid gap-2.5">
-                <div class="flex items-end justify-between gap-3 px-0.5">
-                  <div>
-                    <h3 class="text-[0.95rem] font-[650] tracking-[-0.01em]">
-                      Sessions
-                    </h3>
+                <!-- Sessions -->
+                <section class="grid gap-2.5">
+                  <div class="flex items-end justify-between gap-3 px-0.5">
+                    <div>
+                      <h3 class="text-[0.95rem] font-[650] tracking-[-0.01em]">Sessions</h3>
 
-                    <p class="text-[var(--text-muted)] text-[0.8rem]">
-                      This program consists of {program.sessions?.length} sessions.
-                    </p>
+                      <p class="text-[0.8rem] text-[var(--text-muted)]">
+                        This program consists of {program.sessions?.length} sessions.
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                <div class="grid gap-2 bg-[hsl(var(--muted)/0.2)] rounded-2xl">
-                  {#each program.sessions as item, index}
-                    <Card.Root class="border border-border py-4">
-                      <Card.Content class="grid gap-3 p-3">
-                        <div class="flex items-start justify-between gap-3">
-                          <div class="flex min-w-0 gap-2.5">
-                            <span class="grid place-items-center w-8 h-8 min-w-8 rounded-full bg-[hsl(var(--background))] text-[hsl(var(--foreground))] p-0 text-[0.8rem] font-semibold leading-none whitespace-nowrap">
-                              {index + 1}
-                            </span>
+                  <div class="grid gap-2 rounded-2xl bg-[hsl(var(--muted)/0.2)]">
+                    {#each program.sessions as item, index}
+                      <Card.Root class="border-border border py-4">
+                        <Card.Content class="grid gap-3 p-3">
+                          <div class="flex items-start justify-between gap-3">
+                            <div class="flex min-w-0 gap-2.5">
+                              <span
+                                class="grid h-8 w-8 min-w-8 place-items-center rounded-full bg-[hsl(var(--background))] p-0 text-[0.8rem] leading-none font-semibold whitespace-nowrap text-[hsl(var(--foreground))]"
+                              >
+                                {index + 1}
+                              </span>
 
-                            <div class="min-w-0">
-                              <Card.Title class="text-[0.925rem] leading-[1.25] tracking-[-0.01em]">
-                                {item}
-                              </Card.Title>
+                              <div class="min-w-0">
+                                <Card.Title
+                                  class="text-[0.925rem] leading-[1.25] tracking-[-0.01em]"
+                                >
+                                  {item}
+                                </Card.Title>
 
-                              <Card.Description class="mt-1 text-[0.775rem] leading-[1.35]">
-                                Session {index + 1}
-                              </Card.Description>
+                                <Card.Description class="mt-1 text-[0.775rem] leading-[1.35]">
+                                  Session {index + 1}
+                                </Card.Description>
+                              </div>
                             </div>
+
+                            <Button
+                              variant="outline"
+                              disabled
+                              size="sm"
+                              type="button"
+                              class="h-8 rounded-full px-2.5 text-[0.8rem]"
+                            >
+                              <Icon icon="mdi:eye" fill="white" />
+                            </Button>
                           </div>
 
-                          <Button
-                            variant="outline"
-                            disabled
-                            size="sm"
-                            type="button"
-                            class="h-8 px-2.5 rounded-full text-[0.8rem]"
-                          >
-                            <Icon icon="mdi:eye" fill="white"/>
-                          </Button>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2">
-                          <Button
-                            disabled
-
-                            variant="outline"
-                            size="sm"
-                            class="text-[0.825rem] font-semibold"
-                          >
-                            <a href={`${base}/create/program/${program.slug}`}>
+                          <div class="grid grid-cols-2 gap-2">
+                            <Button
+                              disabled={!existsData(program.id)}
+                              onclick={() => editAndAdd(index, program.id)}
+                              variant="outline"
+                              size="sm"
+                              class="text-[0.825rem] font-semibold"
+                            >
                               Edit and add
-                            </a>
-                          </Button>
+                            </Button>
 
-                          <Button
-                          disabled
-                            size="sm"
-                            class="text-[0.825rem] font-semibold"
-                          >
-                            <a href={`${base}/create/program/${program.slug}`}>
-                              Quick add
-                            </a>
-                          </Button>
-                        </div>
-                      </Card.Content>
-                    </Card.Root>
-                  {/each}
-                </div>
-              </section>
+                            <Button disabled size="sm" class="text-[0.825rem] font-semibold">
+                              <a href={`${base}/create/program/${program.slug}`}> Quick add </a>
+                            </Button>
+                          </div>
+                        </Card.Content>
+                      </Card.Root>
+                    {/each}
+                  </div>
+                </section>
+              </div>
             </div>
-          </div>
 
-<Card.Root class="border-border mt-4">
-  <Card.Header class="items-center">
-    <Card.Title>Radar Chart - Muscle Groups</Card.Title>
-    <Card.Description>
-      Showing relative training volume across major muscle groups
-    </Card.Description>
-  </Card.Header>
+            {#if openPrograms[program.id]}
+              <Card.Root class="border-border mt-4 pb-0">
+                <Card.Header class="items-center">
+                  <Card.Title>Radar Chart - Muscle Groups</Card.Title>
+                  <Card.Description>
+                    Showing training volume coverage relative to ideal weekly targets.
+                  </Card.Description>
+                </Card.Header>
 
-  <Card.Content class="flex-1 ">
-    <Chart.Container config={chartConfig} class="mx-auto aspect-square max-h-[320px] w-[70%]">
-      <LineChart
-        data={program.chartData}
-        series={[
-          {
-            key: "volume",
-            label: "Training Volume",
-            color: chartConfig.volume.color,
-          },
-        ]}
-        radial
-        x="muscleGroup"
-        xScale={scaleBand()}
-        points={{ r: 4 }}
-        padding={12}
-        props={{
-          spline: {
-            curve: curveLinearClosed,
-            fill: "var(--color-volume)",
-            fillOpacity: 0.6,
-            stroke: "0",
-            motion: "tween",
-          },
-          xAxis: {
-            tickLength: 0,
-          },
-          yAxis: {
-            format: () => "",
-          },
-          grid: {
-            radialY: "linear",
-          },
-          tooltip: {
-            context: {
-              mode: "voronoi",
-            },
-          },
-          highlight: {
-            lines: false,
-            points: false,
-          },
-        }}
-      >
-        {#snippet tooltip()}
-          <Chart.Tooltip />
-        {/snippet}
-      </LineChart>
-    </Chart.Container>
-  </Card.Content>
-</Card.Root>
-
-
-
-        </Collapsible.Content>
-      </Collapsible.Root>
+                <Card.Content class="min-h-[320px] flex-1">
+                  {#if chartReady[program.id]}
+                    <div class="animate-in fade-in zoom-in-95 duration-300">
+                      <Chart.Container
+                        config={chartConfig}
+                        class="mx-auto aspect-square max-h-[300px] w-[70%]"
+                      >
+                        <LineChart
+                          data={program.chartData}
+                          series={[
+                            {
+                              key: 'volume',
+                              label: 'Training Volume (%): ',
+                              color: chartConfig.volume.color,
+                            },
+                          ]}
+                          radial
+                          x="muscleGroup"
+                          xScale={scaleBand()}
+                          points={{ r: 4 }}
+                          padding={12}
+                          props={{
+                            spline: {
+                              curve: curveLinearClosed,
+                              fill: 'var(--color-volume)',
+                              fillOpacity: 0.6,
+                              stroke: '0',
+                              motion: 'tween',
+                            },
+                            xAxis: {
+                              tickLength: 0,
+                            },
+                            yAxis: {
+                              format: () => '',
+                            },
+                            grid: {
+                              radialY: 'linear',
+                            },
+                            tooltip: {
+                              context: {
+                                mode: 'voronoi',
+                              },
+                            },
+                            highlight: {
+                              lines: false,
+                              points: false,
+                            },
+                          }}
+                        >
+                          {#snippet tooltip()}
+                            <Chart.Tooltip />
+                          {/snippet}
+                        </LineChart>
+                      </Chart.Container>
+                    </div>
+                  {:else}
+                    <div class="text-muted-foreground flex items-center justify-center text-sm">
+                      Loading chart...
+                    </div>
+                  {/if}
+                </Card.Content>
+              </Card.Root>
+            {/if}
+          </Collapsible.Content>
+        </Collapsible.Root>
       </article>
     {/each}
   </div>
@@ -317,7 +390,7 @@ let openPrograms = $derived.by(() =>
 
   .program-type-selector {
     display: flex;
-    width: 100%; 
+    width: 100%;
     gap: 1rem;
   }
 
@@ -592,7 +665,6 @@ let openPrograms = $derived.by(() =>
     text-transform: uppercase;
     color: var(--program-text-muted);
   }
-
 
   .program-card__section p,
   .program-card__section li,
