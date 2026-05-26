@@ -14,6 +14,7 @@
   import { CheckActiveSession } from './tracker/dbFetches';
   import { getMe } from './me';
   import { isHelpOpen, setHelpOpen, toggleHelpOpen } from './webapp.svelte';
+  import Switch from '$lib/components/ui/switch/switch.svelte';
 
   let isHelpOpened = $derived(isHelpOpen());
   let introHelpOpening = $state(false);

@@ -4,6 +4,8 @@
   import Icon from '@iconify/svelte';
   import type { ExerciseInfo } from './dbFetches';
   import { fade } from 'svelte/transition';
+  import RIRSlider from '../../components/RPESlider.svelte';
+  import { onMount } from 'svelte';
 
   let {
     finished,
@@ -20,6 +22,19 @@
   } = $props();
 
   let infoShown = $state(false);
+  let RIRValue = $state(5);
+
+  let rpeMode = $state(false);
+
+  onMount(() => {
+    const value = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith('rpe-mode='))
+      ?.split('=')[1];
+
+    rpeMode = value === 'true';
+  });
+
   const errEx: ExerciseInfo = {
     name: 'err',
     currentProgress: {
@@ -76,6 +91,9 @@
     </div>
   {/each}
 
+  {#if rpeMode}
+    <RIRSlider value={RIRValue} />
+  {/if}
   <ConfirmSelection {finished} onConfirm={onSubmit} />
 </cont>
 

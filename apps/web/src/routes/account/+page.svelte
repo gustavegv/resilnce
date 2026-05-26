@@ -16,6 +16,10 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
+  import { Label } from '$lib/components/ui/label/index.js';
+  import { Switch } from '$lib/components/ui/switch/index.js';
+
+  import { browser } from '$app/environment';
 
   let username = $state('');
   let cooldown = false;
@@ -115,6 +119,23 @@
 
   let maxes: number[] = $derived.by(() => getMaxes());
   const rmLabels = ['1RM', '2RM', '3RM', '5RM', '8RM', '10RM'];
+
+  const cookieName = 'rpe-mode';
+  let rpeMode = $state(false);
+
+  if (browser) {
+    const saved = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith('rpe-mode='))
+      ?.split('=')[1];
+
+    rpeMode = saved === 'true';
+  }
+
+  function updateRpeMode(value: boolean) {
+    rpeMode = value;
+    document.cookie = `rpe-mode=${value}; path=/; max-age=31536000; SameSite=Lax`;
+  }
 </script>
 
 <main class="main">
@@ -155,9 +176,10 @@
       </Card.Header>
 
       <Card.Content class="space-y-4">
-        <div class="flex items-center space-x-3">
-          <Checkbox id="cb1" />
-          <label for="cb1" class="text-neutral-300 select-none"> Coming soon </label>
+        <div class="flex items-center space-x-2">
+          <Switch id="rpe-mode" checked={rpeMode} onCheckedChange={updateRpeMode} />
+
+          <Label for="rpe-mode">RPE evaluation bar on exercises</Label>
         </div>
       </Card.Content>
     </Card.Root>
@@ -211,7 +233,7 @@
       </Card.Content>
     </Card.Root>
 
-    <Card.Root class="border-border mt-2 w-[100%] px-2">
+    <Card.Root class="border-border mt-2 mb-8 w-[100%] px-2">
       <Card.Header class="border-neutral-700">
         <div class="flex w-full justify-between">
           <Card.Title>Statistics</Card.Title>
@@ -241,7 +263,8 @@
     align-items: center;
     height: 100vh;
     flex-direction: column;
-    overflow-y: auto;
+    overflow-y: scroll;
+    overflow-x: hidden;
   }
 
   :global(.mar) {
