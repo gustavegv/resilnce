@@ -160,7 +160,7 @@ export const WorkoutPrograms = {
   ],
   'upper-lower-booty': [
     {
-      name: 'PDF Lower A',
+      name: 'Booty Builder Lower A',
       description: 'Glutes, hamstrings + quad accessories',
       exercises: [
         {
@@ -208,7 +208,7 @@ export const WorkoutPrograms = {
       ],
     },
     {
-      name: 'PDF Upper A',
+      name: 'Booty Builder Upper A',
       description: 'Push-focused upper with pull support',
       exercises: [
         {
@@ -263,7 +263,7 @@ export const WorkoutPrograms = {
       ],
     },
     {
-      name: 'PDF Lower B',
+      name: 'Booty Builder Lower B',
       description: 'Quads, glutes + hamstring support',
       exercises: [
         {
@@ -311,7 +311,7 @@ export const WorkoutPrograms = {
       ],
     },
     {
-      name: 'PDF Upper B',
+      name: 'Booty Builder Upper B',
       description: 'Pull-focused upper with shoulder and arm work',
       exercises: [
         {

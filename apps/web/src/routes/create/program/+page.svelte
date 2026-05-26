@@ -78,10 +78,10 @@
 
     const sessionData = program[sessionIndex];
     const exercisesJson: string = JSON.stringify(sessionData.exercises);
-    sendToAddScreen(exercisesJson);
+    sendToAddScreen(exercisesJson, sessionData.name);
   }
 
-  async function sendToAddScreen(jsonData: string) {
+  async function sendToAddScreen(jsonData: string, title: string) {
     if (jsonData == null) {
       toast.error('Data creation error. Try again');
       console.error('JSON Data not loaded properly.');
@@ -91,7 +91,10 @@
     sessionStorage.setItem(STORAGE_KEY, jsonData);
     console.log('Storing...');
 
-    goto(`${resolve('/create/manual')}?quickload=1`);
+    const titleParam = new URLSearchParams();
+    titleParam.set('title', title);
+
+    goto(`${resolve('/create/manual')}?quickload=1&${titleParam.toString()}`);
   }
 
   function hasChart() {

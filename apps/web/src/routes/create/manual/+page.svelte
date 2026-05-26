@@ -16,7 +16,9 @@
   import { getMe } from '../../me';
   import Icon from '@iconify/svelte';
 
-  let sessionName = $state('');
+  let titleParam = page.url.searchParams.get('title');
+
+  let sessionName = $state(titleParam ?? '');
   let newExName = $state('');
   let newExSetCount: string = $state('');
   let newExWeight: string = $state('');
@@ -27,6 +29,7 @@
 
   let exercises = $state<ExerciseDataPackaged[]>([]);
   let hasFlag = $derived(page.url.searchParams.get('quickload') === '1');
+
   const QUICKLOAD_STORAGE_KEY = 'workoutPayload';
 
   onMount(async () => {
