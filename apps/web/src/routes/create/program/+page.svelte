@@ -4,7 +4,7 @@
 
   import Icon from '@iconify/svelte';
   import { advancedPrograms, hypertrophyPrograms } from './programs';
-  import { Button } from '$lib/components/ui/button';
+  import { Button, buttonVariants } from '$lib/components/ui/button';
 
   import { LineChart } from 'layerchart';
   import { curveLinearClosed } from 'd3-shape';
@@ -16,6 +16,10 @@
 
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
+
+  import * as Popover from '$lib/components/ui/popover/index.js';
+  import DropdownMenu from '$lib/components/ui/dropdown-menu/dropdown-menu.svelte';
+  import { Separator } from 'bits-ui';
 
   const chartConfig = {
     volume: {
@@ -67,18 +71,50 @@
     return programId in WorkoutPrograms;
   }
 
-  function editAndAdd(sessionIndex: number, programId: string) {
-    let program: any = null;
+  function editAndAdd(sessionIndex: number, programID: string) {
+    const sessionData = getSessionData(sessionIndex, programID);
+    const exercisesJson: string = JSON.stringify(sessionData.exercises);
+    sendToAddScreen(exercisesJson, sessionData.name);
+  }
+
+  type Exercise = {
+    name: string;
+    weight: number;
+    sets: number;
+    repThreshold: number;
+    autoIncrease: number;
+  };
+
+  type SessionData = {
+    name: string;
+    description: string;
+    exercises: Exercise[];
+  };
+
+  let previewData: SessionData | null = $state(null);
+  let previewVisible: boolean = $state(false);
+
+  function getSessionData(sessionIndex: number, programId: string): any {
+    let program = null;
+
     if (isProgramId(programId)) {
       program = WorkoutPrograms[programId];
     }
-    if (program == null) {
+
+    if (!program || !program[sessionIndex]) {
       toast.error('Session not found in data');
+      return null;
     }
 
-    const sessionData = program[sessionIndex];
-    const exercisesJson: string = JSON.stringify(sessionData.exercises);
-    sendToAddScreen(exercisesJson, sessionData.name);
+    return program[sessionIndex];
+  }
+
+  function previewSession(sessionIndex: number, programId: string) {
+    const sessionData = getSessionData(sessionIndex, programId);
+
+    if (!sessionData) return;
+    previewData = sessionData;
+    previewVisible = true;
   }
 
   async function sendToAddScreen(jsonData: string, title: string) {
@@ -240,16 +276,47 @@
                                 </Card.Description>
                               </div>
                             </div>
+                            <Popover.Root>
+                              <Popover.Trigger
+                                class=""
+                                onclick={() => previewSession(index, program.id)}
+                              >
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  type="button"
+                                  class="h-8 rounded-full px-2.5 text-[0.8rem]"
+                                >
+                                  <Icon icon="mdi:eye" fill="white" />
+                                </Button>
+                              </Popover.Trigger>
 
-                            <Button
-                              variant="outline"
-                              disabled
-                              size="sm"
-                              type="button"
-                              class="h-8 rounded-full px-2.5 text-[0.8rem]"
-                            >
-                              <Icon icon="mdi:eye" fill="white" />
-                            </Button>
+                              <Popover.Content class="bg-background w-76">
+                                {#if previewData}
+                                  <div class="grid gap-2">
+                                    <h4 class="font-bold">Session preview</h4>
+                                    <hr class="border-border my-2 border-t" />
+                                    <div class="max-h-80 space-y-2 overflow-y-auto pr-1">
+                                      {#each previewData.exercises as exercise}
+                                        <div
+                                          class="border-border flex items-center justify-between rounded-md px-2 py-1 text-sm"
+                                        >
+                                          <span class="font-normal">
+                                            {exercise.name}
+                                          </span>
+
+                                          <span class="text-muted-foreground text-xs">
+                                            {exercise.sets} sets x {exercise.repThreshold} reps
+                                          </span>
+                                        </div>
+                                      {/each}
+                                    </div>
+                                  </div>
+                                {:else}
+                                  <p class="text-muted-foreground text-sm">No session selected.</p>
+                                {/if}
+                              </Popover.Content>
+                            </Popover.Root>
                           </div>
 
                           <div class="grid grid-cols-2 gap-2">
