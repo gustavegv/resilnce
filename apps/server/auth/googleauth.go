@@ -82,19 +82,23 @@ func (s *Service) CallbackGoogle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var claims struct {
-		Sub   string `json:"sub"`
-		Email string `json:"email"`
-		Name  string `json:"name"`
+		Sub           string `json:"sub"`
+		Email         string `json:"email"`
+		Name          string `json:"name"`
+		EmailVerified bool   `json:"email_verified"`
 	}
-	_ = idTok.Claims(&claims)
+	if err := idTok.Claims(&claims); err != nil {
+		http.Error(w, "invalid identity claims", http.StatusUnauthorized)
+		return
+	}
 
-	if claims.Sub == "" {
+	if claims.Sub == "" || claims.Email == "" {
 		http.Error(w, "missing sub", http.StatusUnauthorized)
 		return
 	}
 
 	// save / update session in db
-	email, err := s.UpsertUser(ctx, "google", claims.Sub, claims.Email, claims.Name)
+	email, err := s.UpsertUser(ctx, "google", claims.Sub, claims.Email, claims.Name, claims.EmailVerified)
 	if err != nil {
 		println("Error (UpsertUser - 1): User upsert failed.", err.Error())
 		http.Error(w, "user upsert failed", http.StatusInternalServerError)

@@ -3,14 +3,16 @@ package sessions
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 )
 
 type SessionData struct {
-	Email string
-	Name  string
+	Email         string
+	Name          string
+	EmailVerified bool
 }
 
 func sessKey(sessionID string) string { return "sess:" + sessionID }
@@ -24,8 +26,9 @@ func (s *Store) SaveSession(ctx context.Context, sessionID string, data SessionD
 	println("REDIS KEY SAVED:\n", key)
 
 	if err := s.rdb.HSet(ctx, key, map[string]interface{}{
-		"email": data.Email,
-		"name":  data.Name,
+		"email":          data.Email,
+		"name":           data.Name,
+		"email_verified": strconv.FormatBool(data.EmailVerified),
 	}).Err(); err != nil {
 		return err
 	}
@@ -45,7 +48,7 @@ func (s *Store) GetSession(ctx context.Context, sessionID string) (*SessionData,
 		println("Redis entry not found / expired (sessionHandler.go)")
 		return nil, redis.Nil // not found / expired
 	}
-	return &SessionData{Email: m["email"], Name: m["name"]}, nil
+	return &SessionData{Email: m["email"], Name: m["name"], EmailVerified: m["email_verified"] == "true"}, nil
 }
 
 // refresh TTL on successful login

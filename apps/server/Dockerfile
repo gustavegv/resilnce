@@ -16,6 +16,8 @@ COPY ${SERVER_DIR}/ ./
 # Build static binary
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build -ldflags="-s -w" -o /bin/server .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -ldflags="-s -w" -o /bin/portdata ./cmd/portdata
 
 # -------- runtime --------
 FROM gcr.io/distroless/static-debian12
@@ -23,4 +25,5 @@ ENV PORT=8080
 EXPOSE 8080
 USER nonroot:nonroot
 COPY --from=build /bin/server /server
+COPY --from=build /bin/portdata /portdata
 ENTRYPOINT ["/server"]

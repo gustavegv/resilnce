@@ -1,0 +1,6 @@
+CREATE TABLE public."User"(mail varchar(255) PRIMARY KEY,signup_date timestamp,name varchar(255),active_session text);
+CREATE TABLE public."Exercise"(ex_id integer PRIMARY KEY,ex_name varchar(255),auto_inc numeric(6,2),mail varchar(255) REFERENCES public."User"(mail) ON DELETE CASCADE);
+CREATE TABLE public."Session"(ses_id integer PRIMARY KEY,ses_name varchar(255),date_last_ran timestamp,mail varchar(255) REFERENCES public."User"(mail) ON DELETE CASCADE);
+CREATE TABLE public."SesExercise"(ses_id integer REFERENCES public."Session"(ses_id) ON DELETE CASCADE,ex_id integer REFERENCES public."Exercise"(ex_id),rep_threshold smallint,set_count smallint,rep_per_set smallint[],weight_per_set real[],rest_seconds smallint,"order" smallint,finished boolean NOT NULL DEFAULT false,PRIMARY KEY(ses_id,ex_id));
+CREATE TABLE public."History"(save_date timestamp NOT NULL,avg_rep integer,avg_weight numeric(6,2),no_of_sets integer,ex_id integer REFERENCES public."Exercise"(ex_id) ON DELETE CASCADE,PRIMARY KEY(ex_id,save_date));
+CREATE TABLE public."Set"(set_count integer,weight numeric(6,2),rep integer,ses_id integer,ex_id integer,PRIMARY KEY(ses_id,ex_id,set_count),FOREIGN KEY(ses_id,ex_id) REFERENCES public."SesExercise"(ses_id,ex_id) ON DELETE CASCADE);

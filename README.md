@@ -26,6 +26,8 @@ PostgreSQL is used as the main database.
 It provides reliable SQL-based data modeling, strong relational integrity, and efficient querying making it ideal for managing structured workout, user, and progress data.
 This structured foundation also opens up future possibilities for advanced statistics, analytics, and performance graphs.
 
+The [database schema](docs/database-schema.md) lists the application tables, columns, and relationships. Run `make db-schema` to refresh it.
+
 
 
 ### How to get the full native experience

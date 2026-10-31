@@ -1,6 +1,7 @@
 APP_NAME ?= resilnce
 WORKDIR  ?= apps/server
 PORT     ?= 8080
+PORTING_ARGS ?=
 
 # ---- Cloud settings ----
 PROJECT_ID ?= resilnce
@@ -16,7 +17,7 @@ CONTAINER ?= $(APP_NAME)-dev
 
 
 .PHONY: help dev server docker-build docker-run stop logs curl tidy clean \
-        docker-tag docker-push gcloud-auth deploy release
+        docker-tag docker-push gcloud-auth deploy release db-schema db-migrate porting-audit porting-worker porting-test
 
 help:
 	@echo "Targets:"
@@ -31,6 +32,11 @@ help:
 	@echo "  make logs             - tail logs from the local container"
 	@echo "  make curl             - quick health check curl"
 	@echo "  make tidy             - go mod tidy in $(WORKDIR)"
+	@echo "  make db-schema        - inspect database metadata and refresh docs/database-schema.md"
+	@echo "  make db-migrate       - apply additive migrations using .env (optional PORTING_DATABASE_URL override)"
+	@echo "  make porting-audit    - read-only legacy audit (optional PORTING_ARGS)"
+	@echo "  make porting-worker   - process durable queued audits/imports"
+	@echo "  make porting-test     - importer tests using PORTING_TEST_DATABASE_URL"
 	@echo "  make clean            - remove local dev image"
 
 dev: tidy
@@ -39,11 +45,26 @@ dev: tidy
 tidy:
 	cd $(WORKDIR) && go mod tidy
 
+db-schema:
+	cd $(WORKDIR) && SCHEMA_OUTPUT=../../../docs/database-schema.md go test -tags=integration ./db -run '^TestDatabaseSchema$$' -count=1 -v
+
+db-migrate:
+	cd $(WORKDIR) && go run ./cmd/portdata migrate
+
+porting-audit:
+	cd $(WORKDIR) && go run ./cmd/portdata audit $(PORTING_ARGS)
+
+porting-worker:
+	cd $(WORKDIR) && go run ./cmd/portdata worker
+
+porting-test:
+	cd $(WORKDIR) && go test -tags=integration ./porting -count=1
+
 server: docker-run
 
-# Build the Docker image from the root, using the Dockerfile in $(WORKDIR)
+# Build with the server directory as the context; cloudbuild uses the root context.
 docker-build:
-	docker build --platform linux/amd64 -t $(IMAGE_LOCAL) $(WORKDIR)
+	docker build --platform linux/amd64 --build-arg SERVER_DIR=. -t $(IMAGE_LOCAL) $(WORKDIR)
 
 docker-run: docker-build
 	docker run --rm \

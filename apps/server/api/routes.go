@@ -3,11 +3,13 @@ package api
 import (
 	"context"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/gustavegv/resilnce/apps/server/ai"
 	"github.com/gustavegv/resilnce/apps/server/auth"
 	"github.com/gustavegv/resilnce/apps/server/db"
+	"github.com/gustavegv/resilnce/apps/server/porting"
 	"github.com/rs/cors"
 )
 
@@ -26,6 +28,12 @@ func RoutingCreation() http.Handler {
 	pool := db.NewPool()
 	supaCFG := &db.SupabaseCFG{DB: pool, RedisStore: service.RedisStore}
 	service.SBDB = *supaCFG
+
+	porting.HTTP{
+		Service:      &porting.Service{Pool: pool, AllowApply: os.Getenv("PORTING_APPLY_ENABLED") == "true"},
+		Authenticate: func(r *http.Request) (string, error) { return auth.VerifiedIdentity(r, service.RedisStore) },
+		Origin:       siteDirectory,
+	}.Register(mux)
 
 	mux.HandleFunc("/api/me", service.GetUserInfo)
 	mux.HandleFunc("/login/google", service.LoginGoogle)

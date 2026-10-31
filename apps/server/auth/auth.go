@@ -40,11 +40,12 @@ type Config struct {
 	PKCETTLSeconds  int // default 600
 }
 
-func (s *Service) UpsertUser(ctx context.Context, provider, providerSID, email, name string) (userID string, err error) {
+func (s *Service) UpsertUser(ctx context.Context, provider, providerSID, email, name string, emailVerified bool) (userID string, err error) {
 
 	var data = sessions.SessionData{
-		Email: email,
-		Name:  name,
+		Email:         email,
+		Name:          name,
+		EmailVerified: emailVerified,
 	}
 
 	err = s.store().SaveSession(ctx, providerSID, data, 120*24*time.Hour)
