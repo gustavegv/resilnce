@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-var ErrApplyDisabled = errors.New("apply is disabled; enable PORTING_APPLY_ENABLED only for a rehearsal or reviewed cutover")
+var ErrApplyDisabled = errors.New("imports are disabled by PORTING_APPLY_ENABLED; unset it or set it to true in the API and worker to enable imports")
 var ErrNotResumable = errors.New("run is still active or already completed")
 
 type Run struct {
@@ -42,6 +42,11 @@ func (s *Service) StartRun(ctx context.Context, actor, mode, scope string, opts 
 	if err := opts.Validate(); err != nil {
 		return "", err
 	}
+	if mode == "apply" {
+		if err := s.prepareApply(ctx); err != nil {
+			return "", err
+		}
+	}
 	id := newID()
 	var scoped any
 	if scope != "" {
@@ -58,6 +63,11 @@ func (s *Service) ResumeRun(ctx context.Context, id string) error {
 	}
 	if mode == "apply" && !s.AllowApply {
 		return ErrApplyDisabled
+	}
+	if mode == "apply" {
+		if err := s.prepareApply(ctx); err != nil {
+			return err
+		}
 	}
 	tag, err := s.Pool.Exec(ctx, `UPDATE internal.porting_run SET status='queued',finished_at=NULL,error=NULL,lease_token=NULL,lease_until=NULL
  WHERE id=$1 AND migration_version=$2 AND (status IN ('failed','incomplete') OR (status='running' AND lease_until<now()))`, id, Version)

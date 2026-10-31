@@ -3,7 +3,8 @@
 The additive migrations, shared Go importer, CLI, worker, protected API, and
 `/internal/porting` page are implemented. The existing tracker still uses the legacy
 tables. Application behavior, merge/deletion integration, and production cutover
-remain separate work. Rehearse against a restored database before enabling imports.
+remain separate work. Actual imports are enabled by default for the allowlisted internal
+tool and the CLI/worker; starting a process does not start a data import.
 
 ## Database setup and audit
 
@@ -17,9 +18,24 @@ not require the separate worker or enabling data imports.
 
 The check works on the untouched six-table legacy layout. It checks the migration
 ledger/checksums, table/column types and nullability, key counts, named indexes,
-required triggers, and row security. Altered or untracked destination objects are
+required triggers, RPE/notes constraint definitions and validation, and row security.
+Altered or untracked destination objects are
 listed for review; the tool does not rebuild existing tables automatically.
 Audits and imports become available once the layout passes the check.
+
+The bundled migrations create the initial domain and bookkeeping tables, then use
+`003_exercise_rpe.sql` and `004_notes.sql` to ALTER existing tables. These add optional
+RPE and nullable notes on variants, workouts, and exercise attempts, including the
+0–10 RPE bounds, paired last-rating timestamp, and 4,000-character notes limits.
+Existing/imported rows stay unrated and without notes; later retries preserve user
+notes. Already applied migrations keep their checksums and are not replayed.
+
+An apply run also applies pending migrations and validates the full layout before
+queueing or resuming, and again before writing each account. This covers CLI imports
+and worker execution as well as page-started imports. Failed upgrades roll back the
+DDL transaction, and incompatible layouts block the import before domain writes.
+Auditing never applies migrations; the page still offers explicit setup before its
+audit/import controls become available.
 
 The CLI remains available for operational use:
 
@@ -74,15 +90,23 @@ and mappings. With the history option off, orphans with history remain setup iss
 
 ## Apply and resume
 
-Freeze legacy writes for the import scope. Enable apply explicitly in the process
-performing the import:
+Freeze legacy writes for the import scope. With the API and worker restarted on the
+updated code, **Import pending records** is enabled after schema setup. The CLI can
+also apply pending migrations and run a real import directly:
 
 ```sh
-export PORTING_APPLY_ENABLED=true
-go run ./cmd/portdata run --actor operator@example.com --owner account@example.com --delete-unused-exercises --delete-unused-history
+go run ./cmd/portdata run --actor operator@example.com --owner account@example.com
 go run ./cmd/portdata status --id RUN_UUID
 go run ./cmd/portdata resume --id RUN_UUID
 ```
+
+Import is enabled when `PORTING_APPLY_ENABLED` is unset, blank, or `true`. Set it to
+`false` to disable actual imports in either process; other unrecognized nonblank
+values also disable them. Both the API and worker must permit apply jobs. Existing
+deployments with an explicit disabling value must unset it or set it to `true` and
+restart. The allowlist, verified sign-in, Origin checks, and per-account source
+validation still apply. Deletion remains separately opt-in through the page's
+checkboxes or the CLI flags described above.
 
 `run` creates a durable job and executes it using the shared worker implementation.
 `resume` requeues an incomplete/failed job or an expired lease. Job options and the
@@ -132,8 +156,8 @@ jobs created through the page.
 The Docker image includes `/portdata`; override its entrypoint with `/portdata` and
 pass `worker` for a separate worker deployment. The worker needs CPU while no HTTP
 requests are active, such as an always-running process or equivalent worker hosting.
-Both API and worker need `PORTING_APPLY_ENABLED=true` to accept and execute apply
-jobs. Audit jobs work with apply disabled.
+API and worker both enable imports by default and honor `PORTING_APPLY_ENABLED=false`
+as an explicit override. Audit jobs work with apply disabled.
 
 Open `/internal/porting` on the frontend. Sign in again to populate trusted
 `email_verified` in the live Redis session. The server authorizes only
@@ -170,6 +194,9 @@ rollback, resume, concurrent runs, expired leases, skipped user edits, new sourc
 keys, deletion tombstones, ownership, and target-count constraints. API tests cover
 authorization, mutation origins, schema setup without bookkeeping, repeated/concurrent
 setup requests, source preservation, and detection of changed layouts/checksums.
+Upgrade coverage includes a populated pre-notes layout, RPE/notes constraint drift,
+Unicode note length and multiline storage, default-enabled import setup, pre-import
+schema rejection, and preservation of variant notes on retries.
 The option/default suite also covers unused-exercise selection, explicit history
 cleanup, deletion rollback, exact history-key/reference rechecks, missing rest,
 default Stockholm timestamps, explicit timezone overrides, and deletion-aware inventory.

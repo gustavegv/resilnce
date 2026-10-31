@@ -84,8 +84,9 @@ Note operations address the variant, workout, or workout-exercise ID explicitly.
 `notes` in a partial update as unchanged and null as clearing it. Normalize blank notes to null,
 preserve internal line breaks, and validate the proposed 4,000-character limit consistently with
 PostgreSQL `char_length`. Return current variant instructions separately from attempt notes.
-Changing notes must not trigger progression, RPE updates, or target reconciliation. Notes require
-a future additive migration; the existing migrations provide no note storage yet.
+Changing notes must not trigger progression, RPE updates, or target reconciliation. Migration
+`004_notes.sql` supplies nullable note storage and length constraints; note APIs and UI remain
+to be implemented.
 
 ### Transactions and concurrency
 
@@ -205,8 +206,8 @@ the source for tests.
 
 ### Phase 2: implement against the new schema
 
-1. Add versioned, additive migrations and an isolated development/test database workflow,
-   including the specified nullable notes columns on variants, workouts, and attempts.
+1. Use the versioned additive migrations and isolated development/test database workflow;
+   migrations 003/004 supply RPE and nullable notes on variants, workouts, and attempts.
 2. Implement library/variant/target-set operations and owner/name constraints.
 3. Implement saved-session variant references and the new workout lifecycle.
 4. Implement transactional recording, immediate configuration edits, progression, completion, and

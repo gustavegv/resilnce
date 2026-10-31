@@ -103,10 +103,10 @@ Neither the legacy schema nor the current slider persists RPE. Leave the new var
 and `last_rpe_at` null on import, and never manufacture historical exercise ratings. New attempt
 RPE starts null as well; migration `003_exercise_rpe.sql` performs no inferred backfill.
 
-The legacy schema has no notes either. When the proposed notes columns are implemented, initialize
-variant notes to null on import and leave existing workout/attempt notes null when adding the
-columns. Do not infer notes from names or import bookkeeping. Skip-only importer reruns must
-preserve any notes the user has subsequently entered on imported variants.
+The legacy schema has no notes either. Migration `004_notes.sql` adds nullable notes to variants,
+workouts, and attempts without backfilling content. Imported variant notes default to null.
+Do not infer notes from names or import bookkeeping. Skip-only importer reruns preserve any notes
+the user has subsequently entered on imported variants.
 
 Propose a `legacy_history_entry` compatibility table containing:
 

@@ -115,12 +115,13 @@ workout contents are independent.
 
 Add a nullable `notes text` column to `exercise_variant`, `workout`, and `workout_exercise`.
 Each row owns one optional plain-text note. A separate notes table is unnecessary for this model.
-New fields default to null, including on existing rows and imported variants. These note columns
-are specified here but are not yet present in executable migrations; add a new additive migration
-without changing checksums of already versioned migrations.
+New fields default to null, including on existing rows and imported variants. The additive
+`004_notes.sql` migration adds these columns and length constraints without changing earlier
+migration checksums. The porting preflight applies pending migrations and validates the layout
+before importing. Note editing and lifecycle behavior below remain application implementation work.
 
-Proposed initial validation: at most 4,000 characters per field, using PostgreSQL `char_length`
-for a matching database CHECK constraint. Normalize empty or whitespace-only input to null in the
+The implemented database CHECK constraints allow at most 4,000 characters per field using
+PostgreSQL `char_length`. Normalize empty or whitespace-only input to null in the
 API; preserve internal line breaks and reject oversized input rather than truncating it. Render
 notes as plain text. In partial updates, omitted `notes` means unchanged and explicit null clears
 the field.

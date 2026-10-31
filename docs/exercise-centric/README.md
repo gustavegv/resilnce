@@ -75,10 +75,14 @@ Migration `003_exercise_rpe.sql` adds optional exercise-attempt RPE for history 
 RPE/time on each variant. Slider persistence and transactional completion/cache updates remain part
 of the new application implementation; RPE-based exercise adjustment is deferred.
 
-Optional notes are specified on variants (reusable instructions), workouts (occasion context), and
+Migration `004_notes.sql` adds optional notes on variants (reusable instructions), workouts (occasion context), and
 workout exercises (attempt observations). See [requirements](decisions.md#notes) and
-[storage/lifecycle](schema.md#notes-storage-and-lifecycle). Notes storage migrations and application
-behavior remain to be implemented; the current executable migrations have no note fields.
+[storage/lifecycle](schema.md#notes-storage-and-lifecycle). Storage and length constraints are
+implemented; note editing, synchronization, and historical rendering remain application work.
+
+The internal tool and CLI/worker enable actual imports by default, with an explicit
+`PORTING_APPLY_ENABLED=false` override. Apply runs upgrade and validate the schema before importing;
+audits remain read-only. See [operations](porting-operations.md) for setup and execution.
 
 The muscle-group catalog is available in
 [`predefined/muscle_groups.go`](../../apps/server/predefined/muscle_groups.go). Internal access is

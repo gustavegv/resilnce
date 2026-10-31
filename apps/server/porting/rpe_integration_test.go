@@ -3,31 +3,14 @@
 package porting
 
 import (
-	"crypto/sha256"
 	"errors"
-	"fmt"
-	"os"
 	"testing"
 
 	"github.com/gustavegv/resilnce/apps/server/migrations"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-func TestRPEMigrationUpgradesExistingData(t *testing.T) {
-	s, ctx := testLegacyService(t)
-	execSQL(t, s, ctx, `CREATE SCHEMA internal;
-CREATE TABLE internal.schema_migration(version text PRIMARY KEY,checksum text NOT NULL,applied_at timestamptz NOT NULL DEFAULT now());`)
-	for _, name := range []string{"001_exercise_centric.sql", "002_porting.sql"} {
-		sql, err := os.ReadFile("../migrations/" + name)
-		if err != nil {
-			t.Fatal(err)
-		}
-		execSQL(t, s, ctx, string(sql))
-		if _, err = s.Pool.Exec(ctx, `INSERT INTO internal.schema_migration(version,checksum) VALUES($1,$2)`, name, fmt.Sprintf("%x", sha256.Sum256(sql))); err != nil {
-			t.Fatal(err)
-		}
-	}
-	execSQL(t, s, ctx, singleOwnerFixture+`
+const completedAttemptFixture = singleOwnerFixture + `
 INSERT INTO public.exercise(id,owner_mail,name) VALUES('00000000-0000-0000-0000-000000000001','a@example.com','Bench');
 INSERT INTO public.exercise_variant(id,owner_mail,exercise_id,name,progression_mode,rep_threshold,auto_increment,rest_seconds)
  VALUES('00000000-0000-0000-0000-000000000002','a@example.com','00000000-0000-0000-0000-000000000001','Standard','average',12,2.5,0);
@@ -38,7 +21,12 @@ INSERT INTO public.workout(id,owner_mail,origin,status,started_at,ended_at)
 INSERT INTO public.workout_exercise(id,owner_mail,workout_id,variant_id,position,state,origin,progression_mode,rep_threshold,auto_increment,config_revision,completed_at)
  VALUES('00000000-0000-0000-0000-000000000005','a@example.com','00000000-0000-0000-0000-000000000004','00000000-0000-0000-0000-000000000002',1,'completed','added','average',12,2.5,1,'2026-01-15T13:00:00Z');
 INSERT INTO public.workout_set(id,owner_mail,workout_exercise_id,target_set_id,position,kind,state,target_reps,target_weight,recorded_reps,recorded_weight,recorded_at)
- VALUES('00000000-0000-0000-0000-000000000006','a@example.com','00000000-0000-0000-0000-000000000005','00000000-0000-0000-0000-000000000003',1,'prescribed','performed',12,50,11,50,'2026-01-15T12:30:00Z');`)
+ VALUES('00000000-0000-0000-0000-000000000006','a@example.com','00000000-0000-0000-0000-000000000005','00000000-0000-0000-0000-000000000003',1,'prescribed','performed',12,50,11,50,'2026-01-15T12:30:00Z');`
+
+func TestRPEMigrationUpgradesExistingData(t *testing.T) {
+	s, ctx := testLegacyService(t)
+	installMigrationVersions(t, s, ctx, "001_exercise_centric.sql", "002_porting.sql")
+	execSQL(t, s, ctx, completedAttemptFixture)
 	status, err := migrations.Inspect(ctx, s.Pool)
 	if err != nil || status.Ready || !status.CanApply || len(status.Issues) != 0 {
 		t.Fatalf("RPE upgrade should be applicable: %+v, %v", status, err)

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gustavegv/resilnce/apps/server/migrations"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -15,6 +16,15 @@ import (
 type Service struct {
 	Pool       *pgxpool.Pool
 	AllowApply bool
+}
+
+// An actual import upgrades and validates the layout before queueing work and
+// again before writing an account. Audit never invokes this mutating preflight.
+func (s *Service) prepareApply(ctx context.Context) error {
+	if !s.AllowApply {
+		return ErrApplyDisabled
+	}
+	return migrations.Apply(ctx, s.Pool)
 }
 
 func newID() string {
@@ -197,9 +207,12 @@ func (s *Service) ImportOwner(ctx context.Context, all []Row, owner string, opts
 		}
 	}()
 	if !s.AllowApply {
-		return report, errors.New("apply is disabled; rehearse and freeze legacy writes before enabling it")
+		return report, ErrApplyDisabled
 	}
 	if err = opts.Validate(); err != nil {
+		return report, err
+	}
+	if err = s.prepareApply(ctx); err != nil {
 		return report, err
 	}
 	// The deletion recheck must see references committed before its source-row

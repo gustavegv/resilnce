@@ -89,6 +89,41 @@ var migrationIndexes = map[string][]string{
 	"002_porting.sql":          {"porting_run_queue", "porting_map_owner"},
 }
 
+// ALTER migrations extend existing tables. Their columns must only be required
+// after the corresponding migration has been applied.
+var alterationLayouts = map[string][]tableLayout{
+	"003_exercise_rpe.sql": {
+		{name: "workout_exercise", columns: "recorded_rpe:smallint"},
+		{name: "exercise_variant", columns: "last_rpe:smallint last_rpe_at:timestamp_with_time_zone"},
+	},
+	"004_notes.sql": {
+		{name: "exercise_variant", columns: "notes:text"},
+		{name: "workout", columns: "notes:text"},
+		{name: "workout_exercise", columns: "notes:text"},
+	},
+}
+
+type checkLayout struct{ table, name, expression string }
+
+var migrationChecks = map[string][]checkLayout{
+	"003_exercise_rpe.sql": {
+		{"workout_exercise", "workout_exercise_rpe_range", "recorded_rpe >= 0 AND recorded_rpe <= 10"},
+		{"exercise_variant", "exercise_variant_rpe_range", "last_rpe >= 0 AND last_rpe <= 10"},
+		{"exercise_variant", "exercise_variant_rpe_timestamp", "(last_rpe IS NULL) = (last_rpe_at IS NULL)"},
+	},
+	"004_notes.sql": {
+		{"exercise_variant", "exercise_variant_notes_length", "char_length(notes) <= 4000"},
+		{"workout", "workout_notes_length", "char_length(notes) <= 4000"},
+		{"workout_exercise", "workout_exercise_notes_length", "char_length(notes) <= 4000"},
+	},
+}
+
+// These simple checks contain no mixed AND/OR groups. Ignore PostgreSQL's
+// formatting parentheses and whitespace while preserving operators and values.
+func normalizeCheck(expression string) string {
+	return strings.NewReplacer("(", "", ")", "", " ", "", "\n", "", "\t", "", "\r", "").Replace(expression)
+}
+
 func inspect(ctx context.Context, tx pgx.Tx) (Status, error) {
 	s := Status{Migrations: []MigrationStatus{}, Issues: []string{}}
 	type column struct {
@@ -203,6 +238,26 @@ func inspect(ctx context.Context, tx pgx.Tx) (Status, error) {
 	if err != nil {
 		return s, err
 	}
+	checks := map[string]string{}
+	rows, err = tx.Query(ctx, `SELECT n.nspname||'.'||t.relname||'.'||c.conname,pg_get_expr(c.conbin,c.conrelid,true)
+ FROM pg_constraint c JOIN pg_class t ON t.oid=c.conrelid JOIN pg_namespace n ON n.oid=t.relnamespace
+ WHERE n.nspname='public' AND c.contype='c' AND c.convalidated`)
+	if err != nil {
+		return s, err
+	}
+	for rows.Next() {
+		var name, expression string
+		if err = rows.Scan(&name, &expression); err != nil {
+			rows.Close()
+			return s, err
+		}
+		checks[name] = expression
+	}
+	err = rows.Err()
+	rows.Close()
+	if err != nil {
+		return s, err
+	}
 	names, err := fs.Glob(files, "*.sql")
 	if err != nil {
 		return s, err
@@ -224,12 +279,26 @@ func inspect(ctx context.Context, tx pgx.Tx) (Status, error) {
 				s.Issues = append(s.Issues, "Migration checksum differs: "+name)
 			}
 		}
-		// Later ALTER migrations validate only their added columns, and only once
-		// applied. Existing domain tables are expected while these are pending.
-		if name == "003_exercise_rpe.sql" {
+		if layouts, alteration := alterationLayouts[name]; alteration {
 			if done {
-				checkTable("public", tableLayout{name: "workout_exercise", columns: "recorded_rpe:smallint"}, false)
-				checkTable("public", tableLayout{name: "exercise_variant", columns: "last_rpe:smallint last_rpe_at:timestamp_with_time_zone"}, false)
+				for _, t := range layouts {
+					checkTable("public", t, false)
+				}
+				for _, expected := range migrationChecks[name] {
+					key := "public." + expected.table + "." + expected.name
+					if actual, ok := checks[key]; !ok || normalizeCheck(actual) != normalizeCheck(expected.expression) {
+						s.Issues = append(s.Issues, "Missing, unvalidated, or altered check constraint "+key)
+					}
+				}
+			} else {
+				for _, t := range layouts {
+					for _, spec := range strings.Fields(t.columns) {
+						field := strings.SplitN(spec, ":", 2)[0]
+						if _, exists := tables["public."+t.name].columns[field]; exists {
+							s.Issues = append(s.Issues, "Untracked column already exists: public."+t.name+"."+field)
+						}
+					}
+				}
 			}
 			continue
 		}

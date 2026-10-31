@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/gustavegv/resilnce/apps/server/ai"
@@ -30,7 +29,7 @@ func RoutingCreation() http.Handler {
 	service.SBDB = *supaCFG
 
 	porting.HTTP{
-		Service:      &porting.Service{Pool: pool, AllowApply: os.Getenv("PORTING_APPLY_ENABLED") == "true"},
+		Service:      &porting.Service{Pool: pool, AllowApply: porting.ApplyEnabled()},
 		Authenticate: func(r *http.Request) (string, error) { return auth.VerifiedIdentity(r, service.RedisStore) },
 		Origin:       siteDirectory,
 	}.Register(mux)

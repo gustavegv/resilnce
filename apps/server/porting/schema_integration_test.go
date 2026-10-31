@@ -3,6 +3,7 @@
 package porting
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -28,6 +29,22 @@ func schemaHTTP(s *Service) HTTP {
 	return HTTP{Service: s, Origin: "https://app.example", Authenticate: func(*http.Request) (string, error) { return "gustavengvall@yahoo.se", nil }}
 }
 
+func installMigrationVersions(t *testing.T, s *Service, ctx context.Context, names ...string) {
+	t.Helper()
+	execSQL(t, s, ctx, `CREATE SCHEMA internal;
+CREATE TABLE internal.schema_migration(version text PRIMARY KEY,checksum text NOT NULL,applied_at timestamptz NOT NULL DEFAULT now());`)
+	for _, name := range names {
+		sql, err := os.ReadFile("../migrations/" + name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		execSQL(t, s, ctx, string(sql))
+		if _, err = s.Pool.Exec(ctx, `INSERT INTO internal.schema_migration(version,checksum,applied_at) VALUES($1,$2,'2000-01-01T00:00:00Z')`, name, fmt.Sprintf("%x", sha256.Sum256(sql))); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 func TestToolBootstrapsSchemaFromLegacyDatabase(t *testing.T) {
 	s, ctx := testLegacyService(t)
 	execSQL(t, s, ctx, singleOwnerFixture)
@@ -50,7 +67,7 @@ func TestToolBootstrapsSchemaFromLegacyDatabase(t *testing.T) {
 	if err = json.Unmarshal(w.Body.Bytes(), &overview); err != nil {
 		t.Fatal(err)
 	}
-	if overview.Schema.Ready || !overview.Schema.CanApply || len(overview.Schema.Migrations) != 3 || len(overview.Inventory) != 0 || len(overview.Runs) != 0 {
+	if overview.Schema.Ready || !overview.Schema.CanApply || len(overview.Schema.Migrations) != 4 || len(overview.Inventory) != 0 || len(overview.Runs) != 0 {
 		t.Fatal(w.Body.String())
 	}
 	if scalar(t, s, ctx, `SELECT count(*) FROM pg_namespace WHERE nspname='internal'`) != 0 {
@@ -78,7 +95,7 @@ func TestToolBootstrapsSchemaFromLegacyDatabase(t *testing.T) {
 			t.Fatal(w.Body.String())
 		}
 	}
-	if scalar(t, s, ctx, `SELECT count(*) FROM internal.schema_migration`) != 3 || scalar(t, s, ctx, `SELECT count(*) FROM public.exercise`) != 0 {
+	if scalar(t, s, ctx, `SELECT count(*) FROM internal.schema_migration`) != 4 || scalar(t, s, ctx, `SELECT count(*) FROM public.exercise`) != 0 {
 		t.Fatal("setup ran data imports or duplicated migrations")
 	}
 	if scalar(t, s, ctx, `SELECT count(*) FROM internal.porting_run`) != 0 {
@@ -110,6 +127,17 @@ func TestSchemaCheckDetectsDriftAndRefusesDestructiveRepair(t *testing.T) {
 		{"missing RPE", `ALTER TABLE public.workout_exercise DROP COLUMN recorded_rpe`, "public.workout_exercise.recorded_rpe"},
 		{"missing last RPE", `ALTER TABLE public.exercise_variant DROP COLUMN last_rpe`, "public.exercise_variant.last_rpe"},
 		{"missing RPE timestamp", `ALTER TABLE public.exercise_variant DROP COLUMN last_rpe_at`, "public.exercise_variant.last_rpe_at"},
+		{"missing variant notes", `ALTER TABLE public.exercise_variant DROP COLUMN notes`, "public.exercise_variant.notes"},
+		{"missing workout notes", `ALTER TABLE public.workout DROP COLUMN notes`, "public.workout.notes"},
+		{"missing attempt notes", `ALTER TABLE public.workout_exercise DROP COLUMN notes`, "public.workout_exercise.notes"},
+		{"wrong notes type", `ALTER TABLE public.workout ALTER COLUMN notes TYPE varchar(4000)`, "public.workout.notes"},
+		{"wrong notes nullability", `ALTER TABLE public.workout ALTER COLUMN notes SET NOT NULL`, "public.workout.notes"},
+		{"missing notes check", `ALTER TABLE public.workout DROP CONSTRAINT workout_notes_length`, "public.workout.workout_notes_length"},
+		{"unvalidated notes check", `ALTER TABLE public.workout DROP CONSTRAINT workout_notes_length; ALTER TABLE public.workout ADD CONSTRAINT workout_notes_length CHECK(char_length(notes)<=4000) NOT VALID`, "public.workout.workout_notes_length"},
+		{"altered notes check", `ALTER TABLE public.workout DROP CONSTRAINT workout_notes_length; ALTER TABLE public.workout ADD CONSTRAINT workout_notes_length CHECK(char_length(notes)<=9000)`, "public.workout.workout_notes_length"},
+		{"missing RPE check", `ALTER TABLE public.workout_exercise DROP CONSTRAINT workout_exercise_rpe_range`, "public.workout_exercise.workout_exercise_rpe_range"},
+		{"altered RPE check", `ALTER TABLE public.workout_exercise DROP CONSTRAINT workout_exercise_rpe_range; ALTER TABLE public.workout_exercise ADD CONSTRAINT workout_exercise_rpe_range CHECK(recorded_rpe BETWEEN 0 AND 20)`, "public.workout_exercise.workout_exercise_rpe_range"},
+		{"missing RPE timestamp check", `ALTER TABLE public.exercise_variant DROP CONSTRAINT exercise_variant_rpe_timestamp`, "public.exercise_variant.exercise_variant_rpe_timestamp"},
 		{"wrong precision", `ALTER TABLE public.variant_target_set ALTER COLUMN target_weight TYPE numeric(9,3)`, "public.variant_target_set.target_weight"},
 		{"missing table", `DROP TABLE internal.porting_issue`, "Missing table internal.porting_issue"},
 		{"checksum", `UPDATE internal.schema_migration SET checksum='changed' WHERE version='001_exercise_centric.sql'`, "checksum differs"},

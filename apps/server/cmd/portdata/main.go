@@ -80,7 +80,7 @@ func run() int {
 		fmt.Fprintln(os.Stderr, "database connection failed (details omitted)")
 		return 1
 	}
-	s := porting.Service{Pool: pool, AllowApply: os.Getenv("PORTING_APPLY_ENABLED") == "true"}
+	s := porting.Service{Pool: pool, AllowApply: porting.ApplyEnabled()}
 	var result any
 	switch command {
 	case "migrate":

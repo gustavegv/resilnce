@@ -132,7 +132,7 @@
         <p role="status">The connected database has the required layout. Audits and imports are available.</p>
       {:else if schema?.canApply}
         <p>The connected database needs the additive migrations listed below.</p>
-        <p>Apply them to create the exercise library and import bookkeeping tables. Existing workout data is preserved.</p>
+        <p>Apply them to create or update the exercise library, including RPE and notes, and import bookkeeping. Existing workout data is preserved.</p>
         <button disabled={busy || polling} onclick={applyMigrations}>{busy ? 'Applying migrations…' : 'Apply additive migrations'}</button>
       {:else}
         <p>The database layout needs attention before audits or imports can run.</p>
@@ -156,7 +156,7 @@
       <label class="checkbox"><input type="checkbox" bind:checked={deleteUnusedHistory} disabled={!deleteUnusedExercises} /> Also delete their history</label>
       <p>Unused means no saved-session placement. History is preserved unless both options are checked. Audit shows the exercise and history deletion counts; import deletes the selected legacy records. Already imported data is preserved.</p>
       <p>Active legacy workouts and invalid source values keep affected accounts incomplete.</p>
-      {#if !applyEnabled}<p>Imports are disabled until the deployment is configured for a rehearsal or reviewed cutover.</p>{/if}
+      {#if !applyEnabled}<p>Imports are disabled by the server configuration. Unset PORTING_APPLY_ENABLED or set it to true in the API and worker, then restart both.</p>{/if}
       <div class="actions">
         <button disabled={busy} onclick={() => start('audit')}>Audit source data</button>
         <button disabled={busy || !applyEnabled} onclick={() => start('apply')}>Import pending records</button>
