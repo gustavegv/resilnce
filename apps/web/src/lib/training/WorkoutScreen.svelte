@@ -8,11 +8,13 @@
     recordSet,
     updateConfiguration,
     completeAttempt,
+    quitWorkout,
     TrainingError,
   } from './client';
   import type {
     ConfigurationPatch,
     CompleteAttemptCommand,
+    QuitWorkoutCommand,
     UpdateConfigurationCommand,
     RecordSetCommand,
     Workout,
@@ -31,7 +33,11 @@
   let error = $state('');
   let candidates = $state<Record<string, string>>({});
   let pending = $state.raw<
-    RecordSetCommand | UpdateConfigurationCommand | CompleteAttemptCommand | null
+    | RecordSetCommand
+    | UpdateConfigurationCommand
+    | CompleteAttemptCommand
+    | QuitWorkoutCommand
+    | null
   >(null);
   let editAttempt = $state.raw<WorkoutExercise | null>(null);
   let editFields = $state({
@@ -45,9 +51,11 @@
   });
   let applyWeight = $state(false);
   let rejectedConfiguration = $state(false);
-  let rejectedCompletion = $state(false);
+  let rejectedFinality = $state(false);
+  let confirmingQuit = $state(false);
+  let quitPending = $derived(pending !== null && !('attemptId' in pending));
   let completionPending = $derived(
-    pending !== null && !('patch' in pending) && !('setId' in pending)
+    pending !== null && 'attemptId' in pending && !('patch' in pending) && !('setId' in pending)
   );
   let mixedWeights = $derived(
     editAttempt !== null &&
@@ -62,12 +70,18 @@
   let saveState = $state<'saved' | 'saving' | 'failed'>('saved');
   let reviewed = $state.raw<Workout | null>(null);
   let conflict = $state(false);
-  let uncertainCompletion = $derived(completionPending && !conflict && !rejectedCompletion);
+  let uncertainFinality = $derived(
+    (completionPending || quitPending) && !conflict && !rejectedFinality
+  );
   let navigationBlocked = $state(false);
-  let hasInput = $derived(pending !== null || editorDirty || Object.keys(candidates).length > 0);
+  let hasInput = $derived(
+    pending !== null || confirmingQuit || editorDirty || Object.keys(candidates).length > 0
+  );
   let canReapply = $derived.by(() => {
     if (!pending || !reviewed || reviewed.status !== 'active') return false;
-    const attempt = reviewed.exercises.find((a) => a.id === pending!.attemptId);
+    if (!('attemptId' in pending)) return true;
+    const attemptId = pending.attemptId;
+    const attempt = reviewed.exercises.find((a) => a.id === attemptId);
     if (attempt?.state !== 'draft') return false;
     const intent = pending;
     return 'patch' in intent
@@ -140,7 +154,9 @@
         ? updateConfiguration(intent)
         : 'setId' in intent
           ? recordSet(intent)
-          : completeAttempt(intent));
+          : 'attemptId' in intent
+            ? completeAttempt(intent)
+            : quitWorkout(intent));
       if (!sameAccount() || workoutId !== intent.workoutId) {
         saveState = 'failed';
         return;
@@ -151,8 +167,9 @@
         applyWeight = false;
       } else if ('setId' in intent) delete candidates[intent.setId];
       rejectedConfiguration = false;
-      rejectedCompletion = false;
+      rejectedFinality = false;
       pending = null;
+      confirmingQuit = false;
       reviewed = null;
       conflict = false;
       saveState = 'saved';
@@ -170,7 +187,7 @@
           'resource-unavailable',
           'not-found',
         ].includes(failure.code);
-      rejectedCompletion =
+      rejectedFinality =
         !('patch' in intent) &&
         !('setId' in intent) &&
         failure instanceof TrainingError &&
@@ -182,6 +199,25 @@
         ['stale-revision', 'resource-finalized'].includes(failure.code);
       if (conflict) await reviewCurrent();
     }
+  }
+  function confirmQuit() {
+    if (
+      !confirmingQuit ||
+      pending ||
+      editorDirty ||
+      Object.keys(candidates).length > 0 ||
+      !workout ||
+      workout.status !== 'active' ||
+      !sameAccount()
+    )
+      return;
+    pending = {
+      operationId: crypto.randomUUID(),
+      workoutId: workout.id,
+      expectedWorkoutRevision: workout.revision,
+    };
+    confirmingQuit = false;
+    void save();
   }
   function finish(attempt: WorkoutExercise) {
     if (
@@ -207,6 +243,7 @@
   function record(attempt: WorkoutExercise, set: WorkoutSet, state: WorkoutSet['state']) {
     if (
       pending ||
+      confirmingQuit ||
       editAttempt ||
       !workout ||
       workout.status !== 'active' ||
@@ -317,7 +354,20 @@
   }
   function reapply() {
     if (!canReapply || !pending || !reviewed || !sameAccount()) return;
-    const attempt = reviewed.exercises.find((a) => a.id === pending!.attemptId)!;
+    if (!('attemptId' in pending)) {
+      pending = {
+        ...pending,
+        operationId: crypto.randomUUID(),
+        expectedWorkoutRevision: reviewed.revision,
+      };
+      workout = reviewed;
+      reviewed = null;
+      conflict = false;
+      void save();
+      return;
+    }
+    const attemptId = pending.attemptId;
+    const attempt = reviewed.exercises.find((a) => a.id === attemptId)!;
     pending =
       'patch' in pending
         ? {
@@ -346,10 +396,11 @@
   }
   function clearInput() {
     pending = null;
+    confirmingQuit = false;
     editAttempt = null;
     applyWeight = false;
     rejectedConfiguration = false;
-    rejectedCompletion = false;
+    rejectedFinality = false;
     candidates = {};
     reviewed = null;
     conflict = false;
@@ -358,7 +409,7 @@
     navigationBlocked = false;
   }
   async function discard() {
-    if (saveState === 'saving' || uncertainCompletion) return;
+    if (saveState === 'saving' || uncertainFinality) return;
     // A lost response may already be committed; never label the old snapshot
     // current after discarding local input. Re-read before enabling recording.
     clearInput();
@@ -440,8 +491,8 @@
     {/if}
     {#if navigationBlocked}
       <p role="alert">
-        {uncertainCompletion
-          ? 'Completion is unconfirmed. Stay and retry to resolve it before leaving or starting another workout.'
+        {uncertainFinality
+          ? `${quitPending ? 'Quit' : 'Completion'} is unconfirmed. Stay and retry to resolve it before leaving or starting another workout.`
           : 'Input is not saved. Stay and retry, or explicitly discard local input before leaving.'}
       </p>
       <button
@@ -450,13 +501,38 @@
         }}>Stay</button
       >
     {/if}
-    {#if uncertainCompletion && saveState === 'failed'}<p role="alert">
-        Completion is unconfirmed. Retry the same completion to resolve it before leaving.
+    {#if uncertainFinality && saveState === 'failed'}<p role="alert">
+        {quitPending ? 'Quit' : 'Completion'} is unconfirmed. Retry the same {quitPending
+          ? 'quit'
+          : 'completion'} to resolve it before leaving.
       </p>{/if}
-    {#if hasInput && !conflict && !uncertainCompletion}<button
+    {#if hasInput && !conflict && !uncertainFinality}<button
         onclick={discard}
         disabled={saveState === 'saving'}>Discard local input</button
       >{/if}
+    {#if workout.status === 'active'}
+      {#if confirmingQuit}
+        <section aria-label="Confirm quit workout">
+          <p>
+            Completed work and progression are kept. Unfinished attempts and their sets are
+            discarded. Shared configuration edits are kept.
+          </p>
+          <button onclick={confirmQuit} disabled={pending !== null || accountChanged}
+            >Confirm quit</button
+          >
+          <button onclick={() => (confirmingQuit = false)} disabled={pending !== null}
+            >Keep training</button
+          >
+        </section>
+      {:else}
+        <button
+          onclick={() => {
+            if (!hasInput && sameAccount()) confirmingQuit = true;
+          }}
+          disabled={hasInput || accountChanged}>Quit workout</button
+        >
+      {/if}
+    {/if}
     <nav aria-label="Exercises">
       {#each workout.exercises as attempt (attempt.id)}
         <a href={`#attempt-${attempt.id}`}
@@ -587,21 +663,30 @@
                 oninput={(event) => {
                   candidates[set.id] = event.currentTarget.value;
                 }}
-                disabled={pending !== null || editAttempt !== null || accountChanged}
+                disabled={pending !== null ||
+                  confirmingQuit ||
+                  editAttempt !== null ||
+                  accountChanged}
               />
               <button
                 onclick={() => record(attempt, set, 'performed')}
-                disabled={pending !== null || editAttempt !== null || accountChanged}
+                disabled={pending !== null ||
+                  confirmingQuit ||
+                  editAttempt !== null ||
+                  accountChanged}
                 >{set.state === 'performed' ? 'Save reps correction' : 'Record set'}</button
               >
               <button
                 onclick={() => record(attempt, set, 'skipped')}
-                disabled={pending !== null || editAttempt !== null || accountChanged}
-                >Skip set</button
+                disabled={pending !== null ||
+                  confirmingQuit ||
+                  editAttempt !== null ||
+                  accountChanged}>Skip set</button
               >
               <button
                 onclick={() => record(attempt, set, 'pending')}
                 disabled={pending !== null ||
+                  confirmingQuit ||
                   editAttempt !== null ||
                   accountChanged ||
                   set.state === 'pending'}>Reset to pending</button
