@@ -248,3 +248,59 @@ no completion or quit request on mount/unmount and shows no default durable rati
 Additive migration `006_workout_rest.sql` captures attempt rest settings; existing
 attempts backfill the current variant rest because no earlier snapshot existed.
 Its columns and nonnegative constraint are included in migration readiness checks.
+
+## Explicit online set recording
+
+`training.Service.RecordSet(ctx, owner, RecordSet)` and
+`POST /api/training/workouts/sets/record` accept one exact set intent:
+
+```json
+{"operationId":"91000000-0000-4000-8000-000000000002","workoutId":"<uuid>","attemptId":"<uuid>","setId":"<uuid>","expectedWorkoutRevision":"1","state":"performed","recordedReps":0}
+```
+
+`state` is `performed`, `pending`, or `skipped`. Performing requires explicit
+whole `recordedReps` from 0 to 2147483647; the threshold is not an actual-rep
+limit. Pending/reset and skip omit `recordedReps` entirely and clear recorded
+reps, weight and time. Null actuals cannot be attached to those intents. Unknown
+fields, browser-supplied weights/owners, notes and RPE controls are rejected.
+
+Each command uses the existing private owner-row command lock, resolves its
+receipt before stale/finality guards, locks the specified owned workout and
+checks the exact attempt/set ancestry. It requires the reviewed workout revision,
+an active workout and a draft attempt. First performance captures that workout
+set's applicable target weight and a server timestamp. A performed-rep correction
+preserves its recorded weight, timestamp and late-override marker. Explicit
+pending/skip clears the marker as well as actuals; performing again captures the
+then-applicable target and a fresh server timestamp. Independent set weights are
+never equalized. Targets, future configuration, deferred attempt notes/RPE and
+exercise/workout lifecycle are not changed by recording.
+
+Success atomically returns `{operation,workout}` with an advanced workout revision
+and durable receipt. Identical retry returns the original acknowledgment plus
+current authoritative state, including after finality; it never repeats the
+recording or regresses the revision. Changed payload/field presence under an
+accepted operation ID returns `operation-mismatch`; stale revision returns
+`stale-revision`; completed/ended recording returns `resource-finalized`. Wrong
+owner or nested parent returns 404. Failed transactions leave neither partial
+recording nor a receipt, so the exact command remains retryable.
+
+The browser client adds `recordSet(RecordSetCommand)`. `WorkoutScreen.svelte`
+keeps target/input candidates separate from confirmed actuals and sends no
+recording on mount, reload, exercise-anchor navigation or display. Explicit
+Record set, Save reps correction, Skip set and Reset to pending use stable IDs.
+Saving persists until acknowledgment; failures retain local input, show Not
+saved and retry identical JSON/operation ID. Further recording waits for that
+command. Dirty input and unresolved commands guard SvelteKit navigation and
+browser unload. Stay/retry or explicit local discard resolves the guard; discard
+after an uncertain response refetches authoritative state before recording can
+resume. Local input has no offline/reload durability guarantee.
+
+Stale/finalized responses retain local values and fetch a separate server-state
+review showing its revision and each set's actuals/targets. Accept server state
+explicitly discards input. Reapply is available only while the reviewed exact
+attempt/set remains editable and creates a new operation against that reviewed
+revision. No silent rebase occurs. The route snapshots initial account access so
+account expiry/model changes cannot unmount an unresolved editor; the screen
+retains input and blocks old-account requests and late-response acceptance until
+the original authoritative account returns. Completion/configuration/quit remain
+separate later operations.

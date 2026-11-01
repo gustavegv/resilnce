@@ -1,7 +1,7 @@
 import { PUBLIC_BACKEND_BASE_URL } from '$env/static/public';
 import { upgradeRequired } from '$lib/stores/appState';
 import type { CreateSessionCommand, ExerciseSelection, Session, SessionResult } from './types';
-import type { StartWorkoutCommand, Workout, WorkoutResult } from './types';
+import type { RecordSetCommand, StartWorkoutCommand, Workout, WorkoutResult } from './types';
 
 export class TrainingError extends Error {
   constructor(
@@ -48,3 +48,6 @@ export const startWorkout = (command: StartWorkoutCommand) =>
 export const activeWorkout = () => request<{ workout: Workout | null }>('/workouts/active');
 export const readWorkout = (id: string) =>
   request<{ workout: Workout }>(`/workouts/${encodeURIComponent(id)}`);
+
+export const recordSet = (command: RecordSetCommand) =>
+  request<WorkoutResult>('/workouts/sets/record', command);
