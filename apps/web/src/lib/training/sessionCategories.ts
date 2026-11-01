@@ -1,0 +1,93 @@
+export const keywordsByCategory: Record<string, readonly string[]> = {
+  'Upper body': [
+    'upper',
+    'upper body',
+    'pull',
+    'push',
+    'chest',
+    'pecs',
+    'back',
+    'lats',
+    'traps',
+    'delts',
+    'shoulders',
+    'biceps',
+    'triceps',
+    'arms',
+    'bench',
+    'press',
+    'overhead press',
+    'ohp',
+    'incline',
+    'dip',
+    'row',
+    'pulldown',
+    'pullup',
+    'pull-up',
+    'chinup',
+    'chin-up',
+  ],
+  'Lower body': [
+    'lower',
+    'lower body',
+    'legs',
+    'leg day',
+    'quads',
+    'quadriceps',
+    'hamstrings',
+    'hams',
+    'calves',
+    'adductors',
+    'abductors',
+    'squat',
+    'front squat',
+    'back squat',
+    'deadlift',
+    'rdl',
+    'romanian deadlift',
+    'hinge',
+    'lunge',
+    'split squat',
+    'bulgarian split squat',
+    'leg press',
+    'leg curl',
+    'leg extension',
+    'hip thrust',
+    'booty',
+    'glute',
+    'glutes',
+    'peach',
+    'cake',
+    'wheels',
+    'quad',
+    'hamstring',
+    'hamstrings',
+    'thighs',
+    'posterior',
+    'squats',
+  ],
+  'Full body': [
+    'full body',
+    'full-body',
+    'fullbody',
+    'total body',
+    'total-body',
+    'totalbody',
+    'whole body',
+    'whole-body',
+    'compound',
+    'compound day',
+  ],
+};
+
+export const categories = ['All', 'Upper body', 'Lower body', 'Full body', 'Other'];
+export function matchesCategory(name: string, category: string): boolean {
+  if (category === 'All') return true;
+  const normalized = name.toLowerCase();
+  const keywords =
+    category === 'Other'
+      ? Object.values(keywordsByCategory).flat()
+      : (keywordsByCategory[category] ?? []);
+  const matched = keywords.some((keyword) => normalized.includes(keyword));
+  return category === 'Other' ? !matched : matched;
+}

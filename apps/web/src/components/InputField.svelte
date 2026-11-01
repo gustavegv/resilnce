@@ -3,13 +3,12 @@
     label = 'Label',
     value = $bindable(''),
     type = '',
-  } = $props<{ label: string; value: string; type: string }>();
-
-  let typet = type;
+    inputmode = undefined,
+  } = $props<{ label: string; value: string; type: string; inputmode?: 'decimal' | 'numeric' }>();
 </script>
 
 <label class="inp">
-  <input maxlength="70" type={typet} min={1} placeholder=" " bind:value />
+  <input maxlength="100" {type} {inputmode} min={0} placeholder=" " bind:value />
   <span class="label">{label}</span>
   <span class="focus-bg"></span>
 </label>

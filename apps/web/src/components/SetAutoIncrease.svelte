@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import '../app.css';
   import Icon from '@iconify/svelte';
 
@@ -19,31 +18,19 @@
     unit?: string;
   } = $props();
 
-  let curCount = $state(weight);
+  let curCount = $derived(weight);
   const maxLimit = 99;
-  let limitReached = $state(false);
+  let limitReached = $derived(curCount <= limit);
   const precsisionThreshold = 1.5;
 
-  onMount(() => {
-    onCountChange?.(curCount);
-
-    if (unit.length > 3) {
-      unit = '\n' + unit;
-    }
-  });
-
   function decrement() {
-    const decrementInterval = curCount <= precsisionThreshold ? interval / 2 : interval;
-    const newCount = Math.max(0.25, curCount - decrementInterval);
+    const decrementInterval =
+      unit !== 'reps' && curCount <= precsisionThreshold ? interval / 2 : interval;
+    const newCount = Math.max(limit, curCount - decrementInterval);
 
     if (newCount < limit) {
       console.log('LIMIT REACHED');
       return;
-    }
-
-    limitReached = newCount - decrementInterval < limit;
-    if (limitReached) {
-      console.log('Greyed out');
     }
 
     curCount = newCount;
@@ -51,16 +38,11 @@
   }
 
   function increment() {
-    if (curCount + 1 > maxLimit) {
+    const step = unit !== 'reps' && curCount < 1.5 ? interval / 2 : interval;
+    if (curCount + step > maxLimit) {
       return;
     }
-    limitReached = false;
-
-    if (curCount < 1.5) {
-      curCount += interval / 2;
-    } else {
-      curCount += interval;
-    }
+    curCount += step;
 
     onCountChange?.(curCount);
   }
@@ -70,11 +52,11 @@
   <div class="ml-1">{title}</div>
   <div class="controls mini">
     <button class="but mini" onclick={decrement}>
-      <Icon icon={'gg:remove'} height={'25'} color={limitReached ? 'grey' : '#fff'} />
+      <Icon icon="gg:remove" height="25" color={limitReached ? 'grey' : '#fff'} />
     </button>
     <gf class="mini-count">{curCount} {unit}</gf>
     <button class="but mini" onclick={increment}>
-      <Icon icon={'gg:add'} height={'25'} />
+      <Icon icon="gg:add" height="25" />
     </button>
   </div>
 </div>

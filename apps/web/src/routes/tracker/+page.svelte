@@ -1,6 +1,10 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
+  import { get } from 'svelte/store';
+  import { user } from '$lib/stores/appState';
+  import { getMe } from '../me';
+  import SessionPlans from '$lib/training/SessionPlans.svelte';
   import SessionSlug from '../../components/SessionSlug.svelte';
 
   import * as Alert from '$lib/components/alert/index.js';
@@ -34,10 +38,11 @@
   let toEditSessionName: string = $state('sessiontoedit');
   let newSessionName: string = $state('');
 
-  const activeTimespan = new Date();
-  activeTimespan.setDate(activeTimespan.getDate() - 14);
+  const activeTimespan = Date.now() - 14 * 24 * 60 * 60 * 1000;
 
   onMount(async () => {
+    if (!get(user)) await getMe();
+    if (get(user)?.capabilities.applicationModel === 'exercise-centric') return;
     slugs = await GetSessions();
 
     const [activeID, activeName] = await CheckActiveSession();
@@ -52,12 +57,12 @@
 
     recentSlugs = activeSlugs.filter((slug) => {
       if (!slug.date) return false;
-      return new Date(slug.date) >= activeTimespan;
+      return new Date(slug.date).getTime() >= activeTimespan;
     });
 
     otherSlugs = activeSlugs.filter((slug) => {
       if (!slug.date) return true;
-      return new Date(slug.date) < activeTimespan;
+      return new Date(slug.date).getTime() < activeTimespan;
     });
   }
 
@@ -268,103 +273,110 @@
   let activeCategory = $state(categories[0].label);
 </script>
 
-<div class="main">
-  <eyebrow>Sessions</eyebrow>
-  <h2>Start a new session</h2>
-  <subtitle>Select the session you want to run.</subtitle>
-  <Toaster theme="dark"></Toaster>
+{#if $user?.capabilities.applicationModel === 'exercise-centric'}
+  <SessionPlans />
+{:else}
+  <div class="main">
+    <eyebrow>Sessions</eyebrow>
+    <h2>Start a new session</h2>
+    <subtitle>Select the session you want to run.</subtitle>
+    <Toaster theme="dark"></Toaster>
 
-  <Alert.Root bind:open={deletePopupShowing}>
-    <Alert.Content title="Are you absolutely sure?" class="border-border border">
-      <Alert.Description>
-        This action cannot be undone. This will permanently delete the session and remove it from
-        our servers.
-      </Alert.Description>
+    <Alert.Root bind:open={deletePopupShowing}>
+      <Alert.Content title="Are you absolutely sure?" class="border-border border">
+        <Alert.Description>
+          This action cannot be undone. This will permanently delete the session and remove it from
+          our servers.
+        </Alert.Description>
 
-      <div class="mt-5 flex justify-evenly gap-3">
-        <Alert.Cancel>No, take me back</Alert.Cancel>
-        <Alert.Action
-          class="bg-destructive text-white"
-          onclick={() => confirmDeleteSession(itemToRemove)}
-        >
-          Remove {itemToRemove[0]}
-        </Alert.Action>
-      </div>
-    </Alert.Content>
-  </Alert.Root>
+        <div class="mt-5 flex justify-evenly gap-3">
+          <Alert.Cancel>No, take me back</Alert.Cancel>
+          <Alert.Action
+            class="bg-destructive text-white"
+            onclick={() => confirmDeleteSession(itemToRemove)}
+          >
+            Remove {itemToRemove[0]}
+          </Alert.Action>
+        </div>
+      </Alert.Content>
+    </Alert.Root>
 
-  <Alert.Root bind:open={activeSessionPopupShowing}>
-    <Alert.Content title="Another session is already active!" class="border-border border">
-      <Alert.Description>Are you sure you want to start a new one?</Alert.Description>
+    <Alert.Root bind:open={activeSessionPopupShowing}>
+      <Alert.Content title="Another session is already active!" class="border-border border">
+        <Alert.Description>Are you sure you want to start a new one?</Alert.Description>
 
-      <div class="mt-5 flex justify-end gap-3">
-        <Alert.Cancel>No, take me back.</Alert.Cancel>
-        <Alert.Action class="bg-accent" onclick={() => confirmStartSession()}>
-          Start new session!
-        </Alert.Action>
-      </div>
-    </Alert.Content>
-  </Alert.Root>
+        <div class="mt-5 flex justify-end gap-3">
+          <Alert.Cancel>No, take me back.</Alert.Cancel>
+          <Alert.Action class="bg-accent" onclick={() => confirmStartSession()}>
+            Start new session!
+          </Alert.Action>
+        </div>
+      </Alert.Content>
+    </Alert.Root>
 
-  <EditScreen
-    bind:open={editSessionPopupShowing}
-    bind:newSessionName
-    {sessionToEditID}
-    sessionName={toEditSessionName}
-    onConfirm={shuffleEdit}
-  />
+    <EditScreen
+      bind:open={editSessionPopupShowing}
+      bind:newSessionName
+      {sessionToEditID}
+      sessionName={toEditSessionName}
+      onConfirm={shuffleEdit}
+    />
 
-  <hr />
+    <hr />
 
-  {#if slugs.length && sessionsLoaded}
-    <div class="category-carousel">
-      {#each categories as category}
-        <button
-          type="button"
-          class={`category-pill ${category.tone}`}
-          class:active-category={activeCategory === category.label}
-          onclick={() => sortByCategory(category.label)}
-        >
-          {category.label}
-        </button>
-      {/each}
-    </div>
-
-    <div class="btn-container">
-      {#if recentSlugs.length}
-        <h3>Recent</h3>
-        {#each recentSlugs as slug, i}
-          <div style="width: inherit" in:fade|global={{ delay: i * 50 }} out:scale>
-            <SessionSlug
-              onPress={() => startSes(slug.id)}
-              onEdit={() => editSes(slug.id)}
-              onDel={() => deleteSession(slug.name, slug.id)}
-              {slug}
-            />
-          </div>
+    {#if slugs.length && sessionsLoaded}
+      <div class="category-carousel">
+        {#each categories as category (category.label)}
+          <button
+            type="button"
+            class={[
+              'category-pill',
+              category.tone,
+              { 'active-category': activeCategory === category.label },
+            ]}
+            onclick={() => sortByCategory(category.label)}
+          >
+            {category.label}
+          </button>
         {/each}
-      {/if}
+      </div>
 
-      {#if otherSlugs.length}
-        <h3 in:fade|global={{ delay: 50 }} class="mt-4">Older</h3>
-        {#each otherSlugs as slug, i}
-          <div style="width: inherit" in:fade|global={{ delay: 50 + i * 50 }} out:scale>
-            <SessionSlug
-              onPress={() => startSes(slug.id)}
-              onEdit={() => editSes(slug.id)}
-              onDel={() => deleteSession(slug.name, slug.id)}
-              {slug}
-            />
-          </div>
-        {/each}
-      {/if}
-    </div>
-  {:else if !sessionsLoaded}
-    <Icon icon="svg-spinners:3-dots-bounce" width="30" />
-  {:else}
-    <subtitle>Nothing here yet. Add a session to get started.</subtitle>
-  {/if}
-</div>
+      <div class="btn-container">
+        {#if recentSlugs.length}
+          <h3>Recent</h3>
+          {#each recentSlugs as slug, i (slug.id)}
+            <div style="width: inherit" in:fade|global={{ delay: i * 50 }} out:scale>
+              <SessionSlug
+                onPress={() => startSes(slug.id)}
+                onEdit={() => editSes(slug.id)}
+                onDel={() => deleteSession(slug.name, slug.id)}
+                {slug}
+              />
+            </div>
+          {/each}
+        {/if}
+
+        {#if otherSlugs.length}
+          <h3 in:fade|global={{ delay: 50 }} class="mt-4">Older</h3>
+          {#each otherSlugs as slug, i (slug.id)}
+            <div style="width: inherit" in:fade|global={{ delay: 50 + i * 50 }} out:scale>
+              <SessionSlug
+                onPress={() => startSes(slug.id)}
+                onEdit={() => editSes(slug.id)}
+                onDel={() => deleteSession(slug.name, slug.id)}
+                {slug}
+              />
+            </div>
+          {/each}
+        {/if}
+      </div>
+    {:else if !sessionsLoaded}
+      <Icon icon="svg-spinners:3-dots-bounce" width="30" />
+    {:else}
+      <subtitle>Nothing here yet. Add a session to get started.</subtitle>
+    {/if}
+  </div>
+{/if}
 
 <style>
   .main {
