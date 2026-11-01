@@ -17,6 +17,7 @@ type HTTP struct {
 }
 
 func (h HTTP) Register(mux *http.ServeMux) {
+	mux.HandleFunc("/api/training/workouts/configuration", h.Boundary.Handler("POST", application.ExerciseCentric, true, h.updateConfiguration))
 	mux.HandleFunc("/api/training/workouts/sets/record", h.Boundary.Handler("POST", application.ExerciseCentric, true, h.recordSet))
 	mux.HandleFunc("/api/training/catalog", h.Boundary.Handler("GET", application.ExerciseCentric, false, func(w http.ResponseWriter, r *http.Request) {
 		respond(w, struct {
