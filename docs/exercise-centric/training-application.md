@@ -546,9 +546,56 @@ revisions and a new operation ID. Finalized reviewed state cannot be reapplied.
 Completed cards display frozen performed/skipped work and a separate Current next
 targets group. Automatic ending requires no separate normal End workout control.
 
-Ticket #36 should read completed actual rows directly (including completed attempts in active
-workouts), exclude drafts/skips from performed averages, and use per-set actual
-products for exact volume. Current future targets are never history aggregates.
+## Stats summaries and imported history
+
+`GET /api/training/stats` is an authenticated exercise-centric read through
+`training.Service.Stats`. It returns `{tracks: StatsTrack[]}` in one repeatable
+read snapshot. Each track contains `exerciseId`, current `exerciseName`, nullable
+`variantId`/current `variantName`, and `entries`. Track identity is the exercise
+UUID plus variant UUID (or null for unassigned imported history), independently
+of session placements. Archived exercises/variants and unlinked history remain
+included; selectable library filtering is not applied.
+
+Each entry has stable `id`, nullable normalized UTC `occurredAt`, nullable original
+`sourceTimestamp` (a timezone-free timestamp string, preserving microseconds),
+`sourceTimezone`, nullable `setCount`, `averageReps`, `averageWeight`, `volume`,
+`representation` and `volumeEstimated`. Decimal aggregates/volume are strings.
+Raw import JSON/internal maps, fabricated workouts and saved-session attribution
+are not returned. Entries sort by occurrence time then ID; equal-time IDs remain
+separate without date jitter. An unavailable occurrence time stays null and is
+never reconstructed from source time in the browser.
+
+`set_derived` entries select only completed workout exercises, including those
+inside active workouts. `setCount` counts performed rows (including actual zero);
+skips are excluded. Averages divide actual sums by performed count with PostgreSQL
+numeric precision. Exact `volume` is the numeric sum of each actual recorded
+weight times recorded reps, retaining decimal precision independently of averages.
+For 12/11/10 reps at 40/50/50 kg, it is `1530.00`, not the product of averages.
+With no performed rows, volume is `0.00` and averages are null. Captured targets,
+progressed targets and draft attempts never supply aggregates.
+
+`legacy_aggregate` entries retain original stored averages/counts even if nullable
+or invalid. `volumeEstimated: true` identifies imported volume: the separately
+derived product is available only with nonnegative finite averages and positive
+set count. Missing/negative/NaN inputs produce null volume; originals are neither
+rewritten nor replaced. Each metric independently omits missing/invalid inputs.
+Estimated 1RM retains `averageWeight * (1 + 0.0333 * averageReps)` with positive
+actual average reps, rounding only the displayed result to one decimal. No minimum
+rep substitution exists; skipped/all-zero reps have no estimate. Zero weight is
+valid. Chart projection converts decimals only for plotting; summary volume keeps
+the exact decimal string. Average display precision is separate.
+
+Stats retains session tabs, chart presentation, ranges anchored to latest dated
+entry, overlays, trends and prior-month comparison. Shared variants resolve the
+same track under every referencing session with current labels. Other history
+provides the existing chart presentation for exercise-level Imported history
+(unassigned variant) and histories with no remaining saved-session placement,
+including accounts with zero saved sessions. Imports clearly identify estimated
+volume; collapsed aggregate summaries expose missing metrics/source time and
+separate equal-time IDs without adding per-set or detailed workout screens.
+Only the active tab mounts charts. Bootstrap uses new-model endpoints only,
+gates on the current account model, and clears/cancels late read state across
+account/model changes. Failed reads offer explicit Retry.
 
 ## Quit partial workouts
 

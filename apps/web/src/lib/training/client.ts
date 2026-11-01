@@ -1,6 +1,7 @@
 import { PUBLIC_BACKEND_BASE_URL } from '$env/static/public';
 import { upgradeRequired } from '$lib/stores/appState';
 import type {
+  StatsTrack,
   CreateSessionCommand,
   CompleteAttemptCommand,
   QuitWorkoutCommand,
@@ -78,6 +79,8 @@ export const completeAttempt = (command: CompleteAttemptCommand) =>
 
 export const updateConfiguration = (command: UpdateConfigurationCommand) =>
   request<ConfigurationResult>('/workouts/configuration', command);
+
+export const readStats = () => request<{ tracks: StatsTrack[] }>('/stats');
 
 export const quitWorkout = (command: QuitWorkoutCommand) =>
   request<WorkoutResult>('/workouts/quit', command);
