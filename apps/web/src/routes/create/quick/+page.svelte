@@ -10,8 +10,8 @@
   import { QuickGeneration } from '../dbWrite';
   import { fade, fly } from 'svelte/transition';
 
-  var userText = $state<string>('');
-  var isAdditionalInfoEnabled = $state<boolean>(false);
+  let userText = $state<string>('');
+  let isAdditionalInfoEnabled = $state<boolean>(false);
 
   let cbSpellcheck = $state(false);
   let cbRestart = $state(false);
@@ -26,13 +26,11 @@
 
   let dataPromise = $state<Promise<string> | null>(null);
 
-  async function quickfillAPICall(prompt: string) {
+  function quickfillAPICall(prompt: string) {
     const choices: boolean[] = [cbSpellcheck, cbRestart, cbAutoChoose, cbStrength];
 
     // load
     dataPromise = QuickGeneration(prompt, choices);
-    // finish loading
-    console.log(await dataPromise);
   }
 
   function validateForm(): true | string {
@@ -64,8 +62,8 @@
     }
     const STORAGE_KEY = 'workoutPayload';
     sessionStorage.setItem(STORAGE_KEY, jsonData);
-    console.log('Storing...');
 
+    // eslint-disable-next-line svelte/no-navigation-without-resolve -- The route is resolved before adding the draft query.
     goto(`${resolve('/create/manual')}?quickload=1`);
   }
 
@@ -166,7 +164,7 @@
     <label for="primary-textarea" class="field-label"> Paste workout session </label>
 
     <Textarea
-      placeholder={'e.g: \nBench press (70kg): reps (7,7,6) etc.'}
+      placeholder="e.g: &#10;Bench press (70kg): reps (7,7,6) etc."
       oninput={(e) => (userText = (e.target as HTMLTextAreaElement).value)}
       id="primary-textarea"
       maxlength={400}
@@ -249,7 +247,7 @@
               {:else if paragraphs == 'fail'}
                 Generation failed!
               {:else}
-                Session created!
+                Draft ready to review!
               {/if}
             {/await}
           </Dialog.Title>
@@ -260,11 +258,11 @@
             {:then result}
               {#if result == 'fail'}
                 <ul>
-                  <p>{'Try again later.'}</p>
+                  <p>Try again later.</p>
                 </ul>
               {:else if result == 'limit'}
                 <ul>
-                  <p>{'Wait for token count to replenish.'}</p>
+                  <p>Wait for token count to replenish.</p>
                 </ul>
               {:else}
                 <div transition:fade={{ delay: 200, duration: 200 }}>

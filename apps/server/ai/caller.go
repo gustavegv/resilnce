@@ -126,7 +126,7 @@ func readResponse(httpResp *http.Response) (string, error) {
 
 	if parsed.Error != nil {
 		fmt.Fprintf(os.Stderr, "API error: %s (type=%s)\n", parsed.Error.Message, parsed.Error.Type)
-		return "", err
+		return "", errors.New("AI response contains an error")
 	}
 
 	text := extractOutputText(parsed)

@@ -9,12 +9,16 @@
   import { get } from 'svelte/store';
   import { user } from '$lib/stores/appState';
   import { getMe } from '../../me';
-  import { createSession, TrainingError } from '$lib/training/client';
-  import type { CreateSessionCommand, DraftSessionItem } from '$lib/training/types';
-  import type { ExerciseDataPackaged } from '../dbWrite';
+  import { createSession, readCatalog, TrainingError } from '$lib/training/client';
+  import type {
+    CreateSessionCommand,
+    DraftSessionItem,
+    ExerciseSuggestion,
+  } from '$lib/training/types';
+  import { readGeneratedDraft } from '$lib/training/generatedDraft';
 
   let sessionName = $state(page.url.searchParams.get('title') ?? '');
-  let resolver: DraftItemResolver;
+  let resolver = $state<DraftItemResolver>();
   let sessionExercisesList: SortableList;
   let error = $state('');
   let reviewing = $state(false);
@@ -23,6 +27,13 @@
   let commandAccount = '';
   let canEdit = $state(false);
   const quickloadKey = 'workoutPayload';
+  let generated = $state(false);
+  let rawDraft = $state('');
+  let draftNeedsCorrection = $state(false);
+  let suggestions = $state.raw<{ id: string; suggestion: ExerciseSuggestion }[]>([]);
+  let reviewIndex = $state(0);
+  let currentSuggestion = $derived(suggestions[reviewIndex]);
+  let loadingDraft = $state(false);
 
   onMount(async () => {
     if (!get(user) && !(await getMe())) {
@@ -31,32 +42,52 @@
       return;
     }
     if (page.url.searchParams.get('quickload') === '1') {
-      try {
-        const draft: ExerciseDataPackaged[] = JSON.parse(
-          sessionStorage.getItem(quickloadKey) ?? '[]'
-        );
-        sessionExercisesList.fillFromArray(
-          draft.map((pack) => ({
-            draftId: crypto.randomUUID(),
-            intent: {
-              kind: 'createExercise',
-              name: pack.name,
-              muscleGroupCodes: [],
-              configuration: {
-                prescribedSets: pack.sets,
-                initialWeight: String(pack.weight),
-                repThreshold: pack.repThreshold ?? 12,
-                autoIncrement: String(pack.autoIncrease ?? 2.5),
-                restSeconds: 0,
-              },
-            },
-          }))
-        );
-      } catch {
-        error = 'Unable to read the draft. Add exercises manually.';
-      }
+      generated = true;
+      rawDraft = sessionStorage.getItem(quickloadKey) ?? '';
+      await reviewSuggestions();
     }
   });
+  async function reviewSuggestions() {
+    loadingDraft = true;
+    try {
+      let draft = readGeneratedDraft(rawDraft);
+      if (draft.some((suggestion) => suggestion.muscleGroupCodes?.length)) {
+        const catalog = await readCatalog();
+        draft = readGeneratedDraft(
+          rawDraft,
+          new Set(catalog.muscleGroups.map((group) => group.code))
+        );
+      }
+      suggestions = draft.map((suggestion) => ({ id: crypto.randomUUID(), suggestion }));
+      reviewIndex = 0;
+      sessionExercisesList.fillFromArray([]);
+      draftNeedsCorrection = false;
+      error = '';
+    } catch (failure) {
+      draftNeedsCorrection = true;
+      error =
+        failure instanceof SyntaxError
+          ? 'The generated draft is not valid JSON. Correct it below or cancel.'
+          : (failure as Error).message;
+    } finally {
+      loadingDraft = false;
+    }
+  }
+  function resolveSuggestion(item: DraftSessionItem): boolean {
+    if (!appendDraft(item)) return false;
+    reviewIndex++;
+    return true;
+  }
+  async function cancelGenerated() {
+    if (pending) return;
+    sessionStorage.removeItem(quickloadKey);
+    await goto(resolve('/create'));
+  }
+  function editSuggestions() {
+    draftNeedsCorrection = true;
+    error =
+      'Applying a corrected draft restarts its review. Your current choices remain until you apply it.';
+  }
   beforeNavigate(({ cancel }) => {
     if (pending) {
       cancel();
@@ -106,6 +137,10 @@
     return true;
   }
   async function editDraft(item: DraftSessionItem): Promise<boolean> {
+    if (!resolver) {
+      error = 'Finish reviewing the suggestions before editing a reviewed exercise.';
+      return false;
+    }
     reviewing = true;
     try {
       return await resolver.edit(item);
@@ -114,9 +149,14 @@
     }
   }
   async function saveSession() {
-    if (saveState === 'saving' || reviewing) return;
+    if (saveState === 'saving' || reviewing || loadingDraft) return;
     if (!pending) {
-      if (resolver.hasInput() && !resolver.add()) return;
+      if (draftNeedsCorrection || currentSuggestion) {
+        error =
+          'Review every suggestion before saving. Each needs an explicit reuse or creation choice.';
+        return;
+      }
+      if (resolver?.hasInput() && !resolver.add()) return;
       const items = sessionExercisesList.extractData().map((item) => item.intent);
       if (!sessionName.trim() || [...sessionName.trim()].length > 100 || !items.length) {
         error = 'Add a session name and at least one exercise.';
@@ -159,7 +199,7 @@
 
 <svelte:window onbeforeunload={beforeUnload} />
 <div class="container">
-  <fieldset disabled={pending !== null || reviewing}>
+  <fieldset disabled={pending !== null || reviewing || loadingDraft}>
     <input
       aria-label="Session name"
       maxlength="100"
@@ -168,12 +208,42 @@
       class="title"
     />
     <div class="add-box shadow">
-      <h3 class="w-full pb-2 text-xl font-semibold">Add an exercise</h3>
-      <DraftItemResolver
-        bind:this={resolver}
-        onresolve={appendDraft}
-        disabled={pending !== null || reviewing}
-      />
+      {#if loadingDraft}
+        <p role="status">Checking the suggested draft…</p>
+      {:else if draftNeedsCorrection}
+        <h3 class="w-full pb-2 text-xl font-semibold">Correct the suggested draft</h3>
+        <label
+          >Suggested draft JSON<textarea aria-label="Suggested draft JSON" bind:value={rawDraft}
+          ></textarea></label
+        >
+        <button class="buttonClass" onclick={reviewSuggestions}>Review corrected draft</button>
+      {:else if currentSuggestion}
+        <h3 class="w-full pb-2 text-xl font-semibold">
+          Review suggestion {reviewIndex + 1} of {suggestions.length}
+        </h3>
+        <p>Choose shared current settings or explicitly create separate settings.</p>
+        {#each [currentSuggestion] as row (row.id)}
+          <DraftItemResolver
+            suggestion={row.suggestion}
+            onresolve={resolveSuggestion}
+            disabled={pending !== null || reviewing}
+          />
+        {/each}
+        <button
+          class="buttonClass minimal"
+          onclick={() => {
+            reviewIndex++;
+            error = '';
+          }}>Remove this suggestion</button
+        >
+      {:else}
+        <h3 class="w-full pb-2 text-xl font-semibold">Add an exercise</h3>
+        <DraftItemResolver
+          bind:this={resolver}
+          onresolve={appendDraft}
+          disabled={pending !== null || reviewing}
+        />
+      {/if}
     </div>
     <SortableList
       bind:this={sessionExercisesList}
@@ -185,6 +255,12 @@
       {saveState === 'saving' ? 'Saving' : saveState === 'saved' ? 'Saved' : 'Not saved'}
     </p>{/if}
   {#if error}<p role="alert">{error}</p>{/if}
+  {#if generated && !pending}
+    {#if !draftNeedsCorrection}<button class="buttonClass minimal" onclick={editSuggestions}
+        >Edit suggested draft</button
+      >{/if}
+    <button class="buttonClass minimal" onclick={cancelGenerated}>Cancel generated session</button>
+  {/if}
   {#if saveState === 'failed'}
     <button onclick={saveSession} class="buttonClass">Retry</button>
     {#if canEdit}<button onclick={resumeEditing} class="buttonClass">Edit draft</button>{/if}
@@ -202,6 +278,14 @@
   [role='alert'] {
     width: 80%;
     color: #ffb3b3;
+  }
+  textarea {
+    background: var(--surface-middle);
+    border-radius: var(--border-middle);
+    padding: var(--spacing-md);
+    width: 100%;
+    min-height: 12rem;
+    box-sizing: border-box;
   }
 
   .container {
