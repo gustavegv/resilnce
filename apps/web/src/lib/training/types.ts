@@ -216,3 +216,23 @@ export interface ConfigurationResult extends WorkoutResult {
   exercise: Exercise;
   variant: Variant;
 }
+
+export interface StatsEntry {
+  id: ID;
+  occurredAt: string | null;
+  sourceTimestamp: string | null;
+  sourceTimezone: string | null;
+  setCount: number | null;
+  averageReps: Decimal | null;
+  averageWeight: Decimal | null;
+  volume: Decimal | null;
+  representation: 'set_derived' | 'legacy_aggregate';
+  volumeEstimated: boolean;
+}
+export interface StatsTrack {
+  exerciseId: ID;
+  exerciseName: string;
+  variantId: ID | null;
+  variantName: string | null;
+  entries: StatsEntry[];
+}

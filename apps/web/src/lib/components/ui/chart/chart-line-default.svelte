@@ -28,10 +28,14 @@
   } = $props();
 
   export interface ChartData {
+    id: string;
     date: Date;
-    oneRM: number;
-    weightPerSet: number;
-    totalVolume: number;
+    representation: 'set_derived' | 'legacy_aggregate';
+    volumeEstimated: boolean;
+    volumeExact?: string;
+    oneRM?: number;
+    weightPerSet?: number;
+    totalVolume?: number;
   }
 
   function getRangeMonths(range: string) {
@@ -109,11 +113,13 @@
       return [];
     }
 
+    const available = data.filter((entry) => Number.isFinite(entry.weightPerSet));
+    if (!available.length) return [];
     return visibleData.map((entry) => {
       const targetDate = new Date(entry.date);
       targetDate.setMonth(targetDate.getMonth() - 1);
 
-      const comparisonEntry = getClosestEntry(data, targetDate);
+      const comparisonEntry = getClosestEntry(available, targetDate);
 
       return {
         ...comparisonEntry,
@@ -139,7 +145,7 @@
       range: string;
     }
   ): DomainType {
-    const values: number[] = [];
+    const values: (number | undefined)[] = [];
 
     if (selectedWPS) {
       values.push(...visibleData.map((entry) => entry.weightPerSet));
@@ -157,12 +163,13 @@
       values.push(...comparisonData.map((entry) => entry.weightPerSet));
     }
 
-    if (!values.length) {
+    const finite = values.filter((value): value is number => Number.isFinite(value));
+    if (!finite.length) {
       return [0, 100];
     }
 
-    const lower = Math.min(...values);
-    const upper = Math.max(...values);
+    const lower = Math.min(...finite);
+    const upper = Math.max(...finite);
     const span = upper - lower || Math.max(upper, 10);
 
     return [Math.max(0, lower - span * 0.15), upper + span * 0.2];
@@ -173,7 +180,12 @@
       return null;
     }
 
-    const sorted = data.slice().sort((a, b) => a.date.getTime() - b.date.getTime());
+    const sorted = data
+      .filter((entry): entry is ChartData & { weightPerSet: number } =>
+        Number.isFinite(entry.weightPerSet)
+      )
+      .sort((a, b) => a.date.getTime() - b.date.getTime() || a.id.localeCompare(b.id));
+    if (sorted.length < 2) return null;
     const latestEntry = sorted[sorted.length - 1];
     const latestDate = latestEntry.date;
     const latestValue = latestEntry.weightPerSet;
@@ -188,6 +200,7 @@
     const pastEntry = getClosestEntry(sorted, targetDate);
 
     const pastValue = pastEntry.weightPerSet;
+    if (pastValue === undefined) return null;
 
     const percentageChange = pastValue === 0 ? null : ((latestValue - pastValue) / pastValue) * 100;
     const rounded = Math.round((percentageChange ?? 1) * 10) / 10;
@@ -209,6 +222,8 @@
         key: 'oneRM',
         label: '1RM',
         color: chartConfig.oneRM.color,
+        value: (entry: ChartData) => entry.oneRM,
+        data: chartData.filter((entry) => Number.isFinite(entry.oneRM)),
       });
     }
 
@@ -217,6 +232,8 @@
         key: 'weightPerSet',
         label: 'Weight per set',
         color: chartConfig.weightPerSet.color,
+        value: (entry: ChartData) => entry.weightPerSet,
+        data: chartData.filter((entry) => Number.isFinite(entry.weightPerSet)),
       });
     }
 
@@ -225,16 +242,18 @@
         key: 'totalVolume',
         label: 'Total volume lifted',
         color: chartConfig.totalVolume.color,
+        value: (entry: ChartData) => entry.totalVolume,
+        data: chartData.filter((entry) => Number.isFinite(entry.totalVolume)),
       });
     }
 
     if (range === '1m' && montComp) {
       series.push({
         key: 'monthComparison',
-        label: 'Last month 1RM',
+        label: 'Last month weight per set',
         color: chartConfig.monthComparison.color,
         value: (entry: ChartData) => entry.weightPerSet,
-        data: monthComparisonData,
+        data: monthComparisonData.filter((entry) => Number.isFinite(entry.weightPerSet)),
       });
     }
 
@@ -258,6 +277,9 @@
   <Card.Description>{desc}</Card.Description>
 </Card.Header>
 <Card.Content>
+  {#if !visibleSeries.some((series) => series.data.length)}
+    <p class="text-muted-foreground text-sm">Selected metrics are unavailable for this range.</p>
+  {/if}
   <Chart.Container config={chartConfig}>
     <AreaChart
       data={chartData}

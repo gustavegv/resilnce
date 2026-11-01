@@ -17,6 +17,7 @@ type HTTP struct {
 }
 
 func (h HTTP) Register(mux *http.ServeMux) {
+	mux.HandleFunc("/api/training/stats", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.stats))
 	mux.HandleFunc("/api/training/workouts/complete", h.Boundary.Handler("POST", application.ExerciseCentric, true, h.completeAttempt))
 	mux.HandleFunc("/api/training/workouts/configuration", h.Boundary.Handler("POST", application.ExerciseCentric, true, h.updateConfiguration))
 	mux.HandleFunc("/api/training/workouts/sets/record", h.Boundary.Handler("POST", application.ExerciseCentric, true, h.recordSet))
@@ -142,4 +143,11 @@ func (h HTTP) sessionRoute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.NotFound(w, r)
+}
+
+func (h HTTP) stats(w http.ResponseWriter, r *http.Request) {
+	v, err := h.Service.Stats(r.Context(), owner(r))
+	respond(w, struct {
+		Tracks []StatsTrack `json:"tracks"`
+	}{v}, err)
 }

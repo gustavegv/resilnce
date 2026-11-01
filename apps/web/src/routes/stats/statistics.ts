@@ -1,29 +1,41 @@
 import type { ChartData } from '$lib/components/ui/chart/chart-line-default.svelte';
-import { GetExerciseHistory, type HistoricEntry } from '../tracker/dbFetches';
+import type { StatsEntry } from '$lib/training/types';
+
+export function metric(value: string | null): number | undefined {
+  if (value === null || value.trim() === '') return undefined;
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? number : undefined;
+}
 
 export function est1RM(weight: number, reps: number) {
-  if (reps < 1) throw new Error('Reps must be at least 1');
   return weight * (1 + 0.0333 * reps);
 }
 
-export function totalVolume(weight: number, reps: number, sets: number) {
-  return weight * reps * sets;
-}
-
-export function historicToChartData(entries: HistoricEntry[]): ChartData[] {
+export function summariesToChartData(entries: StatsEntry[]): ChartData[] {
   return entries
-    .map((entry) => ({
-      date: entry.saveDate,
-      oneRM: Math.round(est1RM(entry.avgWeight, Math.max(entry.avgRep, 1)) * 10) / 10,
-      weightPerSet: entry.avgWeight,
-      totalVolume: totalVolume(entry.avgWeight, entry.avgRep, entry.noOfSets),
-    }))
-    .sort((a, b) => a.date.getTime() - b.date.getTime());
-}
-
-export async function fetchHistoricData(exID: number): Promise<ChartData[]> {
-  const history = await GetExerciseHistory(exID);
-  return historicToChartData(history);
+    .flatMap((entry) => {
+      if (!entry.occurredAt) return [];
+      const date = new Date(entry.occurredAt);
+      if (!Number.isFinite(date.getTime())) return [];
+      const weight = metric(entry.averageWeight);
+      const reps = metric(entry.averageReps);
+      return [
+        {
+          id: entry.id,
+          date,
+          representation: entry.representation,
+          volumeEstimated: entry.volumeEstimated,
+          volumeExact: entry.volume ?? undefined,
+          oneRM:
+            weight !== undefined && reps !== undefined && reps > 0
+              ? Math.round(est1RM(weight, reps) * 10) / 10
+              : undefined,
+          weightPerSet: weight,
+          totalVolume: metric(entry.volume),
+        },
+      ];
+    })
+    .sort((a, b) => a.date.getTime() - b.date.getTime() || a.id.localeCompare(b.id));
 }
 
 function shiftDate(date: Date, amount: number, unit: 'd' | 'm' | 'y') {
