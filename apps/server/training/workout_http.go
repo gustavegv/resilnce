@@ -83,3 +83,19 @@ func (h HTTP) updateConfiguration(w http.ResponseWriter, r *http.Request) {
 	v, err := h.Service.UpdateConfiguration(r.Context(), owner(r), *c)
 	respond(w, v, err)
 }
+
+func (h HTTP) quitWorkout(w http.ResponseWriter, r *http.Request) {
+	var c *QuitWorkout
+	d := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16*1024))
+	d.DisallowUnknownFields()
+	if err := d.Decode(&c); err != nil || c == nil {
+		application.WriteError(w, 400, "malformed-request", "Send one quit command object", nil)
+		return
+	}
+	if err := d.Decode(new(any)); err != io.EOF {
+		application.WriteError(w, 400, "malformed-request", "Send one quit command", nil)
+		return
+	}
+	v, err := h.Service.QuitWorkout(r.Context(), owner(r), *c)
+	respond(w, v, err)
+}

@@ -546,13 +546,6 @@ revisions and a new operation ID. Finalized reviewed state cannot be reapplied.
 Completed cards display frozen performed/skipped work and a separate Current next
 targets group. Automatic ending requires no separate normal End workout control.
 
-Ticket #34 should extend the common pending-command/navigation guard for quit,
-retain completed work/progression and target exactly one workout. An uncertain
-completion must resolve before a quit/start can overtake it. Ticket #36 should
-read completed actual rows directly (including completed attempts in active
-workouts), exclude drafts/skips from performed averages, and use per-set actual
-products for exact volume. Current future targets are never history aggregates.
-
 ## Stats summaries and imported history
 
 `GET /api/training/stats` is an authenticated exercise-centric read through
@@ -603,3 +596,45 @@ separate equal-time IDs without adding per-set or detailed workout screens.
 Only the active tab mounts charts. Bootstrap uses new-model endpoints only,
 gates on the current account model, and clears/cancels late read state across
 account/model changes. Failed reads offer explicit Retry.
+
+## Quit partial workouts
+
+`training.Service.QuitWorkout(ctx, owner, QuitWorkout)` and authenticated
+`POST /api/training/workouts/quit` accept only the exact reviewed workout:
+
+```json
+{"operationId":"a3400000-0000-4000-8000-000000000001","workoutId":"<uuid>","expectedWorkoutRevision":"4"}
+```
+
+The existing command transaction locks the owner row, resolves exact receipt
+replay before revision/finality guards, then locks the owned workout. A stale
+active revision is 409; missing/cross-owner workout is 404. UUIDs and positive
+opaque revision strings are validated; unsupported fields are 400. One atomic
+transaction deletes only draft attempts (and their sets by cascade), marks that
+workout ended with a server timestamp, advances its revision, and stores the
+receipt. Completed attempts, their actuals/settings/timestamps, progression,
+and independent shared configuration edits remain intact. A quit with no
+completions leaves no exercise history or session recency. Failures during
+set deletion, ending or receipt publication roll everything back.
+
+Success returns `{operation,workout}` for that exact ended workout. Exact retry
+returns the original acknowledgment plus current authoritative state. A new
+operation ID for an already ended owned workout acknowledges its ended state
+before stale-revision rejection. Neither can act on a later active workout, and
+an accepted operation ID cannot be changed to address another workout.
+Concurrent completion and quit serialize: completion first makes the old quit
+stale and requires review of accepted work; quit first removes the draft so it
+cannot later complete. Repeated quit cannot repeat lifecycle changes.
+
+`WorkoutScreen.svelte` keeps Quit workout with explicit confirmation explaining
+that completed work/progression and shared edits are kept while unfinished
+attempts/sets are discarded. Keep training cancels that confirmation. Quit uses
+the same pending-command union as recording, configuration and completion.
+Unsent reps, an open edit, a saving/failed command, and an uncertain completion
+block quit. An uncertain quit retains its exact identity/revision/operation ID,
+blocks edits/discard/navigation/unload, and offers identical Retry under the
+original account/workout. Conflict review displays completed and draft state
+before explicit acceptance or reapply with a new ID and reviewed revision.
+Closing/unmounting a saved workout sends no lifecycle command; it remains
+active and resumable. Stage 1 still ends automatically on the final completion
+and exposes no separate normal End control.

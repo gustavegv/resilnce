@@ -236,3 +236,9 @@ export interface StatsTrack {
   variantName: string | null;
   entries: StatsEntry[];
 }
+
+export type QuitWorkoutCommand = {
+  operationId: string;
+  workoutId: string;
+  expectedWorkoutRevision: string;
+};

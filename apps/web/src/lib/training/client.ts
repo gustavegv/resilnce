@@ -4,6 +4,7 @@ import type {
   StatsTrack,
   CreateSessionCommand,
   CompleteAttemptCommand,
+  QuitWorkoutCommand,
   UpdateConfigurationCommand,
   ConfigurationResult,
   DeleteSessionCommand,
@@ -80,3 +81,6 @@ export const updateConfiguration = (command: UpdateConfigurationCommand) =>
   request<ConfigurationResult>('/workouts/configuration', command);
 
 export const readStats = () => request<{ tracks: StatsTrack[] }>('/stats');
+
+export const quitWorkout = (command: QuitWorkoutCommand) =>
+  request<WorkoutResult>('/workouts/quit', command);
