@@ -78,7 +78,9 @@ Imported last-run fallback remains in the session-maintenance slice (#29). The
 existing import map has a naive legacy timestamp without reliable per-session
 source-timezone metadata; this slice does not reinterpret that timestamp as UTC.
 
-The package-private command transaction serializes mutations per owner, checks
+The package-private command transaction locks the existing `User` account row to
+serialize mutations per owner. Affected workout/variant rows must then be locked
+in a consistent order. It checks
 owner-plus-operation receipts before revision/finality checks, and stores kind,
 target, fingerprint and acknowledgment in the mutation transaction. Identical
 create replay resolves the existing identities and returns current authoritative

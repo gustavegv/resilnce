@@ -12,8 +12,9 @@ import (
 
 // A command owns one transaction. Callers defer rollback, check replay before
 // revision/finality guards, read authoritative results through tx, then commit.
-// Owner serialization also makes independent-device commands and receipt
-// publication one ordered sequence. Every training write must use this wrapper.
+// Locking the existing account row serializes independent-device commands and
+// receipt publication. Affected workout/variant locks follow in consistent order.
+// Every training write must use this wrapper before its state/revision guards.
 type command struct {
 	tx                       pgx.Tx
 	replay                   bool
@@ -42,7 +43,8 @@ func (s *Service) beginCommand(ctx context.Context, owner, operationID, kind, ta
 			c.tx.Rollback(ctx)
 		}
 	}()
-	if _, err = c.tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1, 127427))`, owner); err != nil {
+	var lockedOwner string
+	if err = c.tx.QueryRow(ctx, `SELECT mail FROM public."User" WHERE mail=$1 FOR UPDATE`, owner).Scan(&lockedOwner); err != nil {
 		return nil, err
 	}
 	var existingKind, existingFingerprint string
