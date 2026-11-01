@@ -3,8 +3,15 @@
   import { beforeNavigate } from '$app/navigation';
   import { get } from 'svelte/store';
   import { user } from '$lib/stores/appState';
-  import { readWorkout, recordSet, TrainingError } from './client';
-  import type { RecordSetCommand, Workout, WorkoutExercise, WorkoutSet } from './types';
+  import { readWorkout, recordSet, updateConfiguration, TrainingError } from './client';
+  import type {
+    ConfigurationPatch,
+    UpdateConfigurationCommand,
+    RecordSetCommand,
+    Workout,
+    WorkoutExercise,
+    WorkoutSet,
+  } from './types';
 
   let { workoutId }: { workoutId: string } = $props();
   const originalAccount = get(user)?.id ?? '';
@@ -16,16 +23,45 @@
   let loading = $state(true);
   let error = $state('');
   let candidates = $state<Record<string, string>>({});
-  let pending = $state.raw<RecordSetCommand | null>(null);
+  let pending = $state.raw<RecordSetCommand | UpdateConfigurationCommand | null>(null);
+  let editAttempt = $state.raw<WorkoutExercise | null>(null);
+  let editFields = $state({
+    exerciseName: '',
+    variantName: '',
+    prescribedSets: '',
+    repThreshold: '',
+    autoIncrement: '',
+    restSeconds: '',
+    weight: '',
+  });
+  let applyWeight = $state(false);
+  let rejectedConfiguration = $state(false);
+  let mixedWeights = $derived(
+    editAttempt !== null &&
+      new Set(editAttempt.currentVariant.targetSets.map((s) => s.targetWeight)).size > 1
+  );
+  let shrinking = $derived(
+    editAttempt !== null &&
+      Number(editFields.prescribedSets) < editAttempt.currentVariant.prescribedSets
+  );
+  let editorDirty = $derived(editAttempt !== null);
+
   let saveState = $state<'saved' | 'saving' | 'failed'>('saved');
   let reviewed = $state.raw<Workout | null>(null);
   let conflict = $state(false);
   let navigationBlocked = $state(false);
-  let hasInput = $derived(pending !== null || Object.keys(candidates).length > 0);
+  let hasInput = $derived(pending !== null || editorDirty || Object.keys(candidates).length > 0);
   let canReapply = $derived.by(() => {
     if (!pending || !reviewed || reviewed.status !== 'active') return false;
     const attempt = reviewed.exercises.find((a) => a.id === pending!.attemptId);
-    return attempt?.state === 'draft' && attempt.sets.some((s) => s.id === pending!.setId);
+    if (attempt?.state !== 'draft') return false;
+    const intent = pending;
+    return 'patch' in intent
+      ? attempt.exercise.id === intent.exerciseId &&
+          attempt.variantId === intent.variantId &&
+          !attempt.exercise.archived &&
+          !attempt.currentVariant.archived
+      : attempt.sets.some((s) => s.id === intent.setId);
   });
 
   beforeNavigate(({ cancel }) => {
@@ -80,13 +116,17 @@
     saveState = 'saving';
     error = '';
     try {
-      const result = await recordSet(intent);
+      const result = await ('patch' in intent ? updateConfiguration(intent) : recordSet(intent));
       if (!sameAccount() || workoutId !== intent.workoutId) {
         saveState = 'failed';
         return;
       }
       workout = result.workout;
-      delete candidates[intent.setId];
+      if ('patch' in intent) {
+        editAttempt = null;
+        applyWeight = false;
+      } else delete candidates[intent.setId];
+      rejectedConfiguration = false;
       pending = null;
       reviewed = null;
       conflict = false;
@@ -94,7 +134,17 @@
       navigationBlocked = false;
     } catch (failure) {
       saveState = 'failed';
-      error = failure instanceof Error ? failure.message : 'Unable to save this set.';
+      error = failure instanceof Error ? failure.message : 'Unable to save this input.';
+      rejectedConfiguration =
+        'patch' in intent &&
+        failure instanceof TrainingError &&
+        [
+          'name-conflict',
+          'invalid-field',
+          'malformed-request',
+          'resource-unavailable',
+          'not-found',
+        ].includes(failure.code);
       conflict =
         failure instanceof TrainingError &&
         ['stale-revision', 'resource-finalized'].includes(failure.code);
@@ -104,6 +154,7 @@
   function record(attempt: WorkoutExercise, set: WorkoutSet, state: WorkoutSet['state']) {
     if (
       pending ||
+      editAttempt ||
       !workout ||
       workout.status !== 'active' ||
       attempt.state !== 'draft' ||
@@ -128,6 +179,84 @@
     } else pending = { ...base, state };
     void save();
   }
+  function openEdit(attempt: WorkoutExercise) {
+    if (hasInput || !sameAccount()) return;
+    const v = attempt.currentVariant;
+    editAttempt = attempt;
+    editFields = {
+      exerciseName: attempt.exercise.name,
+      variantName: v.name,
+      prescribedSets: String(v.prescribedSets),
+      repThreshold: String(v.repThreshold),
+      autoIncrement: v.autoIncrement,
+      restSeconds: String(v.restSeconds),
+      weight:
+        new Set(v.targetSets.map((s) => s.targetWeight)).size === 1
+          ? v.targetSets[0].targetWeight
+          : '',
+    };
+    applyWeight = false;
+  }
+  function submitConfiguration() {
+    if (pending || !editAttempt || !workout || !sameAccount()) return;
+    const a = editAttempt,
+      v = a.currentVariant;
+    const patch: ConfigurationPatch = {};
+    for (const [key, current] of [
+      ['exerciseName', a.exercise.name],
+      ['variantName', v.name],
+    ] as const) {
+      const value = editFields[key].trim();
+      if (!value || [...value].length > 100) {
+        error = 'Use names of 1–100 characters.';
+        return;
+      }
+      if (value !== current) patch[key] = value;
+    }
+    for (const [key, current, min, max, label] of [
+      ['prescribedSets', v.prescribedSets, 1, 20, 'sets'],
+      ['repThreshold', v.repThreshold, 1, 99, 'rep threshold'],
+      ['restSeconds', v.restSeconds, 0, 2147483647, 'rest seconds'],
+    ] as const) {
+      const raw = editFields[key];
+      if (!/^\d+$/.test(raw) || Number(raw) < min || Number(raw) > max) {
+        error = `Enter whole ${label} from ${min} to ${max}.`;
+        return;
+      }
+      if (Number(raw) !== current) patch[key] = Number(raw);
+    }
+    const decimal = (value: string, min: number, max: number) =>
+      /^\d+(?:\.\d{1,2})?$/.test(value) && Number(value) >= min && Number(value) <= max;
+    if (!decimal(editFields.autoIncrement, 0.25, 99)) {
+      error = 'Enter an auto increase from 0.25 to 99 with at most two decimals.';
+      return;
+    }
+    if (Number(editFields.autoIncrement) !== Number(v.autoIncrement))
+      patch.autoIncrement = editFields.autoIncrement;
+    if (applyWeight) {
+      if (!decimal(editFields.weight, 0, 9999)) {
+        error = 'Enter a weight from 0 to 9999 with at most two decimals.';
+        return;
+      }
+      patch.applyWeightToAllSets = editFields.weight;
+    }
+    if (Object.keys(patch).length === 0) {
+      error = 'Enter at least one field to edit, or cancel.';
+      return;
+    }
+    pending = {
+      operationId: crypto.randomUUID(),
+      workoutId: workout.id,
+      attemptId: a.id,
+      exerciseId: a.exercise.id,
+      variantId: a.variantId,
+      expectedWorkoutRevision: workout.revision,
+      expectedExerciseRevision: a.exercise.revision,
+      expectedVariantRevision: v.revision,
+      patch,
+    };
+    void save();
+  }
   function acceptServer() {
     if (!reviewed || !sameAccount()) return;
     workout = reviewed;
@@ -135,11 +264,21 @@
   }
   function reapply() {
     if (!canReapply || !pending || !reviewed || !sameAccount()) return;
-    pending = {
-      ...pending,
-      operationId: crypto.randomUUID(),
-      expectedWorkoutRevision: reviewed.revision,
-    };
+    const attempt = reviewed.exercises.find((a) => a.id === pending!.attemptId)!;
+    pending =
+      'patch' in pending
+        ? {
+            ...pending,
+            operationId: crypto.randomUUID(),
+            expectedWorkoutRevision: reviewed.revision,
+            expectedExerciseRevision: attempt.exercise.revision,
+            expectedVariantRevision: attempt.currentVariant.revision,
+          }
+        : {
+            ...pending,
+            operationId: crypto.randomUUID(),
+            expectedWorkoutRevision: reviewed.revision,
+          };
     workout = reviewed;
     reviewed = null;
     conflict = false;
@@ -147,6 +286,9 @@
   }
   function clearInput() {
     pending = null;
+    editAttempt = null;
+    applyWeight = false;
+    rejectedConfiguration = false;
     candidates = {};
     reviewed = null;
     conflict = false;
@@ -180,7 +322,7 @@
     <p role="status">
       {saveState === 'saving'
         ? 'Saving…'
-        : pending || Object.keys(candidates).length
+        : hasInput
           ? 'Not saved'
           : workout.status === 'active'
             ? 'Active workout · Saved'
@@ -191,6 +333,14 @@
         onclick={save}
         disabled={accountChanged}>Retry</button
       >{/if}
+    {#if rejectedConfiguration && pending}<button
+        onclick={() => {
+          pending = null;
+          rejectedConfiguration = false;
+          saveState = 'saved';
+        }}
+        disabled={accountChanged}>Edit rejected configuration</button
+      >{/if}
     {#if conflict}
       <p role="alert">
         The workout changed. Your local input is retained. Review server state before choosing.
@@ -200,6 +350,15 @@
           <h3>Current server revision {reviewed.revision} · {reviewed.status}</h3>
           {#each reviewed.exercises as attempt (attempt.id)}
             <h4>{attempt.exercise.name} · {attempt.currentVariant.name} · {attempt.state}</h4>
+            <p>
+              Exercise revision {attempt.exercise.revision}; variant revision {attempt
+                .currentVariant.revision}; {attempt.currentVariant.prescribedSets} sets; threshold {attempt
+                .currentVariant.repThreshold}; increase {attempt.currentVariant.autoIncrement} kg; rest
+              {attempt.currentVariant.restSeconds}s
+            </p>
+            {#each attempt.currentVariant.targetSets as target (target.id)}<p>
+                Current target {target.position}: {target.targetReps} reps · {target.targetWeight} kg
+              </p>{/each}
             {#each attempt.sets as set (set.id)}
               <p>
                 Set {set.position}: {set.state}{set.state === 'performed'
@@ -245,6 +404,101 @@
       >
         <h3>{attempt.position}. {attempt.exercise.name} · {attempt.currentVariant.name}</h3>
         <p>{attempt.state === 'completed' ? 'Completed' : 'Draft'}</p>
+        {#if workout.status === 'active' && attempt.state === 'draft'}
+          <button onclick={() => openEdit(attempt)} disabled={hasInput || accountChanged}
+            >Edit exercise</button
+          >
+        {/if}
+        {#if editAttempt?.id === attempt.id}
+          <section class="edit-card" aria-label="Edit shared configuration">
+            <div class="edit-copy">
+              <p class="edit-label">Editing exercise</p>
+              <p class="edit-help">
+                Changes affect every session using this variant. For independent settings, create
+                another variant in session editing.
+              </p>
+              <p class="edit-help">Update any field and save to apply only the changed values.</p>
+            </div>
+            <div class="edit-current-values">
+              {#if mixedWeights}<p>
+                  Mixed target weights · retained sets keep their own weights.
+                </p>{/if}
+              {#each editAttempt.currentVariant.targetSets as target (target.id)}<p>
+                  Set {target.position}: {target.targetReps} reps · {target.targetWeight} kg
+                </p>{/each}
+            </div>
+            <fieldset disabled={pending !== null || accountChanged} class="edit-fields">
+              <label for="edit-exercise-name">Exercise name</label><input
+                id="edit-exercise-name"
+                bind:value={editFields.exerciseName}
+              />
+              <label for="edit-variant-name">Variant name</label><input
+                id="edit-variant-name"
+                bind:value={editFields.variantName}
+              />
+              <label for="edit-sets">Sets</label><input
+                id="edit-sets"
+                inputmode="numeric"
+                bind:value={editFields.prescribedSets}
+              />
+              {#if shrinking}<p role="alert">
+                  Reducing sets removes excess draft sets, including recorded reps and weights.
+                  Completed history is kept.
+                </p>{/if}
+              <label for="edit-weight">Weight (kg)</label><input
+                id="edit-weight"
+                inputmode="decimal"
+                placeholder={mixedWeights ? 'Mixed' : ''}
+                bind:value={editFields.weight}
+                oninput={() => {
+                  applyWeight = false;
+                }}
+              />
+              <button
+                type="button"
+                onclick={() => {
+                  applyWeight = true;
+                }}>Apply weight to all sets</button
+              >
+              <p>
+                {applyWeight
+                  ? 'This save will apply the entered weight to every prescribed set. Recorded weights stay unchanged.'
+                  : 'Only Apply weight to all sets changes existing target weights.'}
+              </p>
+              <label for="edit-threshold">Rep threshold</label><input
+                id="edit-threshold"
+                inputmode="numeric"
+                bind:value={editFields.repThreshold}
+              />
+              <label for="edit-increase">Auto increase</label><input
+                id="edit-increase"
+                inputmode="decimal"
+                bind:value={editFields.autoIncrement}
+              />
+              <label for="edit-rest">Rest seconds</label><input
+                id="edit-rest"
+                inputmode="numeric"
+                bind:value={editFields.restSeconds}
+              />
+            </fieldset>
+            <div class="edit-actions">
+              <button
+                class="movement-b edit-secondary"
+                onclick={() => {
+                  editAttempt = null;
+                  applyWeight = false;
+                  error = '';
+                }}
+                disabled={pending !== null || accountChanged}>Cancel</button
+              >
+              <button
+                class="movement-b edit-primary"
+                onclick={submitConfiguration}
+                disabled={pending !== null || accountChanged}>Save edit</button
+              >
+            </div>
+          </section>
+        {/if}
         {#each attempt.sets as set (set.id)}
           <div class="set">
             <h4>Set {set.position}</h4>
@@ -266,21 +520,24 @@
                 oninput={(event) => {
                   candidates[set.id] = event.currentTarget.value;
                 }}
-                disabled={pending !== null || accountChanged}
+                disabled={pending !== null || editAttempt !== null || accountChanged}
               />
               <button
                 onclick={() => record(attempt, set, 'performed')}
-                disabled={pending !== null || accountChanged}
+                disabled={pending !== null || editAttempt !== null || accountChanged}
                 >{set.state === 'performed' ? 'Save reps correction' : 'Record set'}</button
               >
               <button
                 onclick={() => record(attempt, set, 'skipped')}
-                disabled={pending !== null || accountChanged}>Skip set</button
+                disabled={pending !== null || editAttempt !== null || accountChanged}
+                >Skip set</button
               >
               <button
                 onclick={() => record(attempt, set, 'pending')}
-                disabled={pending !== null || accountChanged || set.state === 'pending'}
-                >Reset to pending</button
+                disabled={pending !== null ||
+                  editAttempt !== null ||
+                  accountChanged ||
+                  set.state === 'pending'}>Reset to pending</button
               >
             {/if}
           </div>
@@ -306,5 +563,88 @@
   .set {
     padding: 0.75rem 0;
     border-top: 1px solid var(--border);
+  }
+  .edit-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 1rem;
+    font-weight: 600;
+    font-size: 1.5rem;
+    color: var(--text);
+  }
+
+  .edit-card {
+    width: 100%;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-low);
+    text-align: left;
+  }
+
+  .edit-copy {
+    margin-bottom: 0.75rem;
+  }
+
+  .edit-help {
+    margin-top: 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .edit-current-values {
+    margin-bottom: 1rem;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+  }
+
+  .edit-current-values p {
+    margin: 0.2rem 0;
+  }
+
+  .edit-fields {
+    display: grid;
+    grid-template-columns: 4fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    font-size: 12px;
+  }
+
+  .edit-secondary,
+  .edit-primary {
+    width: auto;
+    min-width: 7rem;
+    background-color: var(--surface-middle);
+  }
+
+  .movement-b {
+    display: flex;
+
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: center;
+    width: 5rem;
+    height: 2rem;
+    border-radius: 20px;
+    border: none;
+    outline: none;
+    box-shadow: var(--shadow-liquid);
+    transition-property: opacity;
+    transition-timing-function: ease;
+    transition-duration: 700ms;
+    transition-delay: 150ms;
+  }
+
+  fieldset.edit-fields {
+    border: 0;
+    padding: 0;
+    grid-template-columns: 1fr;
   }
 </style>

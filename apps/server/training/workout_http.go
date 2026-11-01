@@ -51,3 +51,19 @@ func (h HTTP) recordSet(w http.ResponseWriter, r *http.Request) {
 	v, err := h.Service.RecordSet(r.Context(), owner(r), *c)
 	respond(w, v, err)
 }
+
+func (h HTTP) updateConfiguration(w http.ResponseWriter, r *http.Request) {
+	var c *UpdateConfiguration
+	d := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16*1024))
+	d.DisallowUnknownFields()
+	if err := d.Decode(&c); err != nil || c == nil {
+		application.WriteError(w, 400, "malformed-request", "Send one configuration edit object", nil)
+		return
+	}
+	if err := d.Decode(new(any)); err != io.EOF {
+		application.WriteError(w, 400, "malformed-request", "Send one configuration edit", nil)
+		return
+	}
+	v, err := h.Service.UpdateConfiguration(r.Context(), owner(r), *c)
+	respond(w, v, err)
+}

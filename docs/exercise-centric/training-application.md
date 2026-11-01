@@ -407,5 +407,73 @@ attempt/set remains editable and creates a new operation against that reviewed
 revision. No silent rebase occurs. The route snapshots initial account access so
 account expiry/model changes cannot unmount an unresolved editor; the screen
 retains input and blocks old-account requests and late-response acceptance until
-the original authoritative account returns. Completion/configuration/quit remain
-separate later operations.
+the original authoritative account returns. Completion and quit remain separate
+later operations; shared configuration uses the same editor guard described below.
+
+## Shared configuration editing during a workout
+
+`training.Service.UpdateConfiguration(ctx, owner, UpdateConfiguration)` and
+`POST /api/training/workouts/configuration` accept one edit of the reviewed
+exercise/variant in an active draft attempt:
+
+```json
+{"operationId":"a2000000-0000-4000-8000-000000000001","workoutId":"<uuid>","attemptId":"<uuid>","exerciseId":"<uuid>","variantId":"<uuid>","expectedWorkoutRevision":"2","expectedExerciseRevision":"1","expectedVariantRevision":"1","patch":{"exerciseName":"Bench press","variantName":"Heavy","prescribedSets":3,"repThreshold":12,"autoIncrement":"2.50","restSeconds":90}}
+```
+
+Every patch field is optional; at least one explicit field is required. Omission
+preserves current values; null and unsupported fields are rejected. Names trim
+and use existing normalized uniqueness, including archived reservations.
+`applyWeightToAllSets:"45.50"` is the sole weight-edit field. Creation-only
+`initialWeight`, per-set target edits, progression modes, muscle groups, notes,
+and RPE cannot accompany this edit.
+
+The private command boundary locks the owner account, resolves exact receipt
+replay before stale/finality validation, then locks the owned workout, exercise
+and variant. Exact nested attempt/variant/exercise ancestry and all three reviewed
+opaque revisions are required. Only active draft editing is exposed here;
+completed history remains immutable. Success returns
+`{operation,workout,exercise,variant}` with authoritative current targets and
+revisions. Every accepted edit advances the workout revision; explicit exercise
+rename advances its revision, and variant-name/settings/count/all-sets edits
+advance the variant revision and draft `configRevision`. Other sessions resolve
+shared metadata/settings/targets on read. Browser training reads have no cache;
+reopening a session or resolver fetches current values for review.
+
+All configuration changes, draft reconciliation and receipt commit together.
+Retained prescribed target/set UUIDs, rep targets, state, recorded reps (including
+zero), actual weights and timestamps survive. Threshold/increment/rest update
+captured draft settings without rewriting retained rep targets or progression
+mode. Count growth appends new target/set UUIDs as pending prescribed work, using
+the current threshold and last retained weight; a simultaneous explicit all-sets
+action supplies the new weight instead. Count reduction removes trailing draft
+sets, even recorded rows, before deleting excess future targets. It never creates
+bonus work. Completed sets survive target deletion with nullable provenance and
+unchanged prescribed kind, targets, actuals, captured settings and completion time.
+Configuration survives subsequent draft abandonment.
+
+Only explicit all-sets weight intent changes retained target weights. When the
+applicable target actually changes after a retained prescribed set was performed,
+`lateWeightOverride` becomes true without rewriting actual weight/time. Pending
+rows receive no marker. Earlier markers survive unrelated edits and same-weight
+saves. Recording corrections retain markers; explicit reset/skip clears them as
+specified above. Completion must consume this explicit marker for the whole
+attempt, rather than infer it from unequal actual and target weights.
+
+`WorkoutScreen.svelte` retains the familiar edit card and Save edit/Cancel flow,
+with distinct exercise and variant names, a shared-settings warning, current
+per-set weights, and a blank Mixed common-weight field for unequal targets.
+Entering a common weight alone is not weight intent: Apply weight to all sets
+explicitly includes it in the next Save edit. Reducing count visibly discloses
+removal of excess draft recording while keeping completed history.
+
+Configuration and recording share one immutable pending-command slot and the
+same Saving/Saved/Not saved, original-account/workout, navigation/unload,
+retry/discard and reviewed-conflict guards. Open configuration editing pauses
+recording; unsent rep candidates or unresolved recording prevent opening it.
+Lost-response retry sends identical operation ID/JSON. A stale edit retains the
+form, displays current configuration and workout state, and requires Accept
+server state or explicit reapply against all reviewed revisions with a new
+operation ID. Finalized/removed/archived targets cannot be reapplied. Definitive
+name/validation rejection permits correcting the retained form with a new intent.
+Completion must wait until this common guard has no pending command or local
+input and use the latest returned workout/configuration revisions.

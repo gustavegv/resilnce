@@ -180,3 +180,29 @@ export type RecordSetCommand = {
   setId: ID;
   expectedWorkoutRevision: Revision;
 } & ({ state: 'performed'; recordedReps: number } | { state: 'pending' | 'skipped' });
+
+// Omission preserves each current value, including independent target weights.
+export interface ConfigurationPatch {
+  exerciseName?: string;
+  variantName?: string;
+  prescribedSets?: number;
+  repThreshold?: number;
+  autoIncrement?: Decimal;
+  restSeconds?: number;
+  applyWeightToAllSets?: Decimal;
+}
+export interface UpdateConfigurationCommand {
+  operationId: ID;
+  workoutId: ID;
+  attemptId: ID;
+  exerciseId: ID;
+  variantId: ID;
+  expectedWorkoutRevision: Revision;
+  expectedExerciseRevision: Revision;
+  expectedVariantRevision: Revision;
+  patch: ConfigurationPatch;
+}
+export interface ConfigurationResult extends WorkoutResult {
+  exercise: Exercise;
+  variant: Variant;
+}
