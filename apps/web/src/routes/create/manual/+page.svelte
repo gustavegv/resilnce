@@ -1,7 +1,6 @@
 <script lang="ts">
   import '../../../app.css';
-  import InputField from '../../../components/InputField.svelte';
-  import SetAutoIncrease from '../../../components/SetAutoIncrease.svelte';
+  import DraftItemResolver from '$lib/training/DraftItemResolver.svelte';
   import SortableList from '../SortableList.svelte';
   import { beforeNavigate, goto } from '$app/navigation';
   import { resolve } from '$app/paths';
@@ -13,16 +12,12 @@
   import { createSession, TrainingError } from '$lib/training/client';
   import type { CreateSessionCommand, DraftSessionItem } from '$lib/training/types';
   import type { ExerciseDataPackaged } from '../dbWrite';
-  import Icon from '@iconify/svelte';
 
   let sessionName = $state(page.url.searchParams.get('title') ?? '');
-  let newExName = $state('');
-  let newExSetCount = $state('');
-  let newExWeight = $state('');
-  let newExAutoIncAmount = $state(2.5);
-  let newExRepThreshold = $state(12);
+  let resolver: DraftItemResolver;
   let sessionExercisesList: SortableList;
   let error = $state('');
+  let reviewing = $state(false);
   let saveState = $state<'idle' | 'saving' | 'failed' | 'saved'>('idle');
   let pending = $state.raw<CreateSessionCommand | null>(null);
   let commandAccount = '';
@@ -75,63 +70,53 @@
     }
   }
 
-  function addExercise(): boolean {
-    const count = Number(newExSetCount);
-    if (
-      !newExName.trim() ||
-      [...newExName.trim()].length > 100 ||
-      !Number.isInteger(count) ||
-      count < 1 ||
-      count > 20 ||
-      !/^[0-9]+(?:\.[0-9]{1,2})?$/.test(newExWeight) ||
-      Number(newExWeight) > 9999
-    ) {
-      error =
-        'Use an exercise name, 1–20 sets, and a weight from 0–9999 with at most two decimal places.';
-      return false;
-    }
-    if (sessionExercisesList.extractData().length >= 100) {
+  function appendDraft(item: DraftSessionItem): boolean {
+    const current = sessionExercisesList.extractData();
+    if (current.length >= 100) {
       error = 'A session can contain at most 100 exercises.';
       return false;
     }
-    sessionExercisesList.pushItemToList({
-      draftId: crypto.randomUUID(),
-      intent: {
-        kind: 'createExercise',
-        name: newExName.trim(),
-        muscleGroupCodes: [],
-        configuration: {
-          prescribedSets: count,
-          initialWeight: newExWeight,
-          repThreshold: newExRepThreshold,
-          autoIncrement: String(newExAutoIncAmount),
-          restSeconds: 0,
-        },
-      },
-    });
-    newExName = '';
-    newExSetCount = '';
-    newExWeight = '';
+    const intent = item.intent;
+    if (
+      intent.kind === 'reuseVariant' &&
+      current.some(
+        (entry) =>
+          entry.intent.kind === 'reuseVariant' && entry.intent.variantId === intent.variantId
+      )
+    ) {
+      error = 'This variant is already in this session. Choose a different variant.';
+      return false;
+    }
+    if (
+      intent.kind !== 'reuseVariant' &&
+      current.some(
+        (entry) =>
+          entry.intent.kind === intent.kind &&
+          entry.intent.name.trim().toLowerCase() === intent.name.trim().toLowerCase() &&
+          (intent.kind === 'createExercise' ||
+            (entry.intent.kind === 'createVariant' &&
+              entry.intent.exerciseId === intent.exerciseId))
+      )
+    ) {
+      error = 'This creation name is already in this session. Choose a different name.';
+      return false;
+    }
+    sessionExercisesList.pushItemToList(item);
     error = '';
     return true;
   }
-  function editDraft(item: DraftSessionItem): boolean {
-    if (newExName || newExSetCount || newExWeight) {
-      error = 'Add the current exercise before editing another one.';
-      return false;
+  async function editDraft(item: DraftSessionItem): Promise<boolean> {
+    reviewing = true;
+    try {
+      return await resolver.edit(item);
+    } finally {
+      reviewing = false;
     }
-    const intent = item.intent;
-    newExName = intent.name;
-    newExSetCount = String(intent.configuration.prescribedSets);
-    newExWeight = intent.configuration.initialWeight;
-    newExAutoIncAmount = Number(intent.configuration.autoIncrement ?? '2.50');
-    newExRepThreshold = intent.configuration.repThreshold ?? 12;
-    return true;
   }
   async function saveSession() {
-    if (saveState === 'saving') return;
+    if (saveState === 'saving' || reviewing) return;
     if (!pending) {
-      if ((newExName || newExSetCount || newExWeight) && !addExercise()) return;
+      if (resolver.hasInput() && !resolver.add()) return;
       const items = sessionExercisesList.extractData().map((item) => item.intent);
       if (!sessionName.trim() || [...sessionName.trim()].length > 100 || !items.length) {
         error = 'Add a session name and at least one exercise.';
@@ -174,7 +159,7 @@
 
 <svelte:window onbeforeunload={beforeUnload} />
 <div class="container">
-  <fieldset disabled={pending !== null}>
+  <fieldset disabled={pending !== null || reviewing}>
     <input
       aria-label="Session name"
       maxlength="100"
@@ -184,30 +169,16 @@
     />
     <div class="add-box shadow">
       <h3 class="w-full pb-2 text-xl font-semibold">Add an exercise</h3>
-      <InputField label="Exercise name" bind:value={newExName} type="text" />
-      <InputField label="Sets" bind:value={newExSetCount} type="number" />
-      <InputField label="Weight" bind:value={newExWeight} type="text" inputmode="decimal" />
-      <SetAutoIncrease
-        title="Auto-increase threshold"
-        unit="reps"
-        weight={newExRepThreshold}
-        limit={1}
-        interval={1}
-        onCountChange={(count) => (newExRepThreshold = count)}
+      <DraftItemResolver
+        bind:this={resolver}
+        onresolve={appendDraft}
+        disabled={pending !== null || reviewing}
       />
-      <SetAutoIncrease
-        title="Weight increase intervals"
-        weight={newExAutoIncAmount}
-        onCountChange={(count) => (newExAutoIncAmount = count)}
-      />
-      <button class="add buttonClass minimal" onclick={addExercise}
-        >Add to session <Icon icon="material-symbols:add" /></button
-      >
     </div>
     <SortableList
       bind:this={sessionExercisesList}
       editData={editDraft}
-      disabled={pending !== null}
+      disabled={pending !== null || reviewing}
     />
   </fieldset>
   {#if saveState !== 'idle'}<p role="status">
@@ -231,18 +202,6 @@
   [role='alert'] {
     width: 80%;
     color: #ffb3b3;
-  }
-  .add {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    background-color: var(--color-secondary);
-    width: 60%;
-    padding: var(--spacing-xs);
-    border-radius: var(--border-middle);
-    font-weight: 400;
-    font-size: 16px;
   }
 
   .container {

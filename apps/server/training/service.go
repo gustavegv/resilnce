@@ -156,36 +156,43 @@ func (s *Service) CreateSession(ctx context.Context, owner string, c CreateSessi
 	if _, err = tx.Exec(ctx, `INSERT INTO public.training_session(id,owner_mail,name) VALUES($1,$2,$3)`, id, owner, strings.TrimSpace(c.Name)); err != nil {
 		return SessionResult{}, err
 	}
+	if err = lockSessionItems(ctx, tx, owner, c.Items); err != nil {
+		return SessionResult{}, err
+	}
+	seen := map[string]bool{}
+	changedExercises := map[string]bool{}
 	for i, item := range c.Items {
-		e, v := newID(), newID()
-		cfg := item.Configuration
-		threshold, inc, rest := 12, "2.50", 0
-		if cfg.RepThreshold != nil {
-			threshold = *cfg.RepThreshold
-		}
-		if cfg.AutoIncrement != nil {
-			inc = *cfg.AutoIncrement
-		}
-		if cfg.RestSeconds != nil {
-			rest = *cfg.RestSeconds
-		}
-		codes, _ := normalizeCodes(item.MuscleGroupCodes)
-		_, err = tx.Exec(ctx, `INSERT INTO public.exercise(id,owner_mail,name,muscle_group_codes) VALUES($1,$2,$3,$4)`, e, owner, strings.TrimSpace(item.Name), codes)
-		if err != nil {
-			return SessionResult{}, err
-		}
-		_, err = tx.Exec(ctx, `INSERT INTO public.exercise_variant(id,owner_mail,exercise_id,name,progression_mode,rep_threshold,auto_increment,rest_seconds) VALUES($1,$2,$3,'Standard','average',$4,$5,$6)`, v, owner, e, threshold, inc, rest)
-		if err != nil {
-			return SessionResult{}, err
-		}
-		for n := 1; n <= cfg.PrescribedSets; n++ {
-			_, err = tx.Exec(ctx, `INSERT INTO public.variant_target_set(id,owner_mail,variant_id,position,target_reps,target_weight) VALUES($1,$2,$3,$4,$5,$6)`, newID(), owner, v, n, threshold, cfg.InitialWeight)
+		v := item.VariantID
+		if item.Kind != "reuseVariant" {
+			e := item.ExerciseID
+			if item.Kind == "createExercise" {
+				e = newID()
+				codes, _ := normalizeCodes(item.MuscleGroupCodes)
+				if _, err = tx.Exec(ctx, `INSERT INTO public.exercise(id,owner_mail,name,muscle_group_codes) VALUES($1,$2,$3,$4)`, e, owner, strings.TrimSpace(item.Name), codes); err != nil {
+					return SessionResult{}, err
+				}
+			} else {
+				changedExercises[e] = true
+			}
+			name := strings.TrimSpace(item.Name)
+			if item.Kind == "createExercise" {
+				name = "Standard"
+			}
+			v, err = createVariant(ctx, tx, owner, e, name, item.Configuration)
 			if err != nil {
 				return SessionResult{}, err
 			}
 		}
-		_, err = tx.Exec(ctx, `INSERT INTO public.session_variant(id,owner_mail,session_id,variant_id,position) VALUES($1,$2,$3,$4,$5)`, newID(), owner, id, v, i+1)
-		if err != nil {
+		if seen[v] {
+			return SessionResult{}, invalid("items", "A variant can appear only once in a session")
+		}
+		seen[v] = true
+		if _, err = tx.Exec(ctx, `INSERT INTO public.session_variant(id,owner_mail,session_id,variant_id,position) VALUES($1,$2,$3,$4,$5)`, newID(), owner, id, v, i+1); err != nil {
+			return SessionResult{}, err
+		}
+	}
+	for e := range changedExercises {
+		if _, err = tx.Exec(ctx, `UPDATE public.exercise SET revision=revision+1,updated_at=now() WHERE owner_mail=$1 AND id=$2`, owner, e); err != nil {
 			return SessionResult{}, err
 		}
 	}

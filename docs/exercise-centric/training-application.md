@@ -34,9 +34,9 @@ the legacy active-session pointer.
 The tagged item explicitly creates a new exercise, its Standard variant, ordered
 target sets and an ordered session placement in the same transaction as the
 session. Existing-name collisions are conflicts, including case differences and
-surrounding whitespace. Additional explicit reuse/create-variant intents belong
-to the following library-selection slice; a reuse item must never implicitly
-override configuration.
+surrounding whitespace. Mixed drafts can also explicitly reuse an existing variant or create a named
+variant under an owned exercise, using the item shapes documented below. Reuse
+never overrides configuration.
 
 Names are trimmed and contain 1–100 Unicode characters. New sessions contain
 1–100 items. Prescribed sets are 1–20, threshold 1–99, initial weight 0–9999 kg,
@@ -60,9 +60,8 @@ Variants include their own ID/name/revision/archive status, progression mode,
 threshold, increment, rest, prescribed count and ordered target sets. Each target
 has its own ID, position, target reps and target weight.
 
-Create has no expected existing revision because it depends only on new
-aggregates. Subsequent reuse/edit operations must include the reviewed revisions
-returned by reads. Unknown fields and unsupported deferred-feature controls are
+Creating entirely new exercises has no expected existing revision. Reuse and
+named-variant creation include the reviewed revisions returned by reads. Unknown fields and unsupported deferred-feature controls are
 rejected rather than silently ignored.
 
 ## Reads and retries
@@ -96,7 +95,8 @@ maintenance policy 503. Storage failures return a retryable 500 without SQL or
 other-owner details.
 
 Frontend contracts live in `apps/web/src/lib/training/types.ts`; the shared client
-has `createSession`, `listSessions`, `readSession` and `TrainingError` with status,
+has `createSession`, `listSessions`, `readSession`, `searchExercises`,
+`readExercise` and `TrainingError` with status,
 code and optional details. The manual editor captures one operation ID and exact
 intent, pauses editing while unresolved, retains the ordered draft on failure,
 and retries the same command. A definitive rejection permits explicit return to
@@ -118,3 +118,62 @@ npm run test --workspace web
 PUBLIC_BACKEND_BASE_URL=https://backend.example npm run check --workspace web
 PUBLIC_BACKEND_BASE_URL=https://backend.example npm run build --workspace web
 ```
+
+## Personal library selection and mixed drafts
+
+`GET /api/training/exercises?q=Bench` returns `{exercises: [...]}` with
+`{exercise, variants}` entries. Search trims input and matches literal,
+case-insensitive substrings within this owner's exercise names; empty input
+lists the selectable library. `%` and `_` have no wildcard meaning. Exercises
+and variants are sorted by name/ID and archived resources are excluded.
+`GET /api/training/exercises/{uuid}` returns one owned selectable
+`{exercise, variants}` for current review; other-owner/absent/archived parents
+return 404. Both operations use a repeatable-read snapshot.
+
+The same atomic session create command accepts three tagged item shapes:
+
+```json
+{"kind":"createExercise","name":"Squat","muscleGroupCodes":[],"configuration":{"prescribedSets":3,"initialWeight":"60"}}
+{"kind":"createVariant","exerciseId":"<uuid>","expectedExerciseRevision":"2","name":"Heavy","configuration":{"prescribedSets":3,"initialWeight":"60"}}
+{"kind":"reuseVariant","exerciseId":"<uuid>","variantId":"<uuid>","expectedVariantRevision":"5"}
+```
+
+Reuse references the existing variant and target IDs without copying or editing
+settings. Configuration, suggested values, names and parent revisions cannot be
+attached to reuse. Create-variant requires an owned, unarchived parent at its
+reviewed revision. Named variants may deliberately have identical settings.
+The exercise revision advances once when a command adds named variants beneath
+it; variant configuration revisions remain independent. A command can create
+multiple differently named variants under the same reviewed parent revision.
+
+After the private owner-row command lock, existing exercises then variants are
+locked in sorted ID order and all review guards run before inserts. A variant
+must belong to its stated parent. Duplicate variant placements are invalid;
+different variants of the same exercise are allowed. Trimmed case-insensitive
+names remain reserved even when archived. Rejection rolls back every new
+exercise, variant, target, placement, session and receipt. The original command
+can replay after its own parent revision advanced. Canonical receipt fingerprints
+preserve JSON field presence, so adding even a forbidden empty tagged field
+cannot replay an accepted command as identical intent.
+
+New conflict codes are `stale-revision` (409, re-review current settings) and
+`resource-unavailable` (409, an archived reference). Name collisions keep
+`name-conflict`; missing/other-owner/wrong-parent references keep `not-found`.
+
+`DraftItemResolver.svelte` is the shared rendered review component for manual
+and generated drafts. It takes optional `ExerciseSuggestion{name,configuration}`,
+`onresolve(DraftSessionItem): boolean`, and `disabled`. A resolved item contains
+one `SessionItem` intent plus optional display-only `exercise` and
+`reviewedVariant` data; only `intent` goes into the server command. The component
+shows all current per-set targets and progression/rest settings beside the
+suggestion. Reuse emits only reviewed IDs/revision. Explicit creation emits the
+reviewed configuration. The callback returns false to preserve a choice rejected
+by composition validation (for example a duplicate variant).
+
+The manual form also uses `hasInput()`, `add()` and async `edit(item)` to capture
+unadded explicit creation on Finish and re-review an existing item. Editing reuse
+fetches current settings but requires another explicit Reuse unchanged choice;
+it never silently rebases a stale draft. Saving/retry still freezes one exact
+ordered command. `searchExercises` and `readExercise` are in the shared client;
+`ExerciseSelection`, `ExerciseSuggestion`, and the three intent types are in
+`types.ts`. Quick fill/Program wiring and generated-output validation remain #35.

@@ -1,7 +1,10 @@
 // Package training owns exercise-centric application operations and persistence.
 package training
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 type Configuration struct {
 	PrescribedSets int     `json:"prescribedSets"`
@@ -11,13 +14,18 @@ type Configuration struct {
 	RestSeconds    *int    `json:"restSeconds,omitempty"`
 }
 
-// SessionItem is a tagged intent. Further creation/reuse intents are added here,
-// rather than accepting configuration overrides on references implicitly.
+// SessionItem is an explicit create/reuse intent. Reuse cannot carry configuration
+// overrides; reviewed parent/variant revisions protect existing identities.
 type SessionItem struct {
-	Kind             string        `json:"kind"`
-	Name             string        `json:"name"`
-	MuscleGroupCodes Codes         `json:"muscleGroupCodes,omitempty"`
-	Configuration    Configuration `json:"configuration"`
+	Kind                     string `json:"kind"`
+	ExerciseID               string `json:"exerciseId,omitempty"`
+	VariantID                string `json:"variantId,omitempty"`
+	ExpectedExerciseRevision string `json:"expectedExerciseRevision,omitempty"`
+	ExpectedVariantRevision  string `json:"expectedVariantRevision,omitempty"`
+	fields                   map[string]json.RawMessage
+	Name                     string        `json:"name"`
+	MuscleGroupCodes         Codes         `json:"muscleGroupCodes,omitempty"`
+	Configuration            Configuration `json:"configuration"`
 }
 type CreateSession struct {
 	OperationID string        `json:"operationId"`
@@ -72,4 +80,10 @@ type Acknowledgment struct {
 type SessionResult struct {
 	Operation Acknowledgment `json:"operation"`
 	Session   Session        `json:"session"`
+}
+
+// ExerciseSelection keeps parent metadata separate from selectable configurations.
+type ExerciseSelection struct {
+	Exercise Exercise  `json:"exercise"`
+	Variants []Variant `json:"variants"`
 }

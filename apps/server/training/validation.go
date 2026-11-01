@@ -131,8 +131,48 @@ func validateCreate(c CreateSession) error {
 	}
 	for i, item := range c.Items {
 		field := fmt.Sprintf("items[%d]", i)
+		allowed := map[string]bool{"kind": true}
+		switch item.Kind {
+		case "createExercise":
+			allowed["name"], allowed["muscleGroupCodes"], allowed["configuration"] = true, true, true
+		case "createVariant":
+			allowed["name"], allowed["configuration"], allowed["exerciseId"], allowed["expectedExerciseRevision"] = true, true, true, true
+		case "reuseVariant":
+			allowed["exerciseId"], allowed["variantId"], allowed["expectedVariantRevision"] = true, true, true
+		default:
+			return invalid(field+".kind", "Choose explicit exercise creation, variant creation or reuse")
+		}
+		fields := item.fields
+		if fields == nil {
+			raw, _ := json.Marshal(item)
+			_ = json.Unmarshal(raw, &fields)
+		}
+		for name := range fields {
+			if !allowed[name] {
+				return invalid(field+"."+name, "This field does not belong to the chosen intent")
+			}
+		}
 		if item.Kind != "createExercise" {
-			return invalid(field+".kind", "Explicitly create a new exercise")
+			if !validID(item.ExerciseID) {
+				return invalid(field+".exerciseId", "Use an owned exercise UUID")
+			}
+			revision := item.ExpectedExerciseRevision
+			if item.Kind == "reuseVariant" {
+				revision = item.ExpectedVariantRevision
+				if !validID(item.VariantID) {
+					return invalid(field+".variantId", "Use an owned variant UUID")
+				}
+				if item.Name != "" || item.Configuration.PrescribedSets != 0 || item.Configuration.InitialWeight != "" || item.Configuration.RepThreshold != nil || item.Configuration.AutoIncrement != nil || item.Configuration.RestSeconds != nil {
+					return invalid(field, "Reuse carries no configuration overrides")
+				}
+			}
+			n, err := strconv.ParseInt(revision, 10, 64)
+			if err != nil || n < 1 || strconv.FormatInt(n, 10) != revision {
+				return invalid(field+".revision", "Use the reviewed positive revision string")
+			}
+		}
+		if item.Kind == "reuseVariant" {
+			continue
 		}
 		if err := validateName(item.Name, field+".name"); err != nil {
 			return err
@@ -160,4 +200,52 @@ func validateCreate(c CreateSession) error {
 		}
 	}
 	return nil
+}
+
+func (s *SessionItem) UnmarshalJSON(raw []byte) error {
+	type value SessionItem
+	var decoded value
+	d := json.NewDecoder(bytes.NewReader(raw))
+	d.DisallowUnknownFields()
+	if err := d.Decode(&decoded); err != nil {
+		return err
+	}
+	if err := json.Unmarshal(raw, &decoded.fields); err != nil {
+		return err
+	}
+	*s = SessionItem(decoded)
+	return nil
+}
+
+// Retain canonical field presence in HTTP receipts: an added forbidden empty
+// field is changed intent, not an identical replay of an accepted command.
+func (s SessionItem) MarshalJSON() ([]byte, error) {
+	fields := map[string]any{"kind": s.Kind}
+	has := func(name string) bool { _, ok := s.fields[name]; return ok }
+	if has("name") || s.Kind != "reuseVariant" || s.Name != "" {
+		fields["name"] = s.Name
+	}
+	if has("muscleGroupCodes") || len(s.MuscleGroupCodes) > 0 || (s.fields == nil && s.Kind == "createExercise") {
+		codes := s.MuscleGroupCodes
+		if codes == nil {
+			codes = Codes{}
+		}
+		fields["muscleGroupCodes"] = codes
+	}
+	if has("configuration") || s.Kind != "reuseVariant" || s.Configuration != (Configuration{}) {
+		fields["configuration"] = s.Configuration
+	}
+	if has("exerciseId") || s.ExerciseID != "" {
+		fields["exerciseId"] = s.ExerciseID
+	}
+	if has("variantId") || s.VariantID != "" {
+		fields["variantId"] = s.VariantID
+	}
+	if has("expectedExerciseRevision") || s.ExpectedExerciseRevision != "" {
+		fields["expectedExerciseRevision"] = s.ExpectedExerciseRevision
+	}
+	if has("expectedVariantRevision") || s.ExpectedVariantRevision != "" {
+		fields["expectedVariantRevision"] = s.ExpectedVariantRevision
+	}
+	return json.Marshal(fields)
 }
