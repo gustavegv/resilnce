@@ -32,6 +32,10 @@ func TestSavedSessionOrderedMaintenanceAndDeletion(t *testing.T) {
 	}
 	a, b := created.Session.Placements[0], created.Session.Placements[1]
 	path := "/api/training/sessions/" + created.Session.ID
+	w = request(t, h, "POST", path+"/update", "null", "https://app.example", nil)
+	if w.Code != 400 {
+		t.Fatal("null maintenance command shape", w.Code, w.Body.String())
+	}
 	update := fmt.Sprintf(`{"operationId":"10000000-0000-4000-8000-000000000020","expectedRevision":"1","name":"Renamed","items":[{"kind":"retainPlacement","placementId":%q},{"kind":"retainPlacement","placementId":%q},{"kind":"createVariant","exerciseId":%q,"expectedExerciseRevision":"1","name":"Heavy","configuration":{"prescribedSets":1,"initialWeight":"80"}}]}`, b.ID, a.ID, a.Exercise.ID)
 	w = request(t, h, "POST", path+"/update", update, "https://app.example", nil)
 	var changed training.SessionResult

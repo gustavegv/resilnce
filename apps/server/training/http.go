@@ -16,6 +16,9 @@ type HTTP struct {
 }
 
 func (h HTTP) Register(mux *http.ServeMux) {
+	mux.HandleFunc("/api/training/workouts/start", h.Boundary.Handler("POST", application.ExerciseCentric, true, h.startWorkout))
+	mux.HandleFunc("/api/training/workouts/active", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.activeWorkout))
+	mux.HandleFunc("/api/training/workouts/", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.getWorkout))
 	mux.HandleFunc("/api/training/exercises", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.searchExercises))
 	mux.HandleFunc("/api/training/exercises/", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.getExercise))
 	mux.HandleFunc("/api/training/sessions", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.list))
@@ -102,8 +105,17 @@ func (h HTTP) sessionRoute(w http.ResponseWriter, r *http.Request) {
 			}
 			d := json.NewDecoder(http.MaxBytesReader(w, r.Body, 256*1024))
 			d.DisallowUnknownFields()
-			if err := d.Decode(value); err != nil {
+			if err := d.Decode(&value); err != nil {
+				var domain *Error
+				if errors.As(err, &domain) {
+					respond(w, nil, err)
+					return
+				}
 				respond(w, nil, &Error{400, "malformed-request", "Send a valid session command", nil})
+				return
+			}
+			if value == nil {
+				respond(w, nil, &Error{400, "malformed-request", "Send a session command object", nil})
 				return
 			}
 			if err := d.Decode(new(any)); err != io.EOF {

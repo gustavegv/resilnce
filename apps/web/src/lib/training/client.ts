@@ -8,6 +8,9 @@ import type {
   ExerciseSelection,
   Session,
   SessionResult,
+  StartWorkoutCommand,
+  Workout,
+  WorkoutResult,
 } from './types';
 
 export class TrainingError extends Error {
@@ -53,3 +56,9 @@ export const searchExercises = (query: string) =>
   request<{ exercises: ExerciseSelection[] }>(`/exercises?q=${encodeURIComponent(query.trim())}`);
 export const readExercise = (id: string) =>
   request<ExerciseSelection>(`/exercises/${encodeURIComponent(id)}`);
+
+export const startWorkout = (command: StartWorkoutCommand) =>
+  request<WorkoutResult>('/workouts/start', command);
+export const activeWorkout = () => request<{ workout: Workout | null }>('/workouts/active');
+export const readWorkout = (id: string) =>
+  request<{ workout: Workout }>(`/workouts/${encodeURIComponent(id)}`);

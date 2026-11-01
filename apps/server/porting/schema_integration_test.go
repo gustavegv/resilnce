@@ -67,7 +67,7 @@ func TestToolBootstrapsSchemaFromLegacyDatabase(t *testing.T) {
 	if err = json.Unmarshal(w.Body.Bytes(), &overview); err != nil {
 		t.Fatal(err)
 	}
-	if overview.Schema.Ready || !overview.Schema.CanApply || len(overview.Schema.Migrations) != 5 || len(overview.Inventory) != 0 || len(overview.Runs) != 0 {
+	if overview.Schema.Ready || !overview.Schema.CanApply || len(overview.Schema.Migrations) != 6 || len(overview.Inventory) != 0 || len(overview.Runs) != 0 {
 		t.Fatal(w.Body.String())
 	}
 	if scalar(t, s, ctx, `SELECT count(*) FROM pg_namespace WHERE nspname='internal'`) != 0 {
@@ -95,7 +95,7 @@ func TestToolBootstrapsSchemaFromLegacyDatabase(t *testing.T) {
 			t.Fatal(w.Body.String())
 		}
 	}
-	if scalar(t, s, ctx, `SELECT count(*) FROM internal.schema_migration`) != 5 || scalar(t, s, ctx, `SELECT count(*) FROM public.exercise`) != 0 {
+	if scalar(t, s, ctx, `SELECT count(*) FROM internal.schema_migration`) != 6 || scalar(t, s, ctx, `SELECT count(*) FROM public.exercise`) != 0 {
 		t.Fatal("setup ran data imports or duplicated migrations")
 	}
 	if scalar(t, s, ctx, `SELECT count(*) FROM internal.porting_run`) != 0 {

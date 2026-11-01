@@ -97,6 +97,7 @@ type alterationLayout struct {
 }
 
 var alterationLayouts = map[string][]alterationLayout{
+	"006_workout_rest.sql": {{schema: "public", tableLayout: tableLayout{name: "workout_exercise", columns: "rest_seconds:integer!"}}},
 	"003_exercise_rpe.sql": {
 		{schema: "public", tableLayout: tableLayout{name: "workout_exercise", columns: "recorded_rpe:smallint"}},
 		{schema: "public", tableLayout: tableLayout{name: "exercise_variant", columns: "last_rpe:smallint last_rpe_at:timestamp_with_time_zone"}},
@@ -112,6 +113,7 @@ var alterationLayouts = map[string][]alterationLayout{
 type checkLayout struct{ table, name, expression string }
 
 var migrationChecks = map[string][]checkLayout{
+	"006_workout_rest.sql": {{"workout_exercise", "workout_exercise_rest_nonnegative", "rest_seconds >= 0"}},
 	"003_exercise_rpe.sql": {
 		{"workout_exercise", "workout_exercise_rpe_range", "recorded_rpe >= 0 AND recorded_rpe <= 10"},
 		{"exercise_variant", "exercise_variant_rpe_range", "last_rpe >= 0 AND last_rpe <= 10"},

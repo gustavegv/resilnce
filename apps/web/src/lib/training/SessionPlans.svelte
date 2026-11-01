@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import SessionSlug from '../../components/SessionSlug.svelte';
+  import WorkoutStart from './WorkoutStart.svelte';
   import { listSessions, readSession } from './client';
   import type { Session } from './types';
   import { categories, matchesCategory } from './sessionCategories';
@@ -13,6 +14,7 @@
   let activeCategory = $state('All');
   let editing = $state(false);
   let maintenanceBusy = $state(false);
+  let starting = $state(false);
   const recentBoundary = Date.now() - 14 * 24 * 60 * 60 * 1000;
   let filtered = $derived(
     sessions.filter((session) => matchesCategory(session.name, activeCategory))
@@ -44,7 +46,7 @@
     void load();
   });
   async function showPlan(id: string) {
-    if (maintenanceBusy) return;
+    if (maintenanceBusy || starting) return;
     editing = false;
     reading = true;
     error = '';
@@ -72,7 +74,7 @@
     <div class="category-carousel">
       {#each categories as category (category)}
         <button
-          disabled={maintenanceBusy}
+          disabled={maintenanceBusy || starting}
           class={[
             'category-pill',
             category.toLowerCase().replace(' ', '-'),
@@ -139,6 +141,7 @@
           />
         {/key}
       {:else}<button
+          disabled={starting}
           onclick={() => {
             editing = true;
           }}>Edit session</button
@@ -159,6 +162,15 @@
             </p>{/each}
         </div>
       {/each}
+      {#key `${selected.id}:${selected.revision}`}
+        <WorkoutStart
+          disabled={editing || maintenanceBusy}
+          session={selected}
+          onpending={(value) => {
+            starting = value;
+          }}
+        />
+      {/key}
     </section>
   {/if}
 </div>
