@@ -211,10 +211,10 @@
             in:fade={{ duration: 380 }}
             out:fade={{ duration: 100 }}
           >
-            {#each maxes as max, i}
+            {#each maxes as max, i (rmLabels[i])}
               <div class="rm-row">
                 <span class="rm-label">{rmLabels[i]}</span>
-                <span class="rm-value rm-value-primary">{maxes[i]}</span>
+                <span class="rm-value rm-value-primary">{max}</span>
               </div>
             {/each}
           </div>

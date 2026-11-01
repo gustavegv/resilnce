@@ -47,9 +47,10 @@
         break;
       default:
         const currentPath = page.url.pathname;
-        const newPath = currentPath.substring(0, currentPath.lastIndexOf('/'));
-        console.log(currentPath);
-        goto(newPath || resolve('/'));
+        const parentPath = currentPath.substring(0, currentPath.lastIndexOf('/'));
+        // The current URL already includes the configured app base.
+        // eslint-disable-next-line svelte/no-navigation-without-resolve -- Resolving this parent again would duplicate the app base.
+        goto(parentPath || resolve('/'));
         break;
     }
   }
@@ -64,8 +65,7 @@
 
   <div class="head">
     <g
-      class="function-button"
-      class:hide={!showHelp}
+      class={['function-button', { hide: !showHelp }]}
       onclick={() => toggleHelpOpen()}
       onkeydown={(e: any) => {
         if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') toggleHelpOpen();
