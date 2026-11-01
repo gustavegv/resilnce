@@ -21,6 +21,9 @@ func (h HTTP) Register(mux *http.ServeMux) {
 			MuscleGroups []predefined.MuscleGroup `json:"muscleGroups"`
 		}{predefined.MuscleGroups()}, nil)
 	}))
+	mux.HandleFunc("/api/training/workouts/start", h.Boundary.Handler("POST", application.ExerciseCentric, true, h.startWorkout))
+	mux.HandleFunc("/api/training/workouts/active", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.activeWorkout))
+	mux.HandleFunc("/api/training/workouts/", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.getWorkout))
 	mux.HandleFunc("/api/training/exercises", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.searchExercises))
 	mux.HandleFunc("/api/training/exercises/", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.getExercise))
 	mux.HandleFunc("/api/training/sessions", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.list))

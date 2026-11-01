@@ -3,7 +3,8 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { user } from '$lib/stores/appState';
-  import { derived, get } from 'svelte/store';
+  import { get } from 'svelte/store';
+  import ResumeWorkout from '$lib/training/ResumeWorkout.svelte';
 
   import Icon from '@iconify/svelte';
   import { blur, fade, slide } from 'svelte/transition';
@@ -56,7 +57,7 @@
     const value = get(user);
 
     if (value?.name || (await getMe())) {
-      loadUserHomepage(value);
+      await loadUserHomepage(value);
 
       setHelpOpen(false);
       introHelpOpening = true;
@@ -84,6 +85,10 @@
       return;
     }
 
+    if (get(user)?.capabilities.applicationModel === 'exercise-centric') {
+      greetMessage = greet(name, false);
+      return;
+    }
     const [activeID, activeName] = await CheckActiveSession();
     console.log('Active session:', activeID, activeName);
 
@@ -107,7 +112,9 @@
 {:else}
   <div in:fade={{ duration: 400, delay: 50 }} class="body">
     <div class="flex w-full justify-end p-6">
-      {#if existingSession}
+      {#if $user?.capabilities.applicationModel === 'exercise-centric'}
+        <ResumeWorkout />
+      {:else if existingSession}
         <button
           in:slide|global={{ duration: 600 }}
           class="base-btn alt flex w-full items-center justify-between"
