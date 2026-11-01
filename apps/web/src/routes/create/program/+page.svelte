@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { base } from '$app/paths';
   import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 
   import Icon from '@iconify/svelte';
@@ -73,6 +72,7 @@
 
   function editAndAdd(sessionIndex: number, programID: string) {
     const sessionData = getSessionData(sessionIndex, programID);
+    if (!sessionData) return;
     const exercisesJson: string = JSON.stringify(sessionData.exercises);
     sendToAddScreen(exercisesJson, sessionData.name);
   }
@@ -88,13 +88,13 @@
   type SessionData = {
     name: string;
     description: string;
-    exercises: Exercise[];
+    exercises: readonly Exercise[];
   };
 
   let previewData: SessionData | null = $state(null);
   let previewVisible: boolean = $state(false);
 
-  function getSessionData(sessionIndex: number, programId: string): any {
+  function getSessionData(sessionIndex: number, programId: string): SessionData | null {
     let program = null;
 
     if (isProgramId(programId)) {
@@ -125,11 +125,11 @@
     }
     const STORAGE_KEY = 'workoutPayload';
     sessionStorage.setItem(STORAGE_KEY, jsonData);
-    console.log('Storing...');
 
     const titleParam = new URLSearchParams();
     titleParam.set('title', title);
 
+    // eslint-disable-next-line svelte/no-navigation-without-resolve -- The route is resolved before adding the draft query.
     goto(`${resolve('/create/manual')}?quickload=1&${titleParam.toString()}`);
   }
 
@@ -160,8 +160,7 @@
 
   <div class="program-type-selector">
     <button
-      class="program-type"
-      class:selected={hypActv}
+      class={['program-type', { selected: hypActv }]}
       onclick={() => {
         hypActv = true;
       }}
@@ -169,8 +168,7 @@
       Hyperthrophy programs
     </button>
     <button
-      class="program-type"
-      class:selected={!hypActv}
+      class={['program-type', { selected: !hypActv }]}
       onclick={() => {
         hypActv = false;
       }}
@@ -187,11 +185,14 @@
     </div>
   {/if}
 
-  <div class="program-list" role="list" class:inactive={!hypActv}>
+  <div class={['program-list', { inactive: !hypActv }]} role="list">
     {#each programs as program (program.id)}
       <article
-        class={`program-card program-card--${program.accent}`}
-        class:program-card--expanded={openPrograms[program.id]}
+        class={[
+          'program-card',
+          `program-card--${program.accent}`,
+          { 'program-card--expanded': openPrograms[program.id] },
+        ]}
         role="listitem"
       >
         <Collapsible.Root
@@ -217,7 +218,7 @@
 
               <div class="program-card__tags mt-4" aria-label="Program tags">
                 <span class="program-card__tag {program.level.toLowerCase()}">{program.level}</span>
-                {#each program.tags as tag}
+                {#each program.tags as tag (tag)}
                   <span class="program-card__tag">{tag}</span>
                 {/each}
               </div>
@@ -253,7 +254,7 @@
                   </div>
 
                   <div class="grid gap-2 rounded-2xl bg-[hsl(var(--muted)/0.2)]">
-                    {#each program.sessions as item, index}
+                    {#each program.sessions ?? [] as item, index (item)}
                       <Card.Root class="border-border border py-4">
                         <Card.Content class="grid gap-3 p-3">
                           <div class="flex items-start justify-between gap-3">
@@ -297,7 +298,7 @@
                                     <h4 class="font-bold">Session preview</h4>
                                     <hr class="border-border my-2 border-t" />
                                     <div class="max-h-80 space-y-2 overflow-y-auto pr-1">
-                                      {#each previewData.exercises as exercise}
+                                      {#each previewData.exercises as exercise (exercise)}
                                         <div
                                           class="border-border flex items-center justify-between rounded-md px-2 py-1 text-sm"
                                         >
@@ -331,7 +332,7 @@
                             </Button>
 
                             <Button disabled size="sm" class="text-[0.825rem] font-semibold">
-                              <a href={`${base}/create/program/${program.slug}`}> Quick add </a>
+                              Quick add
                             </Button>
                           </div>
                         </Card.Content>
@@ -737,19 +738,11 @@
   }
 
   .program-card__section p,
-  .program-card__section li,
   .p-card__section {
     margin: 0;
     font-size: 0.92rem;
     line-height: 1.6;
     color: var(--program-text-secondary);
-  }
-
-  .program-card__section ul {
-    display: grid;
-    gap: 0.55rem;
-    margin: 0;
-    padding-left: 1rem;
   }
 
   .program-card__actions {

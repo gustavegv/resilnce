@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gustavegv/resilnce/apps/server/application"
+	"github.com/gustavegv/resilnce/apps/server/predefined"
 )
 
 type HTTP struct {
@@ -15,6 +16,11 @@ type HTTP struct {
 }
 
 func (h HTTP) Register(mux *http.ServeMux) {
+	mux.HandleFunc("/api/training/catalog", h.Boundary.Handler("GET", application.ExerciseCentric, false, func(w http.ResponseWriter, r *http.Request) {
+		respond(w, struct {
+			MuscleGroups []predefined.MuscleGroup `json:"muscleGroups"`
+		}{predefined.MuscleGroups()}, nil)
+	}))
 	mux.HandleFunc("/api/training/exercises", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.searchExercises))
 	mux.HandleFunc("/api/training/exercises/", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.getExercise))
 	mux.HandleFunc("/api/training/sessions", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.list))

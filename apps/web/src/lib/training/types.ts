@@ -31,6 +31,7 @@ export type SessionItem = CreateExerciseIntent | CreateVariantIntent | ReuseVari
 export interface ExerciseSuggestion {
   name: string;
   configuration: InitialConfiguration;
+  muscleGroupCodes?: string[];
 }
 export interface ExerciseSelection {
   exercise: Exercise;

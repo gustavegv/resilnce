@@ -176,4 +176,54 @@ fetches current settings but requires another explicit Reuse unchanged choice;
 it never silently rebases a stale draft. Saving/retry still freezes one exact
 ordered command. `searchExercises` and `readExercise` are in the shared client;
 `ExerciseSelection`, `ExerciseSuggestion`, and the three intent types are in
-`types.ts`. Quick fill/Program wiring and generated-output validation remain #35.
+`types.ts`.
+
+## Quick fill and Program review
+
+Both existing producer entry points still hand an exercise suggestion array to
+`/create/manual?quickload=1` through the tab's `workoutPayload`. This handoff is
+untrusted review data, not `SessionItem` intent. Quick fill keeps its existing AI
+options; Program keeps its previews and Edit and add action. No generated item is
+inserted directly into the saved draft.
+
+The common review validates the full array before resolving any item: 1–100
+objects, trimmed nonempty names up to 100 Unicode characters, whole set counts
+1–20, numeric weights 0–9999 with at most two decimal places, whole thresholds
+1–99, and numeric increments 0.25–99 with at most two decimal places. Omitted
+threshold and increment retain 12/2.50 defaults; null and unsupported fields are
+errors. The producer shape remains `{name,sets,weight,repThreshold?,autoIncrease?,
+muscleGroupCodes?}`. Malformed/invalid output remains visible in an editable JSON
+field with a correction action; no domain mutation is issued. Applying a
+corrected draft explicitly restarts review. A suggestion can also be removed.
+
+`GET /api/training/catalog` returns `{muscleGroups:[{code,label,sort_order}]}`
+from the backend's predefined catalog in declared order, under the shared
+authenticated/model/method policy. Generated nonempty muscle code arrays are
+checked against this catalog before review. Null, duplicate, unknown or nonstring
+codes are errors. The resolver displays and carries valid codes only when
+creating a new exercise; reuse/named-variant creation preserve existing exercise
+groups. The save command independently validates catalog membership atomically.
+There is no muscle-group picker or inference from marketing labels/free text.
+
+Each suggestion has a stable local review ID and is resolved independently in
+source order through `DraftItemResolver`, using its suggestion prop and boolean
+`onresolve` contract. Current per-set targets/settings appear beside suggestions.
+The explicit choice is reviewed reuse unchanged, a named variant with reviewed
+settings, or a new exercise/Standard. Duplicate variants and normalized creation
+names retain the current choice with an editable error. Different variants of
+one exercise remain distinct. The existing sortable cards retain final order.
+
+Finish is blocked until every retained suggestion is resolved. It uses the same
+single atomic create command and immutable operation ID as manual creation;
+neither producer orchestrates separate library writes. Network/server failure
+retains the draft, pauses edits, protects navigation, and retries identical JSON.
+Definitive rejection permits editing with a new operation ID, and stale reuse
+requires an explicit current-settings review. Cancel before saving removes the
+tab handoff and leaves no library/session records; unresolved saves must first
+be resolved. Only acknowledged success clears the handoff as Saved.
+
+`POST /ai/quick` continues to use the backend-selected account/quota key and
+25-call limit. Generation only returns text for review. Provider errors return
+`ai-generation-failed` rather than a successful empty draft. The Quick fill UI
+recognizes `ai-quota-exceeded` from the authoritative 403 response; network and
+other failed generations remain errors without creating a session.

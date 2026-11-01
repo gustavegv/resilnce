@@ -41,3 +41,5 @@ export const searchExercises = (query: string) =>
   request<{ exercises: ExerciseSelection[] }>(`/exercises?q=${encodeURIComponent(query.trim())}`);
 export const readExercise = (id: string) =>
   request<ExerciseSelection>(`/exercises/${encodeURIComponent(id)}`);
+export const readCatalog = () =>
+  request<{ muscleGroups: { code: string; label: string }[] }>('/catalog');
