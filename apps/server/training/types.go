@@ -18,6 +18,7 @@ type Configuration struct {
 // overrides; reviewed parent/variant revisions protect existing identities.
 type SessionItem struct {
 	Kind                     string `json:"kind"`
+	PlacementID              string `json:"placementId,omitempty"`
 	ExerciseID               string `json:"exerciseId,omitempty"`
 	VariantID                string `json:"variantId,omitempty"`
 	ExpectedExerciseRevision string `json:"expectedExerciseRevision,omitempty"`
@@ -65,12 +66,13 @@ type Placement struct {
 	Variant   Variant  `json:"variant"`
 }
 type Session struct {
-	ID              string      `json:"id"`
-	Name            string      `json:"name"`
-	Revision        string      `json:"revision"`
-	CreatedAt       time.Time   `json:"createdAt"`
-	LastPerformedAt *time.Time  `json:"lastPerformedAt"`
-	Placements      []Placement `json:"placements"`
+	ID                  string      `json:"id"`
+	Name                string      `json:"name"`
+	Revision            string      `json:"revision"`
+	CreatedAt           time.Time   `json:"createdAt"`
+	LastPerformedAt     *time.Time  `json:"lastPerformedAt"`
+	LastPerformedStatus string      `json:"lastPerformedStatus"`
+	Placements          []Placement `json:"placements"`
 }
 type Acknowledgment struct {
 	OperationID      string    `json:"operationId"`
@@ -86,4 +88,21 @@ type SessionResult struct {
 type ExerciseSelection struct {
 	Exercise Exercise  `json:"exercise"`
 	Variants []Variant `json:"variants"`
+}
+
+// UpdateSession replaces composition; retainPlacement keeps its durable identity.
+type UpdateSession struct {
+	OperationID      string        `json:"operationId"`
+	ExpectedRevision string        `json:"expectedRevision"`
+	Name             string        `json:"name"`
+	Items            []SessionItem `json:"items"`
+}
+type DeleteSession struct {
+	OperationID      string `json:"operationId"`
+	ExpectedRevision string `json:"expectedRevision"`
+}
+type DeleteSessionResult struct {
+	Operation Acknowledgment `json:"operation"`
+	SessionID string         `json:"sessionId"`
+	Deleted   bool           `json:"deleted"`
 }

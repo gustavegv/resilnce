@@ -25,9 +25,20 @@ func newID() string {
 
 func readSession(ctx context.Context, q pgx.Tx, owner, id string) (Session, error) {
 	s := Session{Placements: []Placement{}}
-	err := q.QueryRow(ctx, `SELECT s.id::text,s.name,s.revision::text,s.created_at,(SELECT max(a.completed_at) FROM public.workout w JOIN public.workout_exercise a ON (a.owner_mail,a.workout_id)=(w.owner_mail,w.id) WHERE w.owner_mail=s.owner_mail AND w.source_session_id=s.id AND a.state='completed') FROM public.training_session s WHERE s.owner_mail=$1 AND s.id=$2`, owner, id).Scan(&s.ID, &s.Name, &s.Revision, &s.CreatedAt, &s.LastPerformedAt)
+	err := q.QueryRow(ctx, `SELECT s.id::text,s.name,s.revision::text,s.created_at,
+ coalesce(performance.completed_at,CASE WHEN imported.source_timezone IS NOT NULL THEN imported.session_last_ran_at END),
+ CASE WHEN performance.completed_at IS NOT NULL OR (imported.source_timezone IS NOT NULL AND imported.session_last_ran_at IS NOT NULL) THEN 'dated'
+      WHEN imported.raw_date IS NOT NULL THEN 'unknown' ELSE 'never' END
+ FROM public.training_session s
+ LEFT JOIN LATERAL (SELECT max(a.completed_at) AS completed_at FROM public.workout w JOIN public.workout_exercise a ON (a.owner_mail,a.workout_id)=(w.owner_mail,w.id) WHERE w.owner_mail=s.owner_mail AND w.source_session_id=s.id AND a.state='completed') performance ON true
+ LEFT JOIN LATERAL (SELECT m.source_timezone,m.session_last_ran_at,m.source_data->>'date_last_ran' AS raw_date FROM internal.porting_map m WHERE m.owner_key=s.owner_mail AND m.migration_version='exercise-centric-v1' AND m.source_table='Session' AND m.destinations->>'session'=s.id::text ORDER BY m.source_key LIMIT 1) imported ON true
+ WHERE s.owner_mail=$1 AND s.id=$2`, owner, id).Scan(&s.ID, &s.Name, &s.Revision, &s.CreatedAt, &s.LastPerformedAt, &s.LastPerformedStatus)
 	if err != nil {
 		return s, err
+	}
+	if s.LastPerformedAt != nil {
+		normalized := s.LastPerformedAt.UTC()
+		s.LastPerformedAt = &normalized
 	}
 	rows, err := q.Query(ctx, `SELECT p.id::text,p.variant_id::text,p.position,e.id::text,e.name,e.revision::text,e.muscle_group_codes,e.archived_at IS NOT NULL,v.name,v.revision::text,v.progression_mode,v.rep_threshold,v.auto_increment::text,v.rest_seconds,v.archived_at IS NOT NULL FROM public.session_variant p JOIN public.exercise_variant v ON (v.owner_mail,v.id)=(p.owner_mail,p.variant_id) JOIN public.exercise e ON (e.owner_mail,e.id)=(v.owner_mail,v.exercise_id) WHERE p.owner_mail=$1 AND p.session_id=$2 ORDER BY p.position`, owner, id)
 	if err != nil {
@@ -121,11 +132,17 @@ func (s *Service) ListSessions(ctx context.Context, owner string) (out []Session
 	}
 	sort.SliceStable(result, func(i, j int) bool {
 		a, b := result[i].LastPerformedAt, result[j].LastPerformedAt
+		if a == nil && b == nil {
+			return result[i].ID < result[j].ID
+		}
 		if a == nil {
 			return false
 		}
 		if b == nil {
 			return true
+		}
+		if a.Equal(*b) {
+			return result[i].ID < result[j].ID
 		}
 		return a.After(*b)
 	})

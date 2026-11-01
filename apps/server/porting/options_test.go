@@ -2,6 +2,30 @@ package porting
 
 import "testing"
 
+func TestUnmappedSessionDatesRequireUniquePolicyAndMappedDatesRemainSkipped(t *testing.T) {
+	for _, tc := range []struct {
+		raw, zone string
+		ready     bool
+	}{
+		{`null`, "", true}, {`"2026-01-15T12:00:00.123456"`, "", true}, {`"2026-07-15T12:00:00.123456"`, "", true},
+		{`"2026-03-29T02:30:00"`, "", false}, {`"2026-10-25T02:30:00"`, "Europe/Stockholm", false},
+		{`"2026-03-29T02:30:00"`, "UTC", true}, {`"2026-10-25T02:30:00"`, "UTC", true}, {`"infinity"`, "UTC", false},
+	} {
+		t.Run(tc.raw+tc.zone, func(t *testing.T) {
+			session := fixtureRow(t, "Session", "a", `{"ses_id":1,"ses_name":"Push","date_last_ran":`+tc.raw+`}`)
+			rows := []Row{fixtureRow(t, "User", "a", `{"mail":"a"}`), session}
+			if p := buildPlan(rows, "a", emptyState(), Options{SourceTimezone: tc.zone}); p.Ready != tc.ready {
+				t.Fatal(p.OwnerReport)
+			}
+			state := emptyState()
+			state.Mapped[session.identity()] = References{Session: "durable-tombstone"}
+			if p := buildPlan(rows, "a", state, Options{SourceTimezone: tc.zone}); !p.Ready || p.Counts["Session"].Mapped != 1 {
+				t.Fatal("mapped source was revalidated", p.OwnerReport)
+			}
+		})
+	}
+}
+
 func TestSourceTimezoneDefaultsToStockholm(t *testing.T) {
 	for _, tc := range []struct{ input, want string }{{"", DefaultSourceTimezone}, {"  ", DefaultSourceTimezone}, {"UTC", "UTC"}, {" Europe/Stockholm ", DefaultSourceTimezone}} {
 		opts := Options{SourceTimezone: tc.input}.normalized()
