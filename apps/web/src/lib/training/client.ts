@@ -3,6 +3,7 @@ import { upgradeRequired } from '$lib/stores/appState';
 import type {
   CreateSessionCommand,
   CompleteAttemptCommand,
+  QuitWorkoutCommand,
   UpdateConfigurationCommand,
   ConfigurationResult,
   DeleteSessionCommand,
@@ -77,3 +78,6 @@ export const completeAttempt = (command: CompleteAttemptCommand) =>
 
 export const updateConfiguration = (command: UpdateConfigurationCommand) =>
   request<ConfigurationResult>('/workouts/configuration', command);
+
+export const quitWorkout = (command: QuitWorkoutCommand) =>
+  request<WorkoutResult>('/workouts/quit', command);

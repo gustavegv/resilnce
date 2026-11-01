@@ -216,3 +216,9 @@ export interface ConfigurationResult extends WorkoutResult {
   exercise: Exercise;
   variant: Variant;
 }
+
+export type QuitWorkoutCommand = {
+  operationId: string;
+  workoutId: string;
+  expectedWorkoutRevision: string;
+};
