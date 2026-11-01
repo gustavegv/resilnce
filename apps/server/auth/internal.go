@@ -20,6 +20,9 @@ func VerifiedIdentity(r *http.Request, store SessionLookup) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if store == nil {
+		return "", errors.New("renew sign-in with a verified email")
+	}
 	data, err := store.GetSession(r.Context(), sid)
 	if err != nil || data == nil || mail == "" || data.Email != mail || !data.EmailVerified {
 		return "", errors.New("renew sign-in with a verified email")

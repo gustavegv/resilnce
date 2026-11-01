@@ -9,6 +9,8 @@
 
   import { asset, resolve } from '$app/paths';
   import { onMount } from 'svelte';
+  import { getMe } from './me';
+  import AccountIndicator from '$lib/AccountIndicator.svelte';
   import LandscapeLanding from './LandscapeLanding.svelte';
   import { isMobileNotWebapp, setHelpOpen, toggleHelpOpen } from './webapp.svelte';
 
@@ -19,6 +21,7 @@
   let isLandscape = $state(false);
 
   onMount(() => {
+    void getMe();
     const mq = window.matchMedia('(orientation: landscape)');
 
     const update = () => {
@@ -44,15 +47,17 @@
         break;
       default:
         const currentPath = page.url.pathname;
-        const newPath = currentPath.substring(0, currentPath.lastIndexOf('/'));
-        console.log(currentPath);
-        goto(newPath || resolve('/'));
+        const parentPath = currentPath.substring(0, currentPath.lastIndexOf('/'));
+        // The current URL already includes the configured app base.
+        // eslint-disable-next-line svelte/no-navigation-without-resolve -- Resolving this parent again would duplicate the app base.
+        goto(parentPath || resolve('/'));
         break;
     }
   }
 </script>
 
 <Toaster />
+<AccountIndicator />
 {#if isLandscape}{:else if home}
   <div class="abs">
     <CustomHeader size={3} />
@@ -60,8 +65,7 @@
 
   <div class="head">
     <g
-      class="function-button"
-      class:hide={!showHelp}
+      class={['function-button', { hide: !showHelp }]}
       onclick={() => toggleHelpOpen()}
       onkeydown={(e: any) => {
         if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') toggleHelpOpen();

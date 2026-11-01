@@ -1,3 +1,4 @@
+import { upgradeRequired } from '$lib/stores/appState';
 import { PUBLIC_BACKEND_BASE_URL } from '$env/static/public';
 
 const baseURL: string = PUBLIC_BACKEND_BASE_URL;
@@ -15,6 +16,7 @@ async function postDB(dir: string, data: any): Promise<Response> {
     },
     body: JSON.stringify(data),
   });
+  if (res.status === 426) upgradeRequired.set(true);
   return res;
 }
 

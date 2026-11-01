@@ -134,3 +134,14 @@ func (s *Store) AllowRateLimit(
 
 	return count <= limit, remaining, ttl, nil
 }
+
+// TakeAICall uses an account-derived key independent of expiring login sessions.
+// The atomic limit preserves the existing 25-call allowance across app restarts.
+func (s *Store) TakeAICall(ctx context.Context, key string, limit int64) (bool, error) {
+	result, err := s.rdb.Eval(ctx, `
+local calls = tonumber(redis.call('GET', KEYS[1]) or '0')
+if calls >= tonumber(ARGV[1]) then return 0 end
+redis.call('INCR', KEYS[1])
+return 1`, []string{key}, limit).Int()
+	return result == 1, err
+}
