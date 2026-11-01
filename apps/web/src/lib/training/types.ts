@@ -173,6 +173,16 @@ export interface WorkoutResult {
   workout: Workout;
 }
 
+export interface CompleteAttemptCommand {
+  operationId: ID;
+  workoutId: ID;
+  attemptId: ID;
+  exerciseId: ID;
+  variantId: ID;
+  expectedWorkoutRevision: Revision;
+  expectedVariantRevision: Revision;
+}
+
 export type RecordSetCommand = {
   operationId: ID;
   workoutId: ID;

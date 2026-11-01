@@ -8,6 +8,22 @@ import (
 	"github.com/gustavegv/resilnce/apps/server/application"
 )
 
+func (h HTTP) completeAttempt(w http.ResponseWriter, r *http.Request) {
+	var c *CompleteAttempt
+	d := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16*1024))
+	d.DisallowUnknownFields()
+	if err := d.Decode(&c); err != nil || c == nil {
+		application.WriteError(w, 400, "malformed-request", "Send one exercise completion command object", nil)
+		return
+	}
+	if err := d.Decode(new(any)); err != io.EOF {
+		application.WriteError(w, 400, "malformed-request", "Send one exercise completion command", nil)
+		return
+	}
+	v, err := h.Service.CompleteAttempt(r.Context(), owner(r), *c)
+	respond(w, v, err)
+}
+
 func (h HTTP) activeWorkout(w http.ResponseWriter, r *http.Request) {
 	v, err := h.Service.ActiveWorkout(r.Context(), owner(r))
 	respond(w, struct {
