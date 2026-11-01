@@ -177,3 +177,74 @@ it never silently rebases a stale draft. Saving/retry still freezes one exact
 ordered command. `searchExercises` and `readExercise` are in the shared client;
 `ExerciseSelection`, `ExerciseSuggestion`, and the three intent types are in
 `types.ts`. Quick fill/Program wiring and generated-output validation remain #35.
+
+## Session-based workout start and resume
+
+The concrete `training.Service` exposes `StartWorkout(ctx, owner, StartWorkout)`,
+`ActiveWorkout(ctx, owner)` and `GetWorkout(ctx, owner, workoutID)`. HTTP adapters
+only decode/authenticate/translate. SQL, snapshotting, ownership, locks and receipts
+remain private to the application module.
+
+`POST /api/training/workouts/start` accepts exactly:
+
+```json
+{"operationId":"90000000-0000-4000-8000-000000000001","sessionId":"<uuid>","expectedSessionRevision":"1"}
+```
+
+It returns `{operation, workout}`. After receipt replay, the owner-row command
+lock resolves an existing active workout before requested-plan revision/archive
+checks. The response always identifies the actual source; requesting another
+plan never replaces active work. A new start requires an owned, nonempty plan at
+the reviewed revision and owned, unarchived exercises/variants. It captures the
+current configuration, target identities, ordered placements and individual set
+weights. Attempts and sets receive stable new UUIDs, with draft/pending state and
+null recorded reps, weight, timestamp, RPE and notes. It never writes legacy
+tables or the old account active-session pointer.
+
+`GET /api/training/workouts/active` returns `{workout:null}` when none is active.
+`GET /api/training/workouts/{uuid}` returns `{workout}` for that owned workout,
+including ended workouts; absent/other-owner IDs return 404. Both reads use a
+consistent repeatable-read snapshot. Closure and reads perform no lifecycle write.
+
+`Workout` has `id`, `status` (`active`/`ended`), opaque `revision`, `origin`, nullable
+`sourceSession:{id,name}`, `startedAt`, nullable `endedAt`, and ordered `exercises`.
+Each `WorkoutExercise` has stable `id`, `variantId`, `position`, `state`
+(`draft`/`completed`), `origin`, captured `configRevision`, `progressionMode`,
+`repThreshold`, `autoIncrement`, `restSeconds`, nullable `completedAt`,
+`recordedRpe` and `notes`, current `exercise` metadata, separate `currentVariant`
+with future target sets, and ordered `sets`. Current names follow library renames;
+the workout list/order and captured performance do not follow session edits.
+
+Each `WorkoutSet` has `id`, nullable `targetSetId` provenance, `position`, `kind`,
+`state` (`pending`/`performed`/`skipped`), captured `targetReps`/`targetWeight`,
+nullable `recordedReps`/`recordedWeight`/`recordedAt`, and `lateWeightOverride`.
+A performed zero remains zero. Future targets must never replace displayed actuals.
+The workout revision is the mutable aggregate guard for subsequent recording,
+configuration reconciliation, completion and quit commands. Attempt
+`configRevision` records the variant configuration used by its captured settings;
+`currentVariant.revision` can be newer. Those later commands reuse private
+`beginCommand`, resolve receipts first, lock the affected workout before sorted
+variant rows, and return authoritative `Workout` plus acknowledgment. Recording,
+completion, free-mode start and quitting are not exposed by the start slice.
+
+Start retries return the original acknowledgment with current state of the
+original workout, even if it ended or another workout has since started. New
+operation IDs requesting an active workout receive an acknowledgment targeting
+that existing workout. Changed intent with the same operation ID is 409
+`operation-mismatch`. Stale plan intent is 409 `stale-revision`, archived references
+409 `resource-unavailable`, empty plans 422 `invalid-field`, invalid shape 400;
+shared identity/model/origin/maintenance policy applies to every route.
+
+The shared browser client adds `startWorkout`, `activeWorkout`, and `readWorkout`.
+`ResumeWorkout.svelte` supplies the home Continue link using the returned workout
+UUID. `WorkoutStart.svelte` captures exact start intent and opaque revision,
+guards unresolved navigation, freezes plan selection and retries identically.
+After a definitive rejection it can explicitly re-read/review the plan before a
+new intent. A different already-active source is identified before Continue.
+`/workout/[id]` checks account model availability and renders `WorkoutScreen.svelte`
+with stable attempt/set keys and distinct target/pending/actual displays. It sends
+no completion or quit request on mount/unmount and shows no default durable rating.
+
+Additive migration `006_workout_rest.sql` captures attempt rest settings; existing
+attempts backfill the current variant rest because no earlier snapshot existed.
+Its columns and nonnegative constraint are included in migration readiness checks.

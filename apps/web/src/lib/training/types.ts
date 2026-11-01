@@ -96,3 +96,58 @@ export interface DraftSessionItem {
   exercise?: Exercise;
   reviewedVariant?: Variant;
 }
+
+export interface StartWorkoutCommand {
+  operationId: ID;
+  sessionId: ID;
+  expectedSessionRevision: Revision;
+}
+export interface WorkoutSource {
+  id: ID;
+  name: string;
+}
+export interface WorkoutSet {
+  id: ID;
+  targetSetId: ID | null;
+  position: number;
+  kind: 'prescribed' | 'bonus';
+  state: 'pending' | 'performed' | 'skipped';
+  targetReps: number;
+  targetWeight: Decimal;
+  recordedReps: number | null;
+  recordedWeight: Decimal | null;
+  recordedAt: string | null;
+  lateWeightOverride: boolean;
+}
+export interface WorkoutExercise {
+  id: ID;
+  variantId: ID;
+  position: number;
+  state: 'draft' | 'completed';
+  origin: 'planned' | 'added';
+  configRevision: Revision;
+  progressionMode: Variant['progressionMode'];
+  repThreshold: number;
+  autoIncrement: Decimal;
+  restSeconds: number;
+  completedAt: string | null;
+  recordedRpe: number | null;
+  notes: string | null;
+  exercise: Exercise;
+  currentVariant: Variant;
+  sets: WorkoutSet[];
+}
+export interface Workout {
+  id: ID;
+  status: 'active' | 'ended';
+  revision: Revision;
+  origin: 'session' | 'free';
+  sourceSession: WorkoutSource | null;
+  startedAt: string;
+  endedAt: string | null;
+  exercises: WorkoutExercise[];
+}
+export interface WorkoutResult {
+  operation: Acknowledgment;
+  workout: Workout;
+}

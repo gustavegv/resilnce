@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import SessionSlug from '../../components/SessionSlug.svelte';
+  import WorkoutStart from './WorkoutStart.svelte';
   import { listSessions, readSession } from './client';
   import type { Session } from './types';
   import { categories, matchesCategory } from './sessionCategories';
@@ -10,6 +11,7 @@
   let reading = $state(false);
   let error = $state('');
   let activeCategory = $state('All');
+  let starting = $state(false);
   const recentBoundary = Date.now() - 14 * 24 * 60 * 60 * 1000;
   let filtered = $derived(
     sessions.filter((session) => matchesCategory(session.name, activeCategory))
@@ -41,6 +43,7 @@
     void load();
   });
   async function showPlan(id: string) {
+    if (starting) return;
     reading = true;
     error = '';
     selected = null;
@@ -67,6 +70,7 @@
     <div class="category-carousel">
       {#each categories as category (category)}
         <button
+          disabled={starting}
           class={[
             'category-pill',
             category.toLowerCase().replace(' ', '-'),
@@ -122,6 +126,14 @@
             </p>{/each}
         </div>
       {/each}
+      {#key `${selected.id}:${selected.revision}`}
+        <WorkoutStart
+          session={selected}
+          onpending={(value) => {
+            starting = value;
+          }}
+        />
+      {/key}
     </section>
   {/if}
 </div>
