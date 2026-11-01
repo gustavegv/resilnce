@@ -41,6 +41,25 @@ export interface CreateSessionCommand {
   name: string;
   items: SessionItem[];
 }
+export interface RetainPlacementIntent {
+  kind: 'retainPlacement';
+  placementId: ID;
+}
+export interface UpdateSessionCommand {
+  operationId: ID;
+  expectedRevision: Revision;
+  name: string;
+  items: (SessionItem | RetainPlacementIntent)[];
+}
+export interface DeleteSessionCommand {
+  operationId: ID;
+  expectedRevision: Revision;
+}
+export interface DeleteSessionResult {
+  operation: Acknowledgment;
+  sessionId: ID;
+  deleted: true;
+}
 export interface TargetSet {
   id: ID;
   position: number;
@@ -79,6 +98,7 @@ export interface Session {
   revision: Revision;
   createdAt: string;
   lastPerformedAt: string | null;
+  lastPerformedStatus: 'dated' | 'never' | 'unknown';
   placements: Placement[];
 }
 export interface Acknowledgment {

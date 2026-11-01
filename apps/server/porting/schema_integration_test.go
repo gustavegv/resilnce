@@ -67,7 +67,7 @@ func TestToolBootstrapsSchemaFromLegacyDatabase(t *testing.T) {
 	if err = json.Unmarshal(w.Body.Bytes(), &overview); err != nil {
 		t.Fatal(err)
 	}
-	if overview.Schema.Ready || !overview.Schema.CanApply || len(overview.Schema.Migrations) != 4 || len(overview.Inventory) != 0 || len(overview.Runs) != 0 {
+	if overview.Schema.Ready || !overview.Schema.CanApply || len(overview.Schema.Migrations) != 5 || len(overview.Inventory) != 0 || len(overview.Runs) != 0 {
 		t.Fatal(w.Body.String())
 	}
 	if scalar(t, s, ctx, `SELECT count(*) FROM pg_namespace WHERE nspname='internal'`) != 0 {
@@ -95,7 +95,7 @@ func TestToolBootstrapsSchemaFromLegacyDatabase(t *testing.T) {
 			t.Fatal(w.Body.String())
 		}
 	}
-	if scalar(t, s, ctx, `SELECT count(*) FROM internal.schema_migration`) != 4 || scalar(t, s, ctx, `SELECT count(*) FROM public.exercise`) != 0 {
+	if scalar(t, s, ctx, `SELECT count(*) FROM internal.schema_migration`) != 5 || scalar(t, s, ctx, `SELECT count(*) FROM public.exercise`) != 0 {
 		t.Fatal("setup ran data imports or duplicated migrations")
 	}
 	if scalar(t, s, ctx, `SELECT count(*) FROM internal.porting_run`) != 0 {
@@ -124,6 +124,12 @@ func TestToolBootstrapsSchemaFromLegacyDatabase(t *testing.T) {
 func TestSchemaCheckDetectsDriftAndRefusesDestructiveRepair(t *testing.T) {
 	for _, tc := range []struct{ name, sql, want string }{
 		{"missing column", `ALTER TABLE public.exercise DROP COLUMN name`, "public.exercise.name"},
+		{"missing map timezone", `ALTER TABLE internal.porting_map DROP COLUMN source_timezone`, "internal.porting_map.source_timezone"},
+		{"missing map instant", `ALTER TABLE internal.porting_map DROP COLUMN session_last_ran_at`, "internal.porting_map.session_last_ran_at"},
+		{"wrong map timezone type", `ALTER TABLE internal.porting_map ALTER COLUMN source_timezone TYPE varchar(100)`, "internal.porting_map.source_timezone"},
+		{"wrong map instant type", `ALTER TABLE internal.porting_map ALTER COLUMN session_last_ran_at TYPE timestamp`, "internal.porting_map.session_last_ran_at"},
+		{"wrong map timezone nullability", `ALTER TABLE internal.porting_map ALTER COLUMN source_timezone SET NOT NULL`, "internal.porting_map.source_timezone"},
+		{"wrong map instant nullability", `ALTER TABLE internal.porting_map ALTER COLUMN session_last_ran_at SET NOT NULL`, "internal.porting_map.session_last_ran_at"},
 		{"missing RPE", `ALTER TABLE public.workout_exercise DROP COLUMN recorded_rpe`, "public.workout_exercise.recorded_rpe"},
 		{"missing last RPE", `ALTER TABLE public.exercise_variant DROP COLUMN last_rpe`, "public.exercise_variant.last_rpe"},
 		{"missing RPE timestamp", `ALTER TABLE public.exercise_variant DROP COLUMN last_rpe_at`, "public.exercise_variant.last_rpe_at"},

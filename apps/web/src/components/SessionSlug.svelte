@@ -10,7 +10,7 @@
     onEdit?: () => void;
     onPress: () => void;
     onDel?: () => void;
-    slug: { name: string; date?: Date };
+    slug: { name: string; date?: Date; undatedLabel?: string };
   } = $props();
 
   function prs() {
@@ -66,7 +66,7 @@
   <div class="base-btn alt" style="width:{sty}">
     <button class="start-side" onclick={prs}>
       <p>{slug.name}</p>
-      <p class="date">{slug.date ? timeAgo(slug.date) : 'Never run'}</p>
+      <p class="date">{slug.date ? timeAgo(slug.date) : (slug.undatedLabel ?? 'Never run')}</p>
     </button>
 
     {#if onEdit || onDel}<button

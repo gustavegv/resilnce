@@ -4,12 +4,15 @@
   import { listSessions, readSession } from './client';
   import type { Session } from './types';
   import { categories, matchesCategory } from './sessionCategories';
+  import SessionPlanEditor from './SessionPlanEditor.svelte';
   let sessions = $state.raw<Session[]>([]);
   let selected = $state.raw<Session | null>(null);
   let loading = $state(true);
   let reading = $state(false);
   let error = $state('');
   let activeCategory = $state('All');
+  let editing = $state(false);
+  let maintenanceBusy = $state(false);
   const recentBoundary = Date.now() - 14 * 24 * 60 * 60 * 1000;
   let filtered = $derived(
     sessions.filter((session) => matchesCategory(session.name, activeCategory))
@@ -41,6 +44,8 @@
     void load();
   });
   async function showPlan(id: string) {
+    if (maintenanceBusy) return;
+    editing = false;
     reading = true;
     error = '';
     selected = null;
@@ -67,6 +72,7 @@
     <div class="category-carousel">
       {#each categories as category (category)}
         <button
+          disabled={maintenanceBusy}
           class={[
             'category-pill',
             category.toLowerCase().replace(' ', '-'),
@@ -86,6 +92,8 @@
           slug={{
             name: session.name,
             date: session.lastPerformedAt ? new Date(session.lastPerformedAt) : undefined,
+            undatedLabel:
+              session.lastPerformedStatus === 'unknown' ? 'Last run unavailable' : 'Never run',
           }}
           onPress={() => showPlan(session.id)}
         />
@@ -96,6 +104,8 @@
           slug={{
             name: session.name,
             date: session.lastPerformedAt ? new Date(session.lastPerformedAt) : undefined,
+            undatedLabel:
+              session.lastPerformedStatus === 'unknown' ? 'Last run unavailable' : 'Never run',
           }}
           onPress={() => showPlan(session.id)}
         />
@@ -106,6 +116,33 @@
   {#if selected}
     <section class="plan" aria-label={`${selected.name} plan`}>
       <h3>{selected.name}</h3>
+      {#if editing}
+        {#key selected.id}
+          <SessionPlanEditor
+            session={selected}
+            onbusy={(value) => {
+              maintenanceBusy = value;
+            }}
+            onsaved={(session) => {
+              selected = session;
+              sessions = sessions.map((item) => (item.id === session.id ? session : item));
+              editing = false;
+            }}
+            ondeleted={(id) => {
+              sessions = sessions.filter((item) => item.id !== id);
+              selected = null;
+              editing = false;
+            }}
+            oncancel={() => {
+              editing = false;
+            }}
+          />
+        {/key}
+      {:else}<button
+          onclick={() => {
+            editing = true;
+          }}>Edit session</button
+        >{/if}
       {#if !selected.placements.length}<p>Add a variant before starting this session.</p>{/if}
       {#each selected.placements as placement (placement.id)}
         <div class="exercise">

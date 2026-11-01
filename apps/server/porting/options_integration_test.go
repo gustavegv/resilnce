@@ -189,3 +189,35 @@ func TestExplicitSourceTimezoneStillOverridesDefault(t *testing.T) {
 		t.Fatal("explicit timezone overridden")
 	}
 }
+
+func TestSessionRecencyPolicyIsFrozenPerMappingWithoutHistory(t *testing.T) {
+	s, ctx := testService(t)
+	execSQL(t, s, ctx, singleOwnerFixture+`DELETE FROM public."History"; UPDATE public."Session" SET date_last_ran='2026-01-15 12:00:00.123456'; INSERT INTO public."Session" VALUES(4,'Summer','2026-07-15 12:00:00.123456','a@example.com');`)
+	first := applyRun(t, s, ctx, "a@example.com")
+	if first.Status != "completed" {
+		t.Fatal(first)
+	}
+	if scalar(t, s, ctx, `SELECT count(*) FROM internal.porting_map WHERE source_table='Session' AND source_timezone='Europe/Stockholm' AND session_last_ran_at='2026-01-15T11:00:00.123456Z' AND source_data->>'date_last_ran'='2026-01-15T12:00:00.123456'`) != 1 {
+		t.Fatal("default session timestamp policy was not preserved")
+	}
+	if scalar(t, s, ctx, `SELECT count(*) FROM internal.porting_map WHERE source_table='Session' AND source_key='[4]'::jsonb AND source_timezone='Europe/Stockholm' AND session_last_ran_at='2026-07-15T10:00:00.123456Z'`) != 1 {
+		t.Fatal("summer session offset was not normalized")
+	}
+	execSQL(t, s, ctx, `UPDATE public."Session" SET date_last_ran='2026-07-15 12:00:00'; INSERT INTO public."Session" VALUES(2,'UTC session','2026-01-15 12:00:00.123456','a@example.com'),(3,'Never run',NULL,'a@example.com');`)
+	id, err := s.StartRun(ctx, "test", "apply", "a@example.com", Options{SourceTimezone: "UTC"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = s.WorkOne(ctx, id); err != nil {
+		t.Fatal(err)
+	}
+	if scalar(t, s, ctx, `SELECT count(*) FROM internal.porting_map WHERE source_table='Session' AND source_key='[1]'::jsonb AND source_timezone='Europe/Stockholm' AND session_last_ran_at='2026-01-15T11:00:00.123456Z' AND source_data->>'date_last_ran'='2026-01-15T12:00:00.123456'`) != 1 {
+		t.Fatal("rerun rewrote prior policy or raw timestamp")
+	}
+	if scalar(t, s, ctx, `SELECT count(*) FROM internal.porting_map WHERE source_table='Session' AND source_key='[2]'::jsonb AND source_timezone='UTC' AND session_last_ran_at='2026-01-15T12:00:00.123456Z'`) != 1 {
+		t.Fatal("second run's newly imported session did not retain UTC")
+	}
+	if scalar(t, s, ctx, `SELECT count(*) FROM internal.porting_map WHERE source_table='Session' AND source_key='[3]'::jsonb AND source_timezone='UTC' AND session_last_ran_at IS NULL`) != 1 {
+		t.Fatal("null date needs known policy without invented instant")
+	}
+}

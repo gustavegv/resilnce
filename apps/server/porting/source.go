@@ -37,6 +37,7 @@ type Source struct {
 	Rest           *int           `json:"rest_seconds"`
 	Order          *int           `json:"order"`
 	ActiveSession  *string        `json:"active_session"`
+	SessionLastRan *string        `json:"date_last_ran"`
 	SaveDate       string         `json:"save_date"`
 }
 

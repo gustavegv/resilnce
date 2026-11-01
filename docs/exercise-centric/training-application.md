@@ -69,13 +69,68 @@ rejected rather than silently ignored.
 `GET /api/training/sessions` returns `{sessions: []}` or owned resolved sessions.
 `GET /api/training/sessions/{uuid}` returns `{session}` and returns 404 for absent
 or other-owner IDs. Both operations use a consistent repeatable-read snapshot.
-Lists sort completed performance descending, then deterministic creation/ID ties;
-never-run plans have `lastPerformedAt: null`. A start or untouched active workout
+Lists sort dated performance descending with session-ID ties; undated plans
+follow in session-ID order. Never-run plans have `lastPerformedAt: null`. A start or untouched active workout
 does not fabricate performance. Completed attempts in an active workout count.
 
-Imported last-run fallback remains in the session-maintenance slice (#29). The
-existing import map has a naive legacy timestamp without reliable per-session
-source-timezone metadata; this slice does not reinterpret that timestamp as UTC.
+`lastPerformedStatus` is `dated`, `never`, or `unknown`. A completed attempt's
+timestamp takes precedence. Without one, an imported session uses only its own
+mapping's normalized timestamp. A preserved null source date means `never`;
+an old nonnull date without proven provenance means `unknown`, with a null
+timestamp. The browser labels this “Last run unavailable”, separately from
+“Never run”. New imported Session mappings freeze normalized source timezone
+and their uniquely resolved instant together with the graph transaction. Blank
+import policy means Europe/Stockholm; explicit UTC remains UTC. DST gaps/folds
+block an unmapped row for explicit resolution. Mapped rows are skipped before
+validation and later runs never rewrite metadata. No mapping, source key,
+timezone policy, raw data, or run bookkeeping is exposed to application clients.
+
+## Saved-session maintenance
+
+`POST /api/training/sessions/{uuid}/update` accepts
+`{operationId,expectedRevision,name,items}`. The items are the same explicit
+create/reuse intents as creation, plus `{kind:"retainPlacement",placementId}`.
+The ordered array is the complete next composition. Retaining a placement keeps
+its UUID; omission removes only that placement. Duplicate placements/variants,
+other-session placements and other-owner references are rejected atomically.
+The session revision advances once. Existing sessions may become empty; they
+cannot start a workout until a selectable variant is added. Plan changes affect
+future starts and never alter an active workout's captured list/order.
+
+`POST /api/training/sessions/{uuid}/delete` accepts
+`{operationId,expectedRevision}` and returns `{operation,sessionId,deleted:true}`.
+Deletion is rejected with `409 active-source-session` while a workout sourced
+from the plan is active. Otherwise only the plan and its placements are deleted;
+surviving workout source references become null. Library configuration, targets,
+completed performance and durable import mapping tombstones remain. An identical
+delete replay returns the original acknowledgment even though the plan is gone.
+Both commands check exact receipts before revision guards and use the shared
+owner-row transaction lock. Changed operation intent is `operation-mismatch`;
+stale plan/selection reviews are `stale-revision`. The editor freezes the exact
+command for Retry, retains the user's ordered draft after rejection, and blocks
+navigation while a save is unresolved. Discard/reload is an explicit action.
+
+Sessions retain the existing name-based categories and inclusive 14-day Recent
+boundary; older dated and undated plans appear under Older in server order.
+
+### Historical import policy correction
+
+Migration 005 deliberately leaves existing provenance null. A new run, source
+History timezone, import timestamp, or latest account-wide option is never
+evidence of an old Session mapping's policy. Unknown dates stay unknown until an
+operator independently establishes that exact mapping's historical policy.
+There is no automatic backfill or ordinary application metadata-write endpoint.
+
+If correction is needed, use the existing privileged operator boundary for a
+separately reviewed manifest containing exact owner, migration version, Session
+source keys, intended timezone, and expected preserved source-data digest. First
+preview each raw date, chosen zone, unique instant, and unresolved DST issue.
+Only a deliberate transaction holding the same owner lock may populate both
+new columns, and only where both are still null and the preserved data matches
+the manifest. Reject known/conflicting provenance and stale manifests. Do not
+change source data, keys, destinations, domain data, aggregates or import counts.
+This describes the narrowly scoped recovery procedure; no production inspection,
+correction, or new general correction UI is part of Stage 1.
 
 The package-private command transaction locks the existing `User` account row to
 serialize mutations per owner. Affected workout/variant rows must then be locked
