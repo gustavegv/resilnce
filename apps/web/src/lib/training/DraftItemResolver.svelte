@@ -26,6 +26,7 @@
   let threshold = $state(12);
   let increment = $state(2.5);
   let rest = 0;
+  let muscleGroupCodes = $state<string[]>([]);
   let results = $state.raw<ExerciseSelection[]>([]);
   let selected = $state.raw<ExerciseSelection | null>(null);
   let mode = $state<'unresolved' | 'createExercise' | 'createVariant'>('unresolved');
@@ -37,6 +38,7 @@
   onMount(() => {
     if (suggestion) {
       name = suggestion.name;
+      muscleGroupCodes = suggestion.muscleGroupCodes ?? [];
       applyConfiguration(suggestion.configuration);
       void search();
     }
@@ -92,6 +94,7 @@
     threshold = 12;
     increment = 2.5;
     rest = 0;
+    muscleGroupCodes = [];
     results = [];
     selected = null;
     mode = 'unresolved';
@@ -172,7 +175,7 @@
     }
     return publish({
       draftId: crypto.randomUUID(),
-      intent: { kind: 'createExercise', name: name.trim(), muscleGroupCodes: [], configuration },
+      intent: { kind: 'createExercise', name: name.trim(), muscleGroupCodes, configuration },
     });
   }
   export async function edit(item: DraftSessionItem): Promise<boolean> {
@@ -182,6 +185,7 @@
     }
     if (item.intent.kind === 'createExercise') {
       name = item.intent.name;
+      muscleGroupCodes = item.intent.muscleGroupCodes;
       applyConfiguration(item.intent.configuration);
       mode = 'createExercise';
       return true;
@@ -276,6 +280,9 @@
         ? 'New exercise · Standard'
         : `New variant under ${selected?.exercise.name}`}
     </p>
+    {#if mode === 'createExercise' && muscleGroupCodes.length}
+      <p>New exercise muscle groups: {muscleGroupCodes.join(', ')}</p>
+    {/if}
     {#if mode === 'createVariant'}<label
         >Variant name<input
           aria-label="Variant name"
