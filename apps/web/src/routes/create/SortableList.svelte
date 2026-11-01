@@ -5,7 +5,8 @@
   let {
     editData,
     disabled = false,
-  }: { editData?: (item: DraftSessionItem) => boolean; disabled?: boolean } = $props();
+  }: { editData?: (item: DraftSessionItem) => boolean | Promise<boolean>; disabled?: boolean } =
+    $props();
   let exerciseList = $state<DraftSessionItem[]>([]);
   let threeDotsOpenFor = $state<string | null>(null);
   function attachSortable(element: HTMLElement) {
@@ -33,8 +34,20 @@
   function remove(id: string) {
     exerciseList = exerciseList.filter((item) => item.draftId !== id);
   }
-  function edit(item: DraftSessionItem) {
-    if (editData?.(item)) remove(item.draftId);
+  async function edit(item: DraftSessionItem) {
+    if (await editData?.(item)) remove(item.draftId);
+  }
+  function exerciseName(item: DraftSessionItem) {
+    return item.intent.kind === 'createExercise'
+      ? item.intent.name
+      : (item.exercise?.name ?? 'Exercise');
+  }
+  function variantName(item: DraftSessionItem) {
+    return item.intent.kind === 'reuseVariant'
+      ? item.reviewedVariant?.name
+      : item.intent.kind === 'createVariant'
+        ? item.intent.name
+        : 'Standard';
   }
 </script>
 
@@ -42,27 +55,36 @@
   {#each exerciseList as item (item.draftId)}
     <li class="blob-cont sortable-item" data-id={item.draftId}>
       <div class="name-cont">
-        <h3>{item.intent.name}</h3>
-        <span class="additional-info">Standard</span>
+        <h3>{exerciseName(item)}</h3>
+        <span class="additional-info">{variantName(item)}</span>
       </div>
       <div class="blob-inner">
-        <p>{item.intent.configuration.prescribedSets} sets</p>
-        <i class="additional-info">{item.intent.configuration.repThreshold ?? 12} rep max.</i>
-        <p>{item.intent.configuration.initialWeight} kg</p>
-        <i class="additional-info">{item.intent.configuration.autoIncrement ?? '2.50'} kg inc.</i>
+        {#if item.intent.kind === 'reuseVariant' && item.reviewedVariant}
+          <p>{item.reviewedVariant.prescribedSets} sets · Shared targets</p>
+          <p>
+            {item.reviewedVariant.targetSets
+              .map((set) => `${set.targetReps} reps × ${set.targetWeight} kg`)
+              .join(' / ')}
+          </p>
+        {:else if item.intent.kind !== 'reuseVariant'}
+          <p>{item.intent.configuration.prescribedSets} sets</p>
+          <i class="additional-info">{item.intent.configuration.repThreshold ?? 12} rep max.</i>
+          <p>{item.intent.configuration.initialWeight} kg</p>
+          <i class="additional-info">{item.intent.configuration.autoIncrement ?? '2.50'} kg inc.</i>
+        {/if}
       </div>
       <button
         class="abs-icon"
-        aria-label={`Options for ${item.intent.name}`}
+        aria-label={`Options for ${exerciseName(item)}`}
         onclick={() => (threeDotsOpenFor = threeDotsOpenFor === item.draftId ? null : item.draftId)}
       >
         <Icon icon="mingcute:more-3-line" color="grey" width="30" />
       </button>
       <div class={['abs-selection-box', { open: threeDotsOpenFor === item.draftId }]}>
-        <button aria-label={`Edit ${item.intent.name}`} onclick={() => edit(item)}
+        <button aria-label={`Edit ${exerciseName(item)}`} onclick={() => edit(item)}
           ><Icon icon="material-symbols:edit-outline" color="white" width="24" /></button
         >
-        <button aria-label={`Remove ${item.intent.name}`} onclick={() => remove(item.draftId)}
+        <button aria-label={`Remove ${exerciseName(item)}`} onclick={() => remove(item.draftId)}
           ><Icon icon="material-symbols:delete-outline" color="red" width="24" /></button
         >
       </div>

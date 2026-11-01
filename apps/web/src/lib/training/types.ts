@@ -14,8 +14,28 @@ export interface CreateExerciseIntent {
   muscleGroupCodes: string[];
   configuration: InitialConfiguration;
 }
-// Other explicit intent tags extend this union in the library-selection slice.
-export type SessionItem = CreateExerciseIntent;
+export interface CreateVariantIntent {
+  kind: 'createVariant';
+  exerciseId: ID;
+  expectedExerciseRevision: Revision;
+  name: string;
+  configuration: InitialConfiguration;
+}
+export interface ReuseVariantIntent {
+  kind: 'reuseVariant';
+  exerciseId: ID;
+  variantId: ID;
+  expectedVariantRevision: Revision;
+}
+export type SessionItem = CreateExerciseIntent | CreateVariantIntent | ReuseVariantIntent;
+export interface ExerciseSuggestion {
+  name: string;
+  configuration: InitialConfiguration;
+}
+export interface ExerciseSelection {
+  exercise: Exercise;
+  variants: Variant[];
+}
 export interface CreateSessionCommand {
   operationId: ID;
   name: string;
@@ -73,4 +93,6 @@ export interface SessionResult {
 export interface DraftSessionItem {
   draftId: ID;
   intent: SessionItem;
+  exercise?: Exercise;
+  reviewedVariant?: Variant;
 }

@@ -15,6 +15,8 @@ type HTTP struct {
 }
 
 func (h HTTP) Register(mux *http.ServeMux) {
+	mux.HandleFunc("/api/training/exercises", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.searchExercises))
+	mux.HandleFunc("/api/training/exercises/", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.getExercise))
 	mux.HandleFunc("/api/training/sessions", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.list))
 	mux.HandleFunc("/api/training/sessions/", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.get))
 	mux.HandleFunc("/api/training/sessions/create", h.Boundary.Handler("POST", application.ExerciseCentric, true, h.create))
@@ -68,5 +70,16 @@ func (h HTTP) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	v, err := h.Service.CreateSession(r.Context(), owner(r), *c)
+	respond(w, v, err)
+}
+
+func (h HTTP) searchExercises(w http.ResponseWriter, r *http.Request) {
+	v, err := h.Service.SearchExercises(r.Context(), owner(r), r.URL.Query().Get("q"))
+	respond(w, struct {
+		Exercises []ExerciseSelection `json:"exercises"`
+	}{v}, err)
+}
+func (h HTTP) getExercise(w http.ResponseWriter, r *http.Request) {
+	v, err := h.Service.GetExercise(r.Context(), owner(r), r.URL.Path[len("/api/training/exercises/"):])
 	respond(w, v, err)
 }

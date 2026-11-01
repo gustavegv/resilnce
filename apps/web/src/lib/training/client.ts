@@ -1,6 +1,6 @@
 import { PUBLIC_BACKEND_BASE_URL } from '$env/static/public';
 import { upgradeRequired } from '$lib/stores/appState';
-import type { CreateSessionCommand, Session, SessionResult } from './types';
+import type { CreateSessionCommand, ExerciseSelection, Session, SessionResult } from './types';
 
 export class TrainingError extends Error {
   constructor(
@@ -36,3 +36,8 @@ export const createSession = (command: CreateSessionCommand) =>
 export const listSessions = () => request<{ sessions: Session[] }>('/sessions');
 export const readSession = (id: string) =>
   request<{ session: Session }>(`/sessions/${encodeURIComponent(id)}`);
+
+export const searchExercises = (query: string) =>
+  request<{ exercises: ExerciseSelection[] }>(`/exercises?q=${encodeURIComponent(query.trim())}`);
+export const readExercise = (id: string) =>
+  request<ExerciseSelection>(`/exercises/${encodeURIComponent(id)}`);
