@@ -407,8 +407,8 @@ attempt/set remains editable and creates a new operation against that reviewed
 revision. No silent rebase occurs. The route snapshots initial account access so
 account expiry/model changes cannot unmount an unresolved editor; the screen
 retains input and blocks old-account requests and late-response acceptance until
-the original authoritative account returns. Completion and quit remain separate
-later operations; shared configuration uses the same editor guard described below.
+the original authoritative account returns. Completion uses the same editor guard described below; quit remains a separate
+later operation.
 
 ## Shared configuration editing during a workout
 
@@ -475,5 +475,80 @@ form, displays current configuration and workout state, and requires Accept
 server state or explicit reapply against all reviewed revisions with a new
 operation ID. Finalized/removed/archived targets cannot be reapplied. Definitive
 name/validation rejection permits correcting the retained form with a new intent.
-Completion must wait until this common guard has no pending command or local
-input and use the latest returned workout/configuration revisions.
+Completion waits until this common guard has no pending command or local
+input and uses the latest returned workout/configuration revisions.
+
+
+## Completion, average progression and automatic ending
+
+`training.Service.CompleteAttempt(ctx, owner, CompleteAttempt)` and
+`POST /api/training/workouts/complete` accept explicit completion of one attempt:
+
+```json
+{"operationId":"a3300000-0000-4000-8000-000000000001","workoutId":"<uuid>","attemptId":"<uuid>","exerciseId":"<uuid>","variantId":"<uuid>","expectedWorkoutRevision":"4","expectedVariantRevision":"2"}
+```
+
+The command supplies identities and reviewed opaque revisions, never reps,
+weights, aggregates or browser-computed next targets. All prescribed sets must
+already be explicitly performed or skipped. Pending completion fails with an
+actionable 422 and changes nothing. Performed zero is actual work; skipped rows
+retain null actuals. Stage 1 exposes average progression only; completion does
+not introduce bonus work, notes/RPE writes or mode controls.
+
+The deterministic public `training.NextTargets(Variant, []WorkoutSet)` seam
+uses actual prescribed reps and current target identities/weights. Every current
+prescribed set must be performed and the unrounded average must reach the current
+threshold to increase. It compares integer rep sums against threshold times
+count, preserving fractions and explicit zero. Skips or any retained prescribed
+`lateWeightOverride` block the whole automatic increase and performed-rep reset.
+Reset is threshold / 1.7 with positive JavaScript Math.round results, computed
+as integer arithmetic. Eligible work independently adds exact integer cents to
+each current target and resets its reps. Otherwise performed actual reps carry
+forward, skipped reps reset, and every current weight stays unchanged.
+
+For actual 12/11/10 at threshold 11, 40.00/50.00/50.00 targets and a 2.50
+increment become 6/6/6 at 42.50/52.50/52.50. Threshold 12 carries 12/11/10 at
+unchanged weights. A late 50-to-45 target override preserves actual 50 and future
+45. All resulting weights are validated before persistence; exceeding 9999 kg
+returns `invalid-field` explaining that weight/increment must be adjusted before
+a new completion intent. No clamping or partial increase occurs.
+
+Completion reuses the private receipt transaction: lock owner, resolve exact
+replay before stale/finality checks, lock owned workout then exercise and variant,
+and authorize exact nested ancestry. Draft completion requires reviewed workout
+and variant revisions and matching captured `configRevision`. Wrong owner or
+parent is 404; stale review is 409. One transaction updates future targets and
+variant revision, marks the attempt completed with server time, advances workout
+revision and stores the receipt. It ends the workout with server ending time
+only when no draft attempts remain. Last list position does not determine ending.
+Failures at targets, completion, ending or receipt leave every effect rolled back.
+
+Success returns `{operation,workout}`. Completed `sets` retain captured targets,
+actual reps/weights/timestamps and override flags; `currentVariant.targetSets`
+separately supplies authoritative future targets, including changes made by a
+later workout. Exact replay returns the original accepted acknowledgment plus
+current state without regressing revisions. A new operation ID for an already
+completed owned attempt acknowledges frozen work before stale/finality rejection,
+without recomputing progression, even after another workout starts. New recording
+or configuration commands cannot reopen completed work.
+
+`WorkoutScreen.svelte` adds the familiar per-exercise Finish action. It waits
+for every explicit prescribed resolution, prior successful save, unsent rep
+correction and open configuration editor. Completion occupies the same frozen
+pending-command slot as recording/configuration. Saving and failed completion
+preserve actual display and block further edits. An uncertain completion offers
+exact Retry and cannot be discarded or overtaken through navigation/account
+changes; resolving the same intent returns authoritative completion/ending.
+Definitive validation rejection permits discarding that rejected intent and
+reviewing configuration. Stale responses preserve intent, fetch separate current
+state, and require explicit Accept or valid reapply with current workout/variant
+revisions and a new operation ID. Finalized reviewed state cannot be reapplied.
+Completed cards display frozen performed/skipped work and a separate Current next
+targets group. Automatic ending requires no separate normal End workout control.
+
+Ticket #34 should extend the common pending-command/navigation guard for quit,
+retain completed work/progression and target exactly one workout. An uncertain
+completion must resolve before a quit/start can overtake it. Ticket #36 should
+read completed actual rows directly (including completed attempts in active
+workouts), exclude drafts/skips from performed averages, and use per-set actual
+products for exact volume. Current future targets are never history aggregates.

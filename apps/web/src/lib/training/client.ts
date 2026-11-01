@@ -2,6 +2,7 @@ import { PUBLIC_BACKEND_BASE_URL } from '$env/static/public';
 import { upgradeRequired } from '$lib/stores/appState';
 import type {
   CreateSessionCommand,
+  CompleteAttemptCommand,
   UpdateConfigurationCommand,
   ConfigurationResult,
   DeleteSessionCommand,
@@ -70,6 +71,9 @@ export const readWorkout = (id: string) =>
 
 export const recordSet = (command: RecordSetCommand) =>
   request<WorkoutResult>('/workouts/sets/record', command);
+
+export const completeAttempt = (command: CompleteAttemptCommand) =>
+  request<WorkoutResult>('/workouts/complete', command);
 
 export const updateConfiguration = (command: UpdateConfigurationCommand) =>
   request<ConfigurationResult>('/workouts/configuration', command);

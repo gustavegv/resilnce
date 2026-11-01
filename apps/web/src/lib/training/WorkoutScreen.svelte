@@ -3,9 +3,16 @@
   import { beforeNavigate } from '$app/navigation';
   import { get } from 'svelte/store';
   import { user } from '$lib/stores/appState';
-  import { readWorkout, recordSet, updateConfiguration, TrainingError } from './client';
+  import {
+    readWorkout,
+    recordSet,
+    updateConfiguration,
+    completeAttempt,
+    TrainingError,
+  } from './client';
   import type {
     ConfigurationPatch,
+    CompleteAttemptCommand,
     UpdateConfigurationCommand,
     RecordSetCommand,
     Workout,
@@ -23,7 +30,9 @@
   let loading = $state(true);
   let error = $state('');
   let candidates = $state<Record<string, string>>({});
-  let pending = $state.raw<RecordSetCommand | UpdateConfigurationCommand | null>(null);
+  let pending = $state.raw<
+    RecordSetCommand | UpdateConfigurationCommand | CompleteAttemptCommand | null
+  >(null);
   let editAttempt = $state.raw<WorkoutExercise | null>(null);
   let editFields = $state({
     exerciseName: '',
@@ -36,6 +45,10 @@
   });
   let applyWeight = $state(false);
   let rejectedConfiguration = $state(false);
+  let rejectedCompletion = $state(false);
+  let completionPending = $derived(
+    pending !== null && !('patch' in pending) && !('setId' in pending)
+  );
   let mixedWeights = $derived(
     editAttempt !== null &&
       new Set(editAttempt.currentVariant.targetSets.map((s) => s.targetWeight)).size > 1
@@ -49,6 +62,7 @@
   let saveState = $state<'saved' | 'saving' | 'failed'>('saved');
   let reviewed = $state.raw<Workout | null>(null);
   let conflict = $state(false);
+  let uncertainCompletion = $derived(completionPending && !conflict && !rejectedCompletion);
   let navigationBlocked = $state(false);
   let hasInput = $derived(pending !== null || editorDirty || Object.keys(candidates).length > 0);
   let canReapply = $derived.by(() => {
@@ -61,7 +75,13 @@
           attempt.variantId === intent.variantId &&
           !attempt.exercise.archived &&
           !attempt.currentVariant.archived
-      : attempt.sets.some((s) => s.id === intent.setId);
+      : 'setId' in intent
+        ? attempt.sets.some((s) => s.id === intent.setId)
+        : attempt.exercise.id === intent.exerciseId &&
+          attempt.variantId === intent.variantId &&
+          !attempt.exercise.archived &&
+          !attempt.currentVariant.archived &&
+          attempt.sets.filter((s) => s.kind === 'prescribed').every((s) => s.state !== 'pending');
   });
 
   beforeNavigate(({ cancel }) => {
@@ -116,7 +136,11 @@
     saveState = 'saving';
     error = '';
     try {
-      const result = await ('patch' in intent ? updateConfiguration(intent) : recordSet(intent));
+      const result = await ('patch' in intent
+        ? updateConfiguration(intent)
+        : 'setId' in intent
+          ? recordSet(intent)
+          : completeAttempt(intent));
       if (!sameAccount() || workoutId !== intent.workoutId) {
         saveState = 'failed';
         return;
@@ -125,8 +149,9 @@
       if ('patch' in intent) {
         editAttempt = null;
         applyWeight = false;
-      } else delete candidates[intent.setId];
+      } else if ('setId' in intent) delete candidates[intent.setId];
       rejectedConfiguration = false;
+      rejectedCompletion = false;
       pending = null;
       reviewed = null;
       conflict = false;
@@ -145,11 +170,39 @@
           'resource-unavailable',
           'not-found',
         ].includes(failure.code);
+      rejectedCompletion =
+        !('patch' in intent) &&
+        !('setId' in intent) &&
+        failure instanceof TrainingError &&
+        ['invalid-field', 'malformed-request', 'resource-unavailable', 'not-found'].includes(
+          failure.code
+        );
       conflict =
         failure instanceof TrainingError &&
         ['stale-revision', 'resource-finalized'].includes(failure.code);
       if (conflict) await reviewCurrent();
     }
+  }
+  function finish(attempt: WorkoutExercise) {
+    if (
+      hasInput ||
+      !workout ||
+      workout.status !== 'active' ||
+      attempt.state !== 'draft' ||
+      attempt.sets.some((s) => s.kind === 'prescribed' && s.state === 'pending') ||
+      !sameAccount()
+    )
+      return;
+    pending = {
+      operationId: crypto.randomUUID(),
+      workoutId: workout.id,
+      attemptId: attempt.id,
+      exerciseId: attempt.exercise.id,
+      variantId: attempt.variantId,
+      expectedWorkoutRevision: workout.revision,
+      expectedVariantRevision: attempt.currentVariant.revision,
+    };
+    void save();
   }
   function record(attempt: WorkoutExercise, set: WorkoutSet, state: WorkoutSet['state']) {
     if (
@@ -274,11 +327,18 @@
             expectedExerciseRevision: attempt.exercise.revision,
             expectedVariantRevision: attempt.currentVariant.revision,
           }
-        : {
-            ...pending,
-            operationId: crypto.randomUUID(),
-            expectedWorkoutRevision: reviewed.revision,
-          };
+        : 'setId' in pending
+          ? {
+              ...pending,
+              operationId: crypto.randomUUID(),
+              expectedWorkoutRevision: reviewed.revision,
+            }
+          : {
+              ...pending,
+              operationId: crypto.randomUUID(),
+              expectedWorkoutRevision: reviewed.revision,
+              expectedVariantRevision: attempt.currentVariant.revision,
+            };
     workout = reviewed;
     reviewed = null;
     conflict = false;
@@ -289,6 +349,7 @@
     editAttempt = null;
     applyWeight = false;
     rejectedConfiguration = false;
+    rejectedCompletion = false;
     candidates = {};
     reviewed = null;
     conflict = false;
@@ -297,7 +358,7 @@
     navigationBlocked = false;
   }
   async function discard() {
-    if (saveState === 'saving') return;
+    if (saveState === 'saving' || uncertainCompletion) return;
     // A lost response may already be committed; never label the old snapshot
     // current after discarding local input. Re-read before enabling recording.
     clearInput();
@@ -379,7 +440,9 @@
     {/if}
     {#if navigationBlocked}
       <p role="alert">
-        Input is not saved. Stay and retry, or explicitly discard local input before leaving.
+        {uncertainCompletion
+          ? 'Completion is unconfirmed. Stay and retry to resolve it before leaving or starting another workout.'
+          : 'Input is not saved. Stay and retry, or explicitly discard local input before leaving.'}
       </p>
       <button
         onclick={() => {
@@ -387,8 +450,12 @@
         }}>Stay</button
       >
     {/if}
-    {#if hasInput && !conflict}<button onclick={discard} disabled={saveState === 'saving'}
-        >Discard local input</button
+    {#if uncertainCompletion && saveState === 'failed'}<p role="alert">
+        Completion is unconfirmed. Retry the same completion to resolve it before leaving.
+      </p>{/if}
+    {#if hasInput && !conflict && !uncertainCompletion}<button
+        onclick={discard}
+        disabled={saveState === 'saving'}>Discard local input</button
       >{/if}
     <nav aria-label="Exercises">
       {#each workout.exercises as attempt (attempt.id)}
@@ -542,6 +609,25 @@
             {/if}
           </div>
         {/each}
+        {#if workout.status === 'active' && attempt.state === 'draft'}
+          {#if attempt.sets.some((s) => s.kind === 'prescribed' && s.state === 'pending')}
+            <p>Resolve every pending set as performed or skipped before finishing.</p>
+          {/if}
+          <button
+            onclick={() => finish(attempt)}
+            disabled={hasInput ||
+              accountChanged ||
+              attempt.sets.some((s) => s.kind === 'prescribed' && s.state === 'pending')}
+            >Finish</button
+          >
+        {:else if attempt.state === 'completed'}
+          <div aria-label="Current next targets">
+            <h4>Current next targets</h4>
+            {#each attempt.currentVariant.targetSets as target (target.id)}
+              <p>Set {target.position}: {target.targetReps} reps · {target.targetWeight} kg</p>
+            {/each}
+          </div>
+        {/if}
       </section>
     {/each}
   {:else if error}<p role="alert">{error}</p>
