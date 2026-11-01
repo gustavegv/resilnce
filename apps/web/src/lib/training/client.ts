@@ -8,6 +8,7 @@ import type {
   ExerciseSelection,
   Session,
   SessionResult,
+  RecordSetCommand,
   StartWorkoutCommand,
   Workout,
   WorkoutResult,
@@ -64,3 +65,6 @@ export const startWorkout = (command: StartWorkoutCommand) =>
 export const activeWorkout = () => request<{ workout: Workout | null }>('/workouts/active');
 export const readWorkout = (id: string) =>
   request<{ workout: Workout }>(`/workouts/${encodeURIComponent(id)}`);
+
+export const recordSet = (command: RecordSetCommand) =>
+  request<WorkoutResult>('/workouts/sets/record', command);

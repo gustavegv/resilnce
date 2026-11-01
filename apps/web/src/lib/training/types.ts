@@ -172,3 +172,11 @@ export interface WorkoutResult {
   operation: Acknowledgment;
   workout: Workout;
 }
+
+export type RecordSetCommand = {
+  operationId: ID;
+  workoutId: ID;
+  attemptId: ID;
+  setId: ID;
+  expectedWorkoutRevision: Revision;
+} & ({ state: 'performed'; recordedReps: number } | { state: 'pending' | 'skipped' });

@@ -35,3 +35,19 @@ func (h HTTP) startWorkout(w http.ResponseWriter, r *http.Request) {
 	v, err := h.Service.StartWorkout(r.Context(), owner(r), *c)
 	respond(w, v, err)
 }
+
+func (h HTTP) recordSet(w http.ResponseWriter, r *http.Request) {
+	var c *RecordSet
+	d := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16*1024))
+	d.DisallowUnknownFields()
+	if err := d.Decode(&c); err != nil || c == nil {
+		application.WriteError(w, 400, "malformed-request", "Send one explicit set recording command object", nil)
+		return
+	}
+	if err := d.Decode(new(any)); err != io.EOF {
+		application.WriteError(w, 400, "malformed-request", "Send one set recording command", nil)
+		return
+	}
+	v, err := h.Service.RecordSet(r.Context(), owner(r), *c)
+	respond(w, v, err)
+}
