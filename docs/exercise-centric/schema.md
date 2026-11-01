@@ -221,6 +221,9 @@ paths.
 
 ## 7. Immediate configuration edits
 
+Follow the [stage-specific volume-editing rule](application-transition.md#set-recording-and-weights)
+during stage 1; the preservation behavior below describes the complete product from stage 2.
+
 In one transaction, update the variant and its target rows, then reconcile any unfinished active
 attempt using it. Update its captured progression settings and applicable target values immediately.
 Already recorded actual values remain intact.

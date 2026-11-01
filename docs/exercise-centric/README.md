@@ -14,6 +14,7 @@ targets, and make active workouts durable across app closure, devices, and offli
 | ------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | [Product requirements](decisions.md)              | Agreed behavior, progression rules, editing, history, and deletion                        |
 | [Database design](schema.md)                      | Proposed tables, relationships, ownership, and integrity constraints                      |
+| [Application transition planning](application-transition.md) | Confirmed delivery stages and open application planning questions                 |
 | [Implementation investigation](implementation.md) | Findings from the current code, transaction boundaries, offline sync, and delivery phases |
 | [Legacy porting plan](migration.md)               | Proposed table mapping, preservation rules, rehearsal, cutover, and rollback              |
 | [Porting tool design](porting-tool.md)            | Shared importer, automatic audit, allowlisted overview, and resumable jobs                |
@@ -23,26 +24,19 @@ targets, and make active workouts durable across app closure, devices, and offli
 
 Product requirements reflect the latest answers in the design discussion. Database layout, API
 shape, and implementation choices are proposals unless identified as existing behavior. Remaining
-decisions are collected in one place rather than repeated throughout the specification.
+product defaults are collected in [remaining decisions](questions.md); staged delivery decisions
+are recorded in [application transition planning](application-transition.md).
 
 ## Terminology
 
-| Term            | Meaning                                                                                                                                |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Exercise        | A user's named lift, such as Bench Press, with shared muscle groups                                                                    |
-| Variant         | A configuration and progression track, such as Heavy or High Reps                                                                      |
-| Session         | A saved, ordered workout plan referencing variants                                                                                     |
-| Session variant | A `session_variant` linking row that selects a reusable variant and its order in a saved session; it does not own or copy that variant |
-| Workout         | One actual training occasion, either based on a session or started in free mode                                                        |
-| Workout exercise | One attempt at a variant within a workout; starts as a draft and becomes part of exercise history on completion                       |
-| Prescribed set  | A set expected by the variant's current configuration                                                                                  |
-| Bonus set       | Work recorded for this workout without changing prescribed volume or progression eligibility                                           |
-| Target          | What to aim for; separate from what was actually performed                                                                             |
+Use the shared [domain glossary](../../GLOSSARY.md) for exercise, variant, session, workout,
+set, and performance terminology.
 
 ## Delivery order
 
 1. Settle the schema and remaining behavior decisions.
-2. Implement and validate the new application behavior against the new schema.
+2. Implement and validate the new application behavior against the new schema in the
+   [agreed application stages](application-transition.md#confirmed-delivery-stages).
 3. Design, rehearse, and execute legacy data porting, then cut over existing users.
 
 The [current database schema](../database-schema.md) remains the reference for legacy tables.

@@ -192,9 +192,9 @@ discard unsynced work before clearing account storage.
   distinct exercises.
 - Replace client-authoritative `buildProgressUpdate` payloads with actual records and completion
   intent. A local preview may use equivalent rules, but the server result is authoritative.
-- Revisit automatic workout ending: `submitExercise` currently ends the session when every listed
-  exercise is finished. Explicit ending is the proposed default so users can add more free-mode or
-  bonus work.
+- `submitExercise` currently ends the session when every listed exercise is finished. Follow the
+  confirmed [stage-specific ending behavior](application-transition.md#workout-ending) while
+  replacing the underlying session-state mutation with an actual workout transition.
 
 ## 5. Delivery phases
 

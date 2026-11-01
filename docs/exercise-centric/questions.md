@@ -30,7 +30,7 @@ adjustable during technical review.
 | New workout contents              | A variant appears at most once in both saved-session and free-mode workouts                                                                                                                       |
 | Added exercises                   | An added variant uses ordinary prescribed-set progression; only extra bonus sets are excluded                                                                                                     |
 | Warm-up work                      | No special warm-up set type in this version; model extra non-progressing sets as bonus work                                                                                                       |
-| Workout ending                    | End explicitly, including after all currently listed exercises are complete, so additional work can still be added                                                                                |
+| Workout ending                    | Confirmed stage-specific behavior is recorded in [application transition planning](application-transition.md#workout-ending)                                                                     |
 | Offline boundary                  | Recording an already loaded active workout works offline; starting a new workout and library creation/merge/delete require connectivity                                                           |
 | Names                             | Trim surrounding whitespace, compare case-insensitively, reserve archived names, and permit renaming Standard                                                                                     |
 | Variant archiving                 | Same hidden-from-selection and restore/remove behavior as archiving its parent; offer an archived-library filter                                                                                  |
@@ -50,7 +50,8 @@ adjustable during technical review.
 ## Resolved during this investigation
 
 - Configuration edits take effect immediately in unfinished exercises.
-- Reducing prescribed volume retains already recorded excess sets as bonus work.
+- Prescribed-volume reduction follows the confirmed
+  [stage-specific rule](application-transition.md#set-recording-and-weights).
 - A later target-weight edit preserves the actual weight already recorded and keeps the deliberate
   new target exactly, even when reps qualify for automatic progression.
 - Saved-session list/order edits apply to the next workout; active workout contents remain

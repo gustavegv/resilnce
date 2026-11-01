@@ -25,3 +25,5 @@ vite.config.ts.timestamp-*
 # SvelteKit builds in monorepo
 apps/web/.svelte-kit/
 apps/web/build/
+.agents/*
+skills-lock.json

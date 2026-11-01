@@ -3,6 +3,10 @@
 These requirements consolidate the agreed behavior. Technical mechanisms and implementation defaults
 live in the [database design](schema.md) and [implementation plan](implementation.md).
 
+These requirements describe the complete product. [Application transition planning](application-transition.md)
+records stage allocation and confirmed temporary stage 1 behavior, including removing excess draft
+sets when reducing prescribed volume rather than retaining them as bonus work.
+
 ## 1. Personal library and variants
 
 - Exercises are private to a user. There is no shared exercise catalog.

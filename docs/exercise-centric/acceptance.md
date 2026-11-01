@@ -1,5 +1,13 @@
 # Acceptance criteria
 
+These criteria cover the complete product. Delivery stage allocation is recorded in
+[application transition planning](application-transition.md); the full list is not the stage 1
+release scope.
+
+In particular, E4's preservation of recorded excess sets as bonus work applies from stage 2.
+Stage 1 instead removes excess draft sets, including their recorded values, when reducing
+prescribed volume, as explicitly decided in the transition plan.
+
 These scenarios define the intended verification work once implementation begins. They are not
 claims that tests already exist or pass. Product rules are in [requirements](decisions.md);
 scenarios depending on a proposed default or unresolved question are marked accordingly.
