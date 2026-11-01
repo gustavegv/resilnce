@@ -1,7 +1,18 @@
 import { PUBLIC_BACKEND_BASE_URL } from '$env/static/public';
 import { upgradeRequired } from '$lib/stores/appState';
-import type { CreateSessionCommand, ExerciseSelection, Session, SessionResult } from './types';
-import type { RecordSetCommand, StartWorkoutCommand, Workout, WorkoutResult } from './types';
+import type {
+  CreateSessionCommand,
+  DeleteSessionCommand,
+  DeleteSessionResult,
+  UpdateSessionCommand,
+  ExerciseSelection,
+  Session,
+  SessionResult,
+  RecordSetCommand,
+  StartWorkoutCommand,
+  Workout,
+  WorkoutResult,
+} from './types';
 
 export class TrainingError extends Error {
   constructor(
@@ -37,11 +48,17 @@ export const createSession = (command: CreateSessionCommand) =>
 export const listSessions = () => request<{ sessions: Session[] }>('/sessions');
 export const readSession = (id: string) =>
   request<{ session: Session }>(`/sessions/${encodeURIComponent(id)}`);
+export const updateSession = (id: string, command: UpdateSessionCommand) =>
+  request<SessionResult>(`/sessions/${encodeURIComponent(id)}/update`, command);
+export const deleteSession = (id: string, command: DeleteSessionCommand) =>
+  request<DeleteSessionResult>(`/sessions/${encodeURIComponent(id)}/delete`, command);
 
 export const searchExercises = (query: string) =>
   request<{ exercises: ExerciseSelection[] }>(`/exercises?q=${encodeURIComponent(query.trim())}`);
 export const readExercise = (id: string) =>
   request<ExerciseSelection>(`/exercises/${encodeURIComponent(id)}`);
+export const readCatalog = () =>
+  request<{ muscleGroups: { code: string; label: string }[] }>('/catalog');
 
 export const startWorkout = (command: StartWorkoutCommand) =>
   request<WorkoutResult>('/workouts/start', command);

@@ -119,20 +119,26 @@ func normalizeCodes(codes Codes) (Codes, error) {
 	}
 	return ordered, nil
 }
-func validateCreate(c CreateSession) error {
+func validateCreate(c CreateSession) error { return validateSession(c, false) }
+func validateSession(c CreateSession, maintenance bool) error {
 	if !validID(c.OperationID) {
 		return invalid("operationId", "Use a UUID operation ID")
 	}
 	if err := validateName(c.Name, "name"); err != nil {
 		return err
 	}
-	if len(c.Items) < 1 || len(c.Items) > 100 {
+	if (!maintenance && len(c.Items) < 1) || len(c.Items) > 100 || c.Items == nil {
 		return invalid("items", "Add between 1 and 100 placements")
 	}
 	for i, item := range c.Items {
 		field := fmt.Sprintf("items[%d]", i)
 		allowed := map[string]bool{"kind": true}
 		switch item.Kind {
+		case "retainPlacement":
+			if !maintenance || !validID(item.PlacementID) {
+				return invalid(field+".placementId", "Choose an existing placement in this session")
+			}
+			allowed["placementId"] = true
 		case "createExercise":
 			allowed["name"], allowed["muscleGroupCodes"], allowed["configuration"] = true, true, true
 		case "createVariant":
@@ -151,6 +157,9 @@ func validateCreate(c CreateSession) error {
 			if !allowed[name] {
 				return invalid(field+"."+name, "This field does not belong to the chosen intent")
 			}
+		}
+		if item.Kind == "retainPlacement" {
+			continue
 		}
 		if item.Kind != "createExercise" {
 			if !validID(item.ExerciseID) {
@@ -221,8 +230,14 @@ func (s *SessionItem) UnmarshalJSON(raw []byte) error {
 // field is changed intent, not an identical replay of an accepted command.
 func (s SessionItem) MarshalJSON() ([]byte, error) {
 	fields := map[string]any{"kind": s.Kind}
+	if s.PlacementID != "" {
+		fields["placementId"] = s.PlacementID
+	}
 	has := func(name string) bool { _, ok := s.fields[name]; return ok }
-	if has("name") || s.Kind != "reuseVariant" || s.Name != "" {
+	if has("placementId") {
+		fields["placementId"] = s.PlacementID
+	}
+	if has("name") || (s.Kind == "createExercise" || s.Kind == "createVariant") || s.Name != "" {
 		fields["name"] = s.Name
 	}
 	if has("muscleGroupCodes") || len(s.MuscleGroupCodes) > 0 || (s.fields == nil && s.Kind == "createExercise") {
@@ -232,7 +247,7 @@ func (s SessionItem) MarshalJSON() ([]byte, error) {
 		}
 		fields["muscleGroupCodes"] = codes
 	}
-	if has("configuration") || s.Kind != "reuseVariant" || s.Configuration != (Configuration{}) {
+	if has("configuration") || (s.Kind == "createExercise" || s.Kind == "createVariant") || s.Configuration != (Configuration{}) {
 		fields["configuration"] = s.Configuration
 	}
 	if has("exerciseId") || s.ExerciseID != "" {

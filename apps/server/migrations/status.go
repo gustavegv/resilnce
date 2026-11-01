@@ -91,17 +91,23 @@ var migrationIndexes = map[string][]string{
 
 // ALTER migrations extend existing tables. Their columns must only be required
 // after the corresponding migration has been applied.
-var alterationLayouts = map[string][]tableLayout{
-	"006_workout_rest.sql": {{name: "workout_exercise", columns: "rest_seconds:integer!"}},
+type alterationLayout struct {
+	schema string
+	tableLayout
+}
+
+var alterationLayouts = map[string][]alterationLayout{
+	"006_workout_rest.sql": {{schema: "public", tableLayout: tableLayout{name: "workout_exercise", columns: "rest_seconds:integer!"}}},
 	"003_exercise_rpe.sql": {
-		{name: "workout_exercise", columns: "recorded_rpe:smallint"},
-		{name: "exercise_variant", columns: "last_rpe:smallint last_rpe_at:timestamp_with_time_zone"},
+		{schema: "public", tableLayout: tableLayout{name: "workout_exercise", columns: "recorded_rpe:smallint"}},
+		{schema: "public", tableLayout: tableLayout{name: "exercise_variant", columns: "last_rpe:smallint last_rpe_at:timestamp_with_time_zone"}},
 	},
 	"004_notes.sql": {
-		{name: "exercise_variant", columns: "notes:text"},
-		{name: "workout", columns: "notes:text"},
-		{name: "workout_exercise", columns: "notes:text"},
+		{schema: "public", tableLayout: tableLayout{name: "exercise_variant", columns: "notes:text"}},
+		{schema: "public", tableLayout: tableLayout{name: "workout", columns: "notes:text"}},
+		{schema: "public", tableLayout: tableLayout{name: "workout_exercise", columns: "notes:text"}},
 	},
+	"005_session_import_recency.sql": {{schema: "internal", tableLayout: tableLayout{name: "porting_map", columns: "source_timezone:text session_last_ran_at:timestamp_with_time_zone"}}},
 }
 
 type checkLayout struct{ table, name, expression string }
@@ -284,7 +290,7 @@ func inspect(ctx context.Context, tx pgx.Tx) (Status, error) {
 		if layouts, alteration := alterationLayouts[name]; alteration {
 			if done {
 				for _, t := range layouts {
-					checkTable("public", t, false)
+					checkTable(t.schema, t.tableLayout, false)
 				}
 				for _, expected := range migrationChecks[name] {
 					key := "public." + expected.table + "." + expected.name
@@ -296,8 +302,8 @@ func inspect(ctx context.Context, tx pgx.Tx) (Status, error) {
 				for _, t := range layouts {
 					for _, spec := range strings.Fields(t.columns) {
 						field := strings.SplitN(spec, ":", 2)[0]
-						if _, exists := tables["public."+t.name].columns[field]; exists {
-							s.Issues = append(s.Issues, "Untracked column already exists: public."+t.name+"."+field)
+						if _, exists := tables[t.schema+"."+t.name].columns[field]; exists {
+							s.Issues = append(s.Issues, "Untracked column already exists: "+t.schema+"."+t.name+"."+field)
 						}
 					}
 				}

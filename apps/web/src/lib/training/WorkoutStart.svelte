@@ -8,8 +8,9 @@
 
   let {
     session,
+    disabled = false,
     onpending = (_pending: boolean) => {},
-  }: { session: Session; onpending?: (pending: boolean) => void } = $props();
+  }: { session: Session; disabled?: boolean; onpending?: (pending: boolean) => void } = $props();
   let reviewed = $state.raw<Session | null>(null);
   let plan = $derived(reviewed ?? session);
   let pending = $state.raw<StartWorkoutCommand | null>(null);
@@ -19,7 +20,8 @@
   let canReview = $state(false);
   let commandAccount = '';
   let unavailable = $derived(
-    !plan.placements.length ||
+    disabled ||
+      !plan.placements.length ||
       plan.placements.some((p) => p.exercise.archived || p.variant.archived)
   );
   beforeNavigate(({ cancel }) => {

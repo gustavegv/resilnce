@@ -9,6 +9,44 @@ afterEach(async () => {
   document.body.innerHTML = '';
   vi.unstubAllGlobals();
 });
+
+test('keeps the inclusive fourteen-day boundary, unknown imported dates and categories distinct', async () => {
+  vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-01T12:00:00Z'));
+  const fixture = (
+    id: string,
+    name: string,
+    lastPerformedAt: string | null,
+    lastPerformedStatus: string
+  ) => ({
+    id,
+    name,
+    revision: '1',
+    createdAt: '2026-01-01T00:00:00Z',
+    lastPerformedAt,
+    lastPerformedStatus,
+    placements: [],
+  });
+  const sessions = [
+    fixture('a', 'Push boundary', '2026-10-18T12:00:00Z', 'dated'),
+    fixture('b', 'Push older', '2026-10-18T11:59:59.999Z', 'dated'),
+    fixture('c', 'Unknown plan', null, 'unknown'),
+    fixture('d', 'Never plan', null, 'never'),
+  ];
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ sessions }))));
+  component = mount(SessionPlans, { target: document.body });
+  await vi.waitFor(() => expect(document.body.textContent).toContain('Last run unavailable'));
+  const content = document.body.textContent!;
+  expect(content.indexOf('Recent')).toBeLessThan(content.indexOf('Push boundary'));
+  expect(content.indexOf('Push boundary')).toBeLessThan(content.indexOf('Older'));
+  expect(content.indexOf('Older')).toBeLessThan(content.indexOf('Push older'));
+  expect(content).toContain('Never run');
+  [...document.querySelectorAll('button')]
+    .find((el) => el.textContent?.trim() === 'Upper body')!
+    .click();
+  await tick();
+  expect(document.body.textContent).toContain('Push boundary');
+  expect(document.body.textContent).not.toContain('Unknown plan');
+});
 test('lists never-run plans honestly and reads current ordered variant targets by UUID', async () => {
   const session = {
     id: '20000000-0000-4000-8000-000000000001',
@@ -78,4 +116,72 @@ test('lists never-run plans honestly and reads current ordered variant targets b
     .click();
   await tick();
   expect(document.body.textContent).not.toContain('Upper bodyNever run');
+});
+
+test('an unresolved maintenance save disables workout start and session switching', async () => {
+  const session = {
+    id: '20000000-0000-4000-8000-000000000001',
+    name: 'Push',
+    revision: '1',
+    createdAt: '2026-11-01T00:00:00Z',
+    lastPerformedAt: null,
+    lastPerformedStatus: 'never',
+    placements: [
+      {
+        id: 'placement',
+        variantId: 'variant',
+        position: 1,
+        exercise: {
+          id: 'exercise',
+          name: 'Bench',
+          revision: '1',
+          muscleGroupCodes: [],
+          archived: false,
+        },
+        variant: {
+          id: 'variant',
+          name: 'Heavy',
+          revision: '1',
+          progressionMode: 'average',
+          repThreshold: 12,
+          autoIncrement: '2.50',
+          restSeconds: 0,
+          prescribedSets: 1,
+          archived: false,
+          targetSets: [],
+        },
+      },
+    ],
+  };
+  const fetchMock = vi.fn(
+    async (url: string) =>
+      new Response(
+        JSON.stringify(
+          url.endsWith('/sessions')
+            ? { sessions: [session] }
+            : url.endsWith('/update')
+              ? { code: 'internal-error', message: 'Connection lost' }
+              : { session }
+        ),
+        { status: url.endsWith('/update') ? 500 : 200 }
+      )
+  );
+  vi.stubGlobal('fetch', fetchMock);
+  component = mount(SessionPlans, { target: document.body });
+  const button = (text: string) =>
+    [...document.querySelectorAll('button')].find((el) => el.textContent?.trim() === text)!;
+  await vi.waitFor(() => expect(document.body.textContent).toContain('Never run'));
+  [...document.querySelectorAll('button')]
+    .find((el) => el.textContent?.includes('Never run'))!
+    .click();
+  await vi.waitFor(() => expect(button('Edit session')).toBeDefined());
+  button('Edit session').click();
+  await tick();
+  button('Save session').click();
+  await vi.waitFor(() => expect(document.body.textContent).toContain('Not saved'));
+  expect(button('Start workout').disabled).toBe(true);
+  expect(button('Lower body').disabled).toBe(true);
+  expect(fetchMock.mock.calls.filter((call) => call[0].includes('/workouts/start'))).toHaveLength(
+    0
+  );
 });

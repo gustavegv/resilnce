@@ -87,7 +87,7 @@ func TestImportAppliesMigrationsAndPreservesUserNotesOnRetry(t *testing.T) {
 	t.Setenv("PORTING_APPLY_ENABLED", "")
 	s.AllowApply = ApplyEnabled()
 	first := applyRun(t, s, ctx, "a@example.com")
-	if first.Status != "completed" || scalar(t, s, ctx, `SELECT count(*) FROM internal.schema_migration`) != 5 ||
+	if first.Status != "completed" || scalar(t, s, ctx, `SELECT count(*) FROM internal.schema_migration`) != 6 ||
 		scalar(t, s, ctx, `SELECT count(*) FROM public.exercise_variant WHERE notes IS NULL AND last_rpe IS NULL AND last_rpe_at IS NULL`) != 1 ||
 		scalar(t, s, ctx, `SELECT count(*) FROM public.legacy_history_entry`) != 1 ||
 		scalar(t, s, ctx, `SELECT count(*) FROM public.workout`) != 0 {

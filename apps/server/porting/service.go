@@ -192,8 +192,20 @@ func lockOwner(ctx context.Context, tx pgx.Tx, owner string) error {
 	return err
 }
 
-func remember(ctx context.Context, tx pgx.Tx, r Row, refs References) error {
-	_, err := tx.Exec(ctx, `INSERT INTO internal.porting_map(migration_version,source_table,source_key,owner_key,destinations,source_data) VALUES($1,$2,$3,$4,$5,$6)`, Version, r.Table, r.Key, r.Owner, refs, r.Raw)
+func remember(ctx context.Context, tx pgx.Tx, r Row, refs References, opts Options) error {
+	var zone any
+	var instant any
+	if r.Table == "Session" {
+		zone = opts.normalized().SourceTimezone
+		if r.Data.SessionLastRan != nil {
+			parsed, err := occurrence(*r.Data.SessionLastRan, zone.(string))
+			if err != nil {
+				return err
+			}
+			instant = parsed
+		}
+	}
+	_, err := tx.Exec(ctx, `INSERT INTO internal.porting_map(migration_version,source_table,source_key,owner_key,destinations,source_data,source_timezone,session_last_ran_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, Version, r.Table, r.Key, r.Owner, refs, r.Raw, zone, instant)
 	return err
 }
 
@@ -323,7 +335,7 @@ func (s *Service) ImportOwner(ctx context.Context, all []Row, owner string, opts
 		default:
 			continue
 		}
-		if err = remember(ctx, tx, r, refs); err != nil {
+		if err = remember(ctx, tx, r, refs, opts); err != nil {
 			return report, err
 		}
 		state.Mapped[r.identity()] = refs
@@ -535,7 +547,7 @@ func (s *Service) importLegacyBatch(ctx context.Context, rows, all []Row, owner 
 				return counts, 0, err
 			}
 		}
-		if err = remember(ctx, tx, r, refs); err != nil {
+		if err = remember(ctx, tx, r, refs, opts); err != nil {
 			return counts, 0, err
 		}
 		counts[r.Table]++

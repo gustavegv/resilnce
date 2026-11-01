@@ -96,15 +96,14 @@ export async function QuickGeneration(
     promptSelections: promptSelections,
   };
 
-  const res = await postDB(`/ai/quick`, payload);
-
-  if (!res.ok) {
-    console.error(`Request failed: ${res.status} ${res.statusText}`);
-    console.error('Response body:', res.text());
-    if (res.status == 401) {
-      return 'limit';
+  try {
+    const res = await postDB(`/ai/quick`, payload);
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      return error.code === 'ai-quota-exceeded' ? 'limit' : 'fail';
     }
+    return await res.text();
+  } catch {
     return 'fail';
   }
-  return await res.text();
 }

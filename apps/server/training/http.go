@@ -5,8 +5,10 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/gustavegv/resilnce/apps/server/application"
+	"github.com/gustavegv/resilnce/apps/server/predefined"
 )
 
 type HTTP struct {
@@ -16,13 +18,18 @@ type HTTP struct {
 
 func (h HTTP) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/api/training/workouts/sets/record", h.Boundary.Handler("POST", application.ExerciseCentric, true, h.recordSet))
+	mux.HandleFunc("/api/training/catalog", h.Boundary.Handler("GET", application.ExerciseCentric, false, func(w http.ResponseWriter, r *http.Request) {
+		respond(w, struct {
+			MuscleGroups []predefined.MuscleGroup `json:"muscleGroups"`
+		}{predefined.MuscleGroups()}, nil)
+	}))
 	mux.HandleFunc("/api/training/workouts/start", h.Boundary.Handler("POST", application.ExerciseCentric, true, h.startWorkout))
 	mux.HandleFunc("/api/training/workouts/active", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.activeWorkout))
 	mux.HandleFunc("/api/training/workouts/", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.getWorkout))
 	mux.HandleFunc("/api/training/exercises", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.searchExercises))
 	mux.HandleFunc("/api/training/exercises/", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.getExercise))
 	mux.HandleFunc("/api/training/sessions", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.list))
-	mux.HandleFunc("/api/training/sessions/", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.get))
+	mux.HandleFunc("/api/training/sessions/", h.sessionRoute)
 	mux.HandleFunc("/api/training/sessions/create", h.Boundary.Handler("POST", application.ExerciseCentric, true, h.create))
 }
 func respond(w http.ResponseWriter, value any, err error) {
@@ -86,4 +93,51 @@ func (h HTTP) searchExercises(w http.ResponseWriter, r *http.Request) {
 func (h HTTP) getExercise(w http.ResponseWriter, r *http.Request) {
 	v, err := h.Service.GetExercise(r.Context(), owner(r), r.URL.Path[len("/api/training/exercises/"):])
 	respond(w, v, err)
+}
+
+func (h HTTP) sessionRoute(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/api/training/sessions/")
+	parts := strings.Split(path, "/")
+	if len(parts) == 1 {
+		h.Boundary.Handler("GET", application.ExerciseCentric, false, h.get)(w, r)
+		return
+	}
+	if len(parts) == 2 && (parts[1] == "update" || parts[1] == "delete") {
+		h.Boundary.Handler("POST", application.ExerciseCentric, true, func(w http.ResponseWriter, r *http.Request) {
+			var value any
+			if parts[1] == "update" {
+				value = &UpdateSession{}
+			} else {
+				value = &DeleteSession{}
+			}
+			d := json.NewDecoder(http.MaxBytesReader(w, r.Body, 256*1024))
+			d.DisallowUnknownFields()
+			if err := d.Decode(&value); err != nil {
+				var domain *Error
+				if errors.As(err, &domain) {
+					respond(w, nil, err)
+					return
+				}
+				respond(w, nil, &Error{400, "malformed-request", "Send a valid session command", nil})
+				return
+			}
+			if value == nil {
+				respond(w, nil, &Error{400, "malformed-request", "Send a session command object", nil})
+				return
+			}
+			if err := d.Decode(new(any)); err != io.EOF {
+				respond(w, nil, &Error{400, "malformed-request", "Send one session command", nil})
+				return
+			}
+			if c, ok := value.(*UpdateSession); ok {
+				v, err := h.Service.UpdateSession(r.Context(), owner(r), parts[0], *c)
+				respond(w, v, err)
+			} else {
+				v, err := h.Service.DeleteSession(r.Context(), owner(r), parts[0], *value.(*DeleteSession))
+				respond(w, v, err)
+			}
+		})(w, r)
+		return
+	}
+	http.NotFound(w, r)
 }

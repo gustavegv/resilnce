@@ -69,13 +69,68 @@ rejected rather than silently ignored.
 `GET /api/training/sessions` returns `{sessions: []}` or owned resolved sessions.
 `GET /api/training/sessions/{uuid}` returns `{session}` and returns 404 for absent
 or other-owner IDs. Both operations use a consistent repeatable-read snapshot.
-Lists sort completed performance descending, then deterministic creation/ID ties;
-never-run plans have `lastPerformedAt: null`. A start or untouched active workout
+Lists sort dated performance descending with session-ID ties; undated plans
+follow in session-ID order. Never-run plans have `lastPerformedAt: null`. A start or untouched active workout
 does not fabricate performance. Completed attempts in an active workout count.
 
-Imported last-run fallback remains in the session-maintenance slice (#29). The
-existing import map has a naive legacy timestamp without reliable per-session
-source-timezone metadata; this slice does not reinterpret that timestamp as UTC.
+`lastPerformedStatus` is `dated`, `never`, or `unknown`. A completed attempt's
+timestamp takes precedence. Without one, an imported session uses only its own
+mapping's normalized timestamp. A preserved null source date means `never`;
+an old nonnull date without proven provenance means `unknown`, with a null
+timestamp. The browser labels this “Last run unavailable”, separately from
+“Never run”. New imported Session mappings freeze normalized source timezone
+and their uniquely resolved instant together with the graph transaction. Blank
+import policy means Europe/Stockholm; explicit UTC remains UTC. DST gaps/folds
+block an unmapped row for explicit resolution. Mapped rows are skipped before
+validation and later runs never rewrite metadata. No mapping, source key,
+timezone policy, raw data, or run bookkeeping is exposed to application clients.
+
+## Saved-session maintenance
+
+`POST /api/training/sessions/{uuid}/update` accepts
+`{operationId,expectedRevision,name,items}`. The items are the same explicit
+create/reuse intents as creation, plus `{kind:"retainPlacement",placementId}`.
+The ordered array is the complete next composition. Retaining a placement keeps
+its UUID; omission removes only that placement. Duplicate placements/variants,
+other-session placements and other-owner references are rejected atomically.
+The session revision advances once. Existing sessions may become empty; they
+cannot start a workout until a selectable variant is added. Plan changes affect
+future starts and never alter an active workout's captured list/order.
+
+`POST /api/training/sessions/{uuid}/delete` accepts
+`{operationId,expectedRevision}` and returns `{operation,sessionId,deleted:true}`.
+Deletion is rejected with `409 active-source-session` while a workout sourced
+from the plan is active. Otherwise only the plan and its placements are deleted;
+surviving workout source references become null. Library configuration, targets,
+completed performance and durable import mapping tombstones remain. An identical
+delete replay returns the original acknowledgment even though the plan is gone.
+Both commands check exact receipts before revision guards and use the shared
+owner-row transaction lock. Changed operation intent is `operation-mismatch`;
+stale plan/selection reviews are `stale-revision`. The editor freezes the exact
+command for Retry, retains the user's ordered draft after rejection, and blocks
+navigation while a save is unresolved. Discard/reload is an explicit action.
+
+Sessions retain the existing name-based categories and inclusive 14-day Recent
+boundary; older dated and undated plans appear under Older in server order.
+
+### Historical import policy correction
+
+Migration 005 deliberately leaves existing provenance null. A new run, source
+History timezone, import timestamp, or latest account-wide option is never
+evidence of an old Session mapping's policy. Unknown dates stay unknown until an
+operator independently establishes that exact mapping's historical policy.
+There is no automatic backfill or ordinary application metadata-write endpoint.
+
+If correction is needed, use the existing privileged operator boundary for a
+separately reviewed manifest containing exact owner, migration version, Session
+source keys, intended timezone, and expected preserved source-data digest. First
+preview each raw date, chosen zone, unique instant, and unresolved DST issue.
+Only a deliberate transaction holding the same owner lock may populate both
+new columns, and only where both are still null and the preserved data matches
+the manifest. Reject known/conflicting provenance and stale manifests. Do not
+change source data, keys, destinations, domain data, aggregates or import counts.
+This describes the narrowly scoped recovery procedure; no production inspection,
+correction, or new general correction UI is part of Stage 1.
 
 The package-private command transaction locks the existing `User` account row to
 serialize mutations per owner. Affected workout/variant rows must then be locked
@@ -176,7 +231,57 @@ fetches current settings but requires another explicit Reuse unchanged choice;
 it never silently rebases a stale draft. Saving/retry still freezes one exact
 ordered command. `searchExercises` and `readExercise` are in the shared client;
 `ExerciseSelection`, `ExerciseSuggestion`, and the three intent types are in
-`types.ts`. Quick fill/Program wiring and generated-output validation remain #35.
+`types.ts`.
+
+## Quick fill and Program review
+
+Both existing producer entry points still hand an exercise suggestion array to
+`/create/manual?quickload=1` through the tab's `workoutPayload`. This handoff is
+untrusted review data, not `SessionItem` intent. Quick fill keeps its existing AI
+options; Program keeps its previews and Edit and add action. No generated item is
+inserted directly into the saved draft.
+
+The common review validates the full array before resolving any item: 1–100
+objects, trimmed nonempty names up to 100 Unicode characters, whole set counts
+1–20, numeric weights 0–9999 with at most two decimal places, whole thresholds
+1–99, and numeric increments 0.25–99 with at most two decimal places. Omitted
+threshold and increment retain 12/2.50 defaults; null and unsupported fields are
+errors. The producer shape remains `{name,sets,weight,repThreshold?,autoIncrease?,
+muscleGroupCodes?}`. Malformed/invalid output remains visible in an editable JSON
+field with a correction action; no domain mutation is issued. Applying a
+corrected draft explicitly restarts review. A suggestion can also be removed.
+
+`GET /api/training/catalog` returns `{muscleGroups:[{code,label,sort_order}]}`
+from the backend's predefined catalog in declared order, under the shared
+authenticated/model/method policy. Generated nonempty muscle code arrays are
+checked against this catalog before review. Null, duplicate, unknown or nonstring
+codes are errors. The resolver displays and carries valid codes only when
+creating a new exercise; reuse/named-variant creation preserve existing exercise
+groups. The save command independently validates catalog membership atomically.
+There is no muscle-group picker or inference from marketing labels/free text.
+
+Each suggestion has a stable local review ID and is resolved independently in
+source order through `DraftItemResolver`, using its suggestion prop and boolean
+`onresolve` contract. Current per-set targets/settings appear beside suggestions.
+The explicit choice is reviewed reuse unchanged, a named variant with reviewed
+settings, or a new exercise/Standard. Duplicate variants and normalized creation
+names retain the current choice with an editable error. Different variants of
+one exercise remain distinct. The existing sortable cards retain final order.
+
+Finish is blocked until every retained suggestion is resolved. It uses the same
+single atomic create command and immutable operation ID as manual creation;
+neither producer orchestrates separate library writes. Network/server failure
+retains the draft, pauses edits, protects navigation, and retries identical JSON.
+Definitive rejection permits editing with a new operation ID, and stale reuse
+requires an explicit current-settings review. Cancel before saving removes the
+tab handoff and leaves no library/session records; unresolved saves must first
+be resolved. Only acknowledged success clears the handoff as Saved.
+
+`POST /ai/quick` continues to use the backend-selected account/quota key and
+25-call limit. Generation only returns text for review. Provider errors return
+`ai-generation-failed` rather than a successful empty draft. The Quick fill UI
+recognizes `ai-quota-exceeded` from the authoritative 403 response; network and
+other failed generations remain errors without creating a session.
 
 ## Session-based workout start and resume
 

@@ -80,6 +80,7 @@ test('starting a different plan identifies the existing workout and retries iden
     revision: '9007199254740993',
     createdAt: '2026-11-01T10:00:00Z',
     lastPerformedAt: null,
+    lastPerformedStatus: 'never',
     placements: [
       {
         id: 'placement',

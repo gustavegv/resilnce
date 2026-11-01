@@ -263,6 +263,11 @@ func buildPlan(all []Row, owner string, state State, opts Options) plan {
 			}
 			p.Groups[r.Data.NormalizedName] = append(p.Groups[r.Data.NormalizedName], r)
 		case "Session":
+			if r.Data.SessionLastRan != nil {
+				if _, err := occurrence(*r.Data.SessionLastRan, opts.SourceTimezone); err != nil {
+					add(r, "ambiguous_timestamp", "error", err.Error())
+				}
+			}
 			if !validName(r.Data.SessionName) {
 				add(r, "invalid_name", "error", "Session name is missing, empty, or exceeds 100 characters.")
 			}
