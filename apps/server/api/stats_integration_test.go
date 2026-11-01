@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/gustavegv/resilnce/apps/server/training"
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -69,7 +70,7 @@ func TestStatsSumsActualSetsIncludingCompletedWorkInActiveWorkout(t *testing.T) 
 				t.Fatalf("entries: %s", p.Body.String())
 			}
 			v := track.Entries[0]
-			if v.ID != a.ID || v.SetCount == nil || *v.SetCount != 3 || v.AverageReps == nil || *v.AverageReps != "11.0000000000000000" || v.Volume == nil || *v.Volume != "1530.00" || v.Representation != "set_derived" {
+			if v.ID != a.ID || v.SetCount == nil || *v.SetCount != 3 || !statsAverageIs(v.AverageReps, 11) || v.Volume == nil || *v.Volume != "1530.00" || v.Representation != "set_derived" {
 				t.Fatalf("summary: %s", p.Body.String())
 			}
 		}
@@ -113,7 +114,7 @@ func TestStatsFractionalPerformedCountZeroAndSkipsExcludeDrafts(t *testing.T) {
 			}
 			w := configuredWorkout(t, h)
 			w = configurationSaved(t, h, configurationIntent(w, 1, map[string]any{"prescribedSets": 3})).Workout
-			for i, r := range []int{1, 2, 0} {
+			for i, r := range []int{0, 1, 0} {
 				state := "performed"
 				if i == 2 || allSkipped {
 					state = "skipped"
@@ -130,7 +131,7 @@ func TestStatsFractionalPerformedCountZeroAndSkipsExcludeDrafts(t *testing.T) {
 					t.Fatalf("skipped: %+v", got)
 				}
 			} else {
-				if *got.SetCount != 2 || *got.AverageReps != "1.5000000000000000" || *got.AverageWeight != "40.5000000000000000" || *got.Volume != "121.50" {
+				if *got.SetCount != 2 || !statsAverageIs(got.AverageReps, 0.5) || !statsAverageIs(got.AverageWeight, 40.5) || *got.Volume != "40.50" {
 					t.Fatalf("fractional: %+v", got)
 				}
 			}
@@ -294,4 +295,13 @@ func TestStatsSharesVariantAcrossSessionsWithCurrentNamesAfterRemoval(t *testing
 	if len(statsVariant(t, h, a.VariantID).Entries) != 2 {
 		t.Fatal("session deletion removed history")
 	}
+}
+
+// Compare average values independently of PostgreSQL's decimal output scale.
+func statsAverageIs(value *string, want float64) bool {
+	if value == nil {
+		return false
+	}
+	number, err := strconv.ParseFloat(*value, 64)
+	return err == nil && number == want
 }

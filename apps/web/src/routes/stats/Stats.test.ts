@@ -190,9 +190,9 @@ test('equal-time entries retain IDs and missing metrics do not invent 1RM or vol
           {
             ...actual,
             id: 'fractional',
-            averageReps: '1.5',
+            averageReps: '0.5',
             averageWeight: '40.5',
-            volume: '121.50',
+            volume: '40.50',
             setCount: 2,
           },
           {
@@ -214,8 +214,8 @@ test('equal-time entries retain IDs and missing metrics do not invent 1RM or vol
   expect(text('zero')).toContain('Weight per set: 0 kg');
   expect(text('zero')).toContain('1RM: unavailable');
   expect(text('skip')).toContain('Weight per set: unavailable');
-  expect(text('fractional')).toContain('1RM: 42.5');
-  expect(text('fractional')).toContain('121.50 kg-reps');
+  expect(text('fractional')).toContain('1RM: 41.2');
+  expect(text('fractional')).toContain('40.50 kg-reps');
   expect(text('invalid')).toContain('Volume: unavailable');
   expect(text('invalid')).toContain('1RM: unavailable');
   await vi.waitFor(() => expect(document.querySelectorAll('svg .lc-point').length).toBe(4));
