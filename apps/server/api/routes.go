@@ -14,6 +14,7 @@ import (
 	"github.com/gustavegv/resilnce/apps/server/db"
 	"github.com/gustavegv/resilnce/apps/server/porting"
 	sessions "github.com/gustavegv/resilnce/apps/server/redis"
+	"github.com/gustavegv/resilnce/apps/server/training"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/cors"
 )
@@ -125,6 +126,7 @@ func NewHandler(ctx context.Context, options Options) (http.Handler, error) {
 		quota = options.RedisStore.TakeAICall
 	}
 	mux.HandleFunc("/ai/quick", boundary.Handler("POST", "", false, ai.HTTP(quota, options.GenerateDraft, boundary.Origin)))
+	training.HTTP{Service: &training.Service{Pool: options.Pool}, Boundary: boundary}.Register(mux)
 	if options.RegisterTraining != nil {
 		options.RegisterTraining(mux, boundary)
 	}

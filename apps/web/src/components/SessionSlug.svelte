@@ -1,7 +1,5 @@
 <script lang="ts">
   import Icon from '@iconify/svelte';
-  import type { SessionMetaData } from '../routes/tracker/dbFetches';
-  import { fade, fly, slide } from 'svelte/transition';
 
   let {
     onEdit,
@@ -9,10 +7,10 @@
     onDel,
     slug,
   }: {
-    onEdit: () => void;
+    onEdit?: () => void;
     onPress: () => void;
-    onDel: () => void;
-    slug: SessionMetaData;
+    onDel?: () => void;
+    slug: { name: string; date?: Date };
   } = $props();
 
   function prs() {
@@ -23,15 +21,6 @@
   }
   function del() {
     if (onDel) onDel();
-  }
-
-  function grd(intervalDays: number): Date {
-    const now = new Date();
-    const twoMonthsInMs = intervalDays * 24 * 60 * 60 * 1000; // 60 days in milliseconds
-    const nowTime = now.getTime();
-    const randomOffset = Math.random() * twoMonthsInMs;
-    const date = new Date(nowTime - randomOffset);
-    return date;
   }
 
   function timeAgo(date: Date): string {
@@ -77,22 +66,26 @@
   <div class="base-btn alt" style="width:{sty}">
     <button class="start-side" onclick={prs}>
       <p>{slug.name}</p>
-      <p class="date">{timeAgo(slug.date ?? grd(3))}</p>
+      <p class="date">{slug.date ? timeAgo(slug.date) : 'Never run'}</p>
     </button>
 
-    <button class="dots-cont" onclick={sideway}>
-      <Icon icon={'uiw:more'} fill={'#fff'} width={16}></Icon>
-    </button>
+    {#if onEdit || onDel}<button
+        class="dots-cont"
+        aria-label={`Options for ${slug.name}`}
+        onclick={sideway}
+      >
+        <Icon icon="uiw:more" fill="#fff" width={16}></Icon>
+      </button>{/if}
   </div>
 
-  <div class="under-cont">
-    <button class="icon-under edit" onclick={edt}>
-      <Icon icon="material-symbols:edit-outline" width={24} fill={'#FFC107'} />
-    </button>
-    <button class="icon-under del" onclick={del}>
-      <Icon icon="material-symbols:delete-outline-rounded" width={24} fill={'#dc3545'} />
-    </button>
-  </div>
+  {#if onEdit || onDel}<div class="under-cont">
+      {#if onEdit}<button aria-label={`Edit ${slug.name}`} class="icon-under edit" onclick={edt}>
+          <Icon icon="material-symbols:edit-outline" width={24} fill="#FFC107" />
+        </button>{/if}
+      {#if onDel}<button aria-label={`Delete ${slug.name}`} class="icon-under del" onclick={del}>
+          <Icon icon="material-symbols:delete-outline-rounded" width={24} fill="#dc3545" />
+        </button>{/if}
+    </div>{/if}
 </div>
 
 <style>

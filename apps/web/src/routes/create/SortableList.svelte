@@ -1,142 +1,70 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import Sortable from 'sortablejs';
-  import type { ExerciseDataPackaged } from './dbWrite';
+  import type { DraftSessionItem } from '$lib/training/types';
   import Icon from '@iconify/svelte';
-  import { toast, Toaster } from 'svelte-sonner';
-  import ExerciseTrackScreen from '../tracker/ExerciseTrackScreen.svelte';
-  import { error } from '@sveltejs/kit';
-
-  type Props = {
-    editData?: (payload: ExerciseDataPackaged) => boolean;
-  };
-
-  let { editData }: Props = $props();
-
-  function sendEditData(pack: ExerciseDataPackaged): boolean {
-    const success: boolean | undefined = editData?.(pack);
-    if (success != undefined) {
-      return success;
-    }
-    return false;
-  }
-
-  let exerciseList: ExerciseDataPackaged[] = $state([]);
-  let els: HTMLElement;
-
-  onMount(() => {
-    const sortable = Sortable.create(els, {
+  let {
+    editData,
+    disabled = false,
+  }: { editData?: (item: DraftSessionItem) => boolean; disabled?: boolean } = $props();
+  let exerciseList = $state<DraftSessionItem[]>([]);
+  let threeDotsOpenFor = $state<string | null>(null);
+  function attachSortable(element: HTMLElement) {
+    const sortable = Sortable.create(element, {
       animation: 150,
-
-      onEnd: () => {},
+      onMove: () => !disabled,
+      onEnd: () => {
+        const ids = sortable.toArray();
+        sortable.sort(exerciseList.map((item) => item.draftId));
+        const byId = new Map(exerciseList.map((item) => [item.draftId, item]));
+        exerciseList = ids.map((id) => byId.get(id)!);
+      },
     });
-  });
-
-  function packageElement(child: HTMLElement): ExerciseDataPackaged {
-    const exName = child.querySelector('#info-name');
-    const exWeight = child.querySelector('#info-weight');
-    const exSets = child.querySelector('#info-sets');
-    const exAuto = child.querySelector('#info-auto');
-    const exThres = child.querySelector('#info-thres');
-
-    if (!exName || !exWeight || !exSets) {
-      console.error('SortableList info not found.');
-      throw new Error('SortableList info not found.');
-    }
-
-    let packaged: ExerciseDataPackaged = {
-      name: exName.textContent ?? 'Error',
-      weight: Number(exWeight.textContent) ?? -1,
-      sets: Number(exSets.textContent) ?? -1,
-      autoIncrease: Number(exAuto?.textContent) ?? 2.5,
-      repThreshold: Number(exThres?.textContent) ?? 12,
-    };
-    return packaged;
+    return () => sortable.destroy();
   }
-
-  function gatherSessionListFromDOM(container: HTMLElement): ExerciseDataPackaged[] {
-    const collectedInfo: ExerciseDataPackaged[] = [];
-
-    for (const child of Array.from(container.children) as HTMLElement[]) {
-      const packagedChild = packageElement(child);
-      collectedInfo.push(packagedChild);
-    }
-
-    return collectedInfo;
+  export function extractData(): DraftSessionItem[] {
+    return $state.snapshot(exerciseList);
   }
-
-  export function extractData() {
-    return gatherSessionListFromDOM(els);
+  export function pushItemToList(item: DraftSessionItem) {
+    exerciseList.push(item);
   }
-
-  export function pushItemToList(newEx: ExerciseDataPackaged) {
-    exerciseList.push(newEx);
+  export function fillFromArray(items: DraftSessionItem[]) {
+    exerciseList = items;
   }
-
-  export function fillFromArray(data: ExerciseDataPackaged[]) {
-    data.forEach((exercise) => {
-      pushItemToList(exercise);
-    });
+  function remove(id: string) {
+    exerciseList = exerciseList.filter((item) => item.draftId !== id);
   }
-
-  function removeFromStack(name: string, popup: boolean) {
-    const index = exerciseList.findIndex((item) => item.name === name);
-    if (index !== -1) {
-      exerciseList.splice(index, 1);
-      if (popup) toast.success('Exercise removed!');
-    }
-  }
-
-  function editFromStack(name: string) {
-    const child = document.getElementById(name) as HTMLElement;
-    if (!child) throw new Error(`No element with id="${name}"`);
-    const pack = packageElement(child);
-    if (sendEditData(pack)) {
-      removeFromStack(name, false);
-    }
-    // todo: Remove only if edit confirmed
-  }
-
-  let threeDotsOpenFor: string | null = $state(null);
-
-  function openSelectionMenu(name: string) {
-    threeDotsOpenFor = threeDotsOpenFor === name ? null : name;
-    setTimeout(() => {
-      threeDotsOpenFor = null;
-    }, 3000);
+  function edit(item: DraftSessionItem) {
+    if (editData?.(item)) remove(item.draftId);
   }
 </script>
 
-<ul bind:this={els} class="component">
-  {#each exerciseList as blob, i (blob)}
-    <li class="blob-cont sortable-item" id={blob.name}>
+<ul {@attach attachSortable} class="component">
+  {#each exerciseList as item (item.draftId)}
+    <li class="blob-cont sortable-item" data-id={item.draftId}>
       <div class="name-cont">
-        <h3 id="info-name">{blob.name}</h3>
+        <h3>{item.intent.name}</h3>
+        <span class="additional-info">Standard</span>
       </div>
       <div class="blob-inner">
-        <p>
-          <span id="info-sets">{blob.sets}</span> sets
-        </p>
-        <i class="additional-info"> <span id="info-thres">{blob.repThreshold}</span> rep max.</i>
-        <p>
-          <span id="info-weight">{blob.weight}</span> kg
-        </p>
-        <i class="additional-info"> <span id="info-auto">{blob.autoIncrease}</span> kg inc.</i>
+        <p>{item.intent.configuration.prescribedSets} sets</p>
+        <i class="additional-info">{item.intent.configuration.repThreshold ?? 12} rep max.</i>
+        <p>{item.intent.configuration.initialWeight} kg</p>
+        <i class="additional-info">{item.intent.configuration.autoIncrement ?? '2.50'} kg inc.</i>
       </div>
-      <button class="abs-icon" onclick={() => openSelectionMenu(blob.name)}>
-        <Icon icon={'mingcute:more-3-line'} color={'grey'} width="30" />
-      </button>
-      <div
-        class="abs-selection-box"
-        class:open={threeDotsOpenFor === blob.name}
-        id={blob.name + '-selection'}
+      <button
+        class="abs-icon"
+        aria-label={`Options for ${item.intent.name}`}
+        onclick={() => (threeDotsOpenFor = threeDotsOpenFor === item.draftId ? null : item.draftId)}
       >
-        <button onclick={() => editFromStack(blob.name)}>
-          <Icon icon={'material-symbols:edit-outline'} color={'white'} width="24" />
-        </button>
-        <button onclick={() => removeFromStack(blob.name, true)}>
-          <Icon icon={'material-symbols:delete-outline'} color={'red'} width="24" />
-        </button>
+        <Icon icon="mingcute:more-3-line" color="grey" width="30" />
+      </button>
+      <div class={['abs-selection-box', { open: threeDotsOpenFor === item.draftId }]}>
+        <button aria-label={`Edit ${item.intent.name}`} onclick={() => edit(item)}
+          ><Icon icon="material-symbols:edit-outline" color="white" width="24" /></button
+        >
+        <button aria-label={`Remove ${item.intent.name}`} onclick={() => remove(item.draftId)}
+          ><Icon icon="material-symbols:delete-outline" color="red" width="24" /></button
+        >
       </div>
     </li>
   {/each}

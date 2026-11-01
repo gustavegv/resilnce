@@ -9,6 +9,9 @@ export default defineConfig({
     alias: {
       $lib: path.resolve('./src/lib'),
       '$env/static/public': path.resolve('./src/test/public-env.ts'),
+      '$app/navigation': path.resolve('./src/test/navigation.ts'),
+      '$app/paths': path.resolve('./src/test/paths.ts'),
+      '$app/state': path.resolve('./src/test/page-state.ts'),
     },
   },
   test: { environment: 'jsdom', include: ['src/**/*.test.ts'], restoreMocks: true },
