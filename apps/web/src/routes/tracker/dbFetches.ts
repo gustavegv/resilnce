@@ -1,4 +1,5 @@
 import { PUBLIC_BACKEND_BASE_URL } from '$env/static/public';
+import { upgradeRequired } from '$lib/stores/appState';
 import { toast } from 'svelte-sonner';
 
 /**
@@ -103,6 +104,7 @@ async function postDB(dir: string, data: any): Promise<boolean> {
     body: JSON.stringify(data),
   });
   if (!res.ok) {
+    if (res.status === 426) { upgradeRequired.set(true); return false; }
     const text = await res.text();
     console.error(`Request failed: ${res.status} ${res.statusText}`);
     console.error('Response body:', text);

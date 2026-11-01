@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gustavegv/resilnce/apps/server/application"
 	sessions "github.com/gustavegv/resilnce/apps/server/redis"
-	scookie "github.com/gustavegv/resilnce/apps/server/scookies"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -28,32 +28,15 @@ const (
 )
 
 func (supa *SupabaseCFG) getValidatedMail(w http.ResponseWriter, r *http.Request) string {
-
-	userMail := r.URL.Query().Get("mail")
-	SID, userMail, _, err := scookie.ValidateSignedCookie(r)
+	if identity, ok := application.FromContext(r.Context()); ok {
+		return identity.Email
+	}
+	identity, err := application.NormalIdentity(supa.RedisStore)(r)
 	if err != nil {
-		println("Verification failed.", err.Error())
-		http.Error(w, "verification failed", http.StatusBadRequest)
+		application.WriteError(w, 401, "unauthenticated", "Sign in to continue", nil)
 		return ""
 	}
-
-	if userMail == "" {
-		println("No mail")
-		http.Error(w, "missing mail", http.StatusBadRequest)
-		return ""
-	}
-
-	data, err := supa.RedisStore.GetSession(r.Context(), SID)
-	if err != nil {
-		http.Error(w, "Authentication error", http.StatusBadRequest)
-		return ""
-	}
-	if data == nil {
-		http.Error(w, "Session expired, please log in again", http.StatusUnauthorized)
-		return ""
-	}
-
-	return userMail
+	return identity.Email
 }
 
 func getSesID(w http.ResponseWriter, r *http.Request) int {

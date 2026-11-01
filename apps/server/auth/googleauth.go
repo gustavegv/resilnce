@@ -1,11 +1,9 @@
 package auth
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
-	scookie "github.com/gustavegv/resilnce/apps/server/scookies"
 	"golang.org/x/oauth2"
 )
 
@@ -135,21 +133,4 @@ func redirectTo(loc string, w http.ResponseWriter, r *http.Request) {
 	base := GetBaseURL()
 	directory = base + directory
 	http.Redirect(w, r, directory, http.StatusSeeOther)
-}
-
-func (s *Service) GetUserInfo(w http.ResponseWriter, r *http.Request) {
-	_, mail, name, err := scookie.ValidateSignedCookie(r)
-	if err != nil {
-		println("Error (GetUserInfo):", err.Error())
-		http.Error(w, "Try signing in.", http.StatusUnauthorized)
-		return
-	}
-
-	resp := map[string]any{
-		"name": name,
-		"id":   mail,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
 }

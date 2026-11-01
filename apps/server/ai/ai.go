@@ -3,91 +3,72 @@ package ai
 import (
 	"context"
 	"encoding/json"
-	"errors"
+	"io"
 	"net/http"
+	"strings"
 
-	sessions "github.com/gustavegv/resilnce/apps/server/redis"
-	scookie "github.com/gustavegv/resilnce/apps/server/scookies"
+	"github.com/gustavegv/resilnce/apps/server/application"
 )
 
-func getValidatedMail(w http.ResponseWriter, r *http.Request) (string, string) {
+type Quota func(context.Context, string, int64) (bool, error)
+type Generator func(context.Context, []bool, string) (string, error)
 
-	userMail := r.URL.Query().Get("mail")
-	SID, userMail, _, err := scookie.ValidateSignedCookie(r)
+func GenerateDraft(_ context.Context, selections []bool, input string) (string, error) {
+	prompt, err := getPrompt(selections, input)
 	if err != nil {
-		println("Verification failed")
-		http.Error(w, "verification failed", http.StatusBadRequest)
-		return "", ""
+		return "", err
 	}
-
-	if userMail == "" {
-		println("No mail")
-		http.Error(w, "missing mail", http.StatusBadRequest)
-		return "", ""
-	}
-	return SID, userMail
+	return callChatAPI(prompt)
 }
 
-func GetQuickCreationData(promptSelections []bool, userData string, sesID string, store *sessions.Store, ctx context.Context) (string, error) {
-
-	accountAICallCount, err := store.GetOrInitAICalls(ctx, sesID)
-	println("AI calls and account number (", accountAICallCount, ",", sesID, ")")
-	const AI_CALL_LIMIT = 25
-	if accountAICallCount > AI_CALL_LIMIT {
-		println("AI calls exceeded")
-		return "", errors.New("AI call count exceeded")
+// HTTP generates untrusted review data; it never writes training records.
+func HTTP(quota Quota, generate Generator, origin string) http.HandlerFunc {
+	if generate == nil {
+		generate = GenerateDraft
 	}
-
-	_, err = store.IncrAICalls(ctx, sesID, 1)
-	if err != nil {
-		return "", err
-	}
-
-	callPrompt, err := getPrompt(promptSelections, userData)
-	if err != nil {
-		return "", err
-	}
-
-	jsonString, err := callChatAPI(callPrompt)
-	if err != nil {
-		return "", err
-	}
-
-	return jsonString, nil
-}
-
-func AutoCreation(store *sessions.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		SID, userMail := getValidatedMail(w, r)
-		if userMail == "" {
-			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		if r.Header.Get("Origin") != strings.TrimRight(origin, "/") || origin == "" {
+			application.WriteError(w, 403, "origin-forbidden", "Use the configured application origin", nil)
 			return
 		}
-
+		identity, ok := application.FromContext(r.Context())
+		if !ok {
+			application.WriteError(w, 401, "unauthenticated", "Sign in to continue", nil)
+			return
+		}
 		var data struct {
 			UserInput        string `json:"userInput"`
 			PromptSelections []bool `json:"promptSelections"`
 		}
-
-		dec := json.NewDecoder(r.Body)
+		dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
 		dec.DisallowUnknownFields()
 		if err := dec.Decode(&data); err != nil {
-			http.Error(w, "Invalid JSON: "+err.Error(), http.StatusBadRequest)
+			application.WriteError(w, 400, "malformed-request", "Provide a valid AI draft request", nil)
 			return
 		}
-
-		output, err := GetQuickCreationData(data.PromptSelections, data.UserInput, SID, store, r.Context())
-
+		if err := dec.Decode(new(any)); err != io.EOF {
+			application.WriteError(w, 400, "malformed-request", "Provide one JSON object", nil)
+			return
+		}
+		if quota == nil {
+			application.WriteError(w, 503, "ai-unavailable", "AI quota service is unavailable", nil)
+			return
+		}
+		allowed, err := quota(r.Context(), identity.QuotaKey(), 25)
 		if err != nil {
-			if err.Error() == "AI call count exceeded" {
-				http.Error(w, "AI call count exceeded", http.StatusForbidden)
-				return
-			}
-			http.Error(w, "Agent failiure", http.StatusBadRequest)
+			application.WriteError(w, 503, "ai-unavailable", "AI quota service is unavailable", nil)
 			return
 		}
-
+		if !allowed {
+			application.WriteError(w, 403, "ai-quota-exceeded", "AI call count exceeded", nil)
+			return
+		}
+		output, err := generate(r.Context(), data.PromptSelections, data.UserInput)
+		if err != nil {
+			application.WriteError(w, 422, "ai-generation-failed", "Could not generate a draft; edit the input and retry", nil)
+			return
+		}
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		_, _ = w.Write([]byte(output))
+		w.Write([]byte(output))
 	}
 }

@@ -9,7 +9,7 @@
   import * as Card from '$lib/components/ui/card';
 
   import { user } from '$lib/stores/appState';
-  import { get } from 'svelte/store';
+  import { getMe } from '../me';
 
   import Icon from '@iconify/svelte';
   import { PUBLIC_BACKEND_BASE_URL } from '$env/static/public';
@@ -21,7 +21,7 @@
 
   import { browser } from '$app/environment';
 
-  let username = $state('');
+  let username = $derived($user?.name || $user?.email || '');
   let cooldown = false;
 
   async function handleSubmit(event: Event) {
@@ -32,36 +32,13 @@
     }, 3000);
   }
 
-  onMount(async () => {
-    const value = get(user);
-
-    if (value?.name || (await getMe())) {
-      username = value?.name ?? get(user)?.name ?? 'error';
-    } else {
-      username = '';
-    }
+  onMount(() => {
+    void getMe();
   });
 
   function backendAdress(dir: string): string {
     const baseURL: string = PUBLIC_BACKEND_BASE_URL;
     return baseURL + dir;
-  }
-
-  async function getMe(): Promise<boolean> {
-    const res = await fetch(backendAdress('/api/me'), {
-      method: 'GET',
-      credentials: 'include',
-    });
-    if (res.ok) {
-      const data = await res.json();
-      console.log(data);
-      user.set(data);
-      return true;
-    } else {
-      user.set(null);
-      console.error('User not logged in.');
-      return false;
-    }
   }
 
   function loginRequest() {
@@ -77,7 +54,6 @@
     });
     if (res.ok) {
       user.set(null);
-      username = '';
       console.log('Successfully logged out.');
     } else {
       console.error('Log out failed');
@@ -148,13 +124,26 @@
         <Card.Title>
           Logged in as <strong>{username}</strong>
         </Card.Title>
+        <Card.Description>{$user?.email}</Card.Description>
+        {#if $user?.developmentMode}
+          <Card.Description
+            >Development account · Data is retained across restarts.</Card.Description
+          >
+        {/if}
+        {#if $user?.capabilities.writeMaintenance}
+          <Card.Description>Training writes are paused for maintenance.</Card.Description>
+        {/if}
       {:else}
         <Card.Title>Login to your account</Card.Title>
         <Card.Description>Sign up / in with any of the providers below</Card.Description>
       {/if}
     </Card.Header>
 
-    {#if username}
+    {#if $user?.developmentMode}
+      <p class="mx-8 mb-4 text-sm text-neutral-400">
+        Development mode is controlled by the server.
+      </p>
+    {:else if username}
       <Button
         variant="destructive"
         class="text-lg&_svg:not([class*='size-'])]:size-8 m-8 mt-0 mb-0 py-5"

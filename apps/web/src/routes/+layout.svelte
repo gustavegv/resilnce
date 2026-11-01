@@ -9,6 +9,8 @@
 
   import { asset, resolve } from '$app/paths';
   import { onMount } from 'svelte';
+  import { getMe } from './me';
+  import AccountIndicator from '$lib/AccountIndicator.svelte';
   import LandscapeLanding from './LandscapeLanding.svelte';
   import { isMobileNotWebapp, setHelpOpen, toggleHelpOpen } from './webapp.svelte';
 
@@ -19,6 +21,7 @@
   let isLandscape = $state(false);
 
   onMount(() => {
+    void getMe();
     const mq = window.matchMedia('(orientation: landscape)');
 
     const update = () => {
@@ -53,6 +56,7 @@
 </script>
 
 <Toaster />
+<AccountIndicator />
 {#if isLandscape}{:else if home}
   <div class="abs">
     <CustomHeader size={3} />
