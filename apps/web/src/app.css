@@ -129,7 +129,8 @@
   font-style: normal;
 }
 
-button.buttonClass {
+button.buttonClass,
+a.buttonClass {
   padding: 0.875rem 1rem;
   border: 1px solid rgb(255 255 255 / 0.08);
   outline: none;
@@ -157,7 +158,8 @@ button.buttonClass {
     background-color 180ms ease;
 }
 
-button.buttonClass.minimal {
+button.buttonClass.minimal,
+a.buttonClass.minimal {
   box-shadow: var(--shadow-dark);
 }
 

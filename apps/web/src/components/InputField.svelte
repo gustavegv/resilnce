@@ -1,16 +1,33 @@
 <script lang="ts">
+  import type { HTMLInputAttributes } from 'svelte/elements';
+
   let {
     label = 'Label',
     value = $bindable(''),
     type = '',
     inputmode = undefined,
-  } = $props<{ label: string; value: string; type: string; inputmode?: 'decimal' | 'numeric' }>();
+    completion = '',
+    ...attributes
+  } = $props<
+    {
+      label: string;
+      value: string;
+      type: string;
+      inputmode?: 'decimal' | 'numeric';
+      completion?: string;
+    } & Omit<HTMLInputAttributes, 'value' | 'type' | 'inputmode'>
+  >();
 </script>
 
 <label class="inp">
-  <input maxlength="100" {type} {inputmode} min={0} placeholder=" " bind:value />
+  <input maxlength="100" {type} {inputmode} min={0} {...attributes} placeholder=" " bind:value />
   <span class="label">{label}</span>
   <span class="focus-bg"></span>
+  {#if completion}
+    <span class="completion" aria-hidden="true"
+      ><span class="completion-prefix">{value}</span><span data-completion>{completion}</span></span
+    >
+  {/if}
 </label>
 
 <style>
@@ -20,6 +37,7 @@
   }
 
   .inp {
+    display: block;
     position: relative;
     width: 100%;
     max-width: 280px;
@@ -51,6 +69,24 @@
     z-index: -1;
     transform: scaleX(0);
     transform-origin: left;
+  }
+
+  .completion {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    padding: 16px 12px 0;
+    overflow: hidden;
+    white-space: pre;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--text-muted, #888);
+    pointer-events: none;
+  }
+  .completion-prefix {
+    visibility: hidden;
   }
 
   input {

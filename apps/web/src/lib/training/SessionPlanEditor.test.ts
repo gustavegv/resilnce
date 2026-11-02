@@ -50,7 +50,9 @@ const plan: Session = {
   })),
 };
 const button = (text: string) =>
-  [...document.querySelectorAll('button')].find((el) => el.textContent?.trim() === text)!;
+  [...document.querySelectorAll('button')].find(
+    (el) => el.getAttribute('aria-label') === text || el.textContent?.trim() === text
+  )!;
 
 test('maintains placement identities and ordered input through an identical failed-save retry', async () => {
   const saved = vi.fn();
@@ -83,7 +85,7 @@ test('maintains placement identities and ordered input through an identical fail
   name.dispatchEvent(new Event('input', { bubbles: true }));
   document.querySelector<HTMLButtonElement>('[aria-label="Move Row up"]')!.click();
   await tick();
-  button('Save session').click();
+  button('Confirm edits').click();
   await vi.waitFor(() => expect(document.body.textContent).toContain('Not saved'));
   expect(name.value).toBe('Push');
   expect(name.disabled || name.closest('fieldset')?.disabled).toBe(true);
@@ -146,6 +148,8 @@ test('uses reviewed personal variants for additions and rejects a duplicate of a
     target: document.body,
     props: { session: plan, onsaved: vi.fn(), ondeleted: vi.fn(), oncancel: vi.fn() },
   });
+  document.querySelector<HTMLButtonElement>('[aria-label="Add an exercise"]')!.click();
+  await tick();
   const search = document.querySelector<HTMLInputElement>('[aria-label="Exercise name"]')!;
   search.value = 'Bench';
   search.dispatchEvent(new Event('input', { bubbles: true }));
@@ -157,7 +161,7 @@ test('uses reviewed personal variants for additions and rejects a duplicate of a
   expect(document.body.textContent).toContain('already in this session');
   button('Reuse Light unchanged').click();
   await tick();
-  button('Save session').click();
+  button('Confirm edits').click();
   await vi.waitFor(() =>
     expect(fetchMock.mock.calls.some((call) => call[0].includes('/update'))).toBe(true)
   );

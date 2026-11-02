@@ -20,6 +20,7 @@ targets, and make active workouts durable across app closure, devices, and offli
 | [Porting tool design](porting-tool.md)            | Shared importer, automatic audit, allowlisted overview, and resumable jobs                |
 | [Porting operations](porting-operations.md)       | Implemented commands, setup, access policy, limitations, and verification                 |
 | [Acceptance criteria](acceptance.md)              | Scenarios the implementation must satisfy                                                 |
+| [Stage 1 problem audit](../spec-errors.md#stage-1-frontend-audit) | Withdrawn requirements, exact source wording, and frontend regressions to avoid |
 | [Remaining decisions](questions.md)               | Unresolved product choices and explicit design defaults                                   |
 
 Product requirements reflect the latest answers in the design discussion. Database layout, API

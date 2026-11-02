@@ -10,6 +10,10 @@ sets when reducing prescribed volume rather than retaining them as bonus work.
 ## 1. Personal library and variants
 
 - Exercises are private to a user. There is no shared exercise catalog.
+- A backend-defined list of common exercise names supplies autocomplete suggestions. These are
+  names only, without shared exercise IDs, variants, targets, or history. Selecting a suggested
+  name configures a new personal exercise with a Standard variant; it is created when the session
+  is saved. A matching personal exercise takes precedence and leads to its existing variants.
 - Exercise metadata consists of ID, name, and zero or more predefined muscle groups.
 - The muscle-group catalog is predefined in backend code. Exercises store an array of its stable
   codes; display labels and list order come from that backend catalog. Muscle groups do not need

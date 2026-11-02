@@ -5,6 +5,8 @@
   import { user } from '$lib/stores/appState';
   import { get } from 'svelte/store';
   import ResumeWorkout from '$lib/training/ResumeWorkout.svelte';
+  import ResumeSessionButton from '../components/ResumeSessionButton.svelte';
+  import type { Workout } from '$lib/training/types';
 
   import Icon from '@iconify/svelte';
   import { blur, fade, slide } from 'svelte/transition';
@@ -72,6 +74,11 @@
     loading = false;
   });
 
+  function activeWorkoutLoaded(workout: Workout | null) {
+    existingSession = workout !== null;
+    greetMessage = greet(get(user)?.name ?? '', existingSession);
+  }
+
   async function loadUserHomepage(uData: { name: string; id: string } | null) {
     var name: string = uData?.name ?? '';
     var id: string = uData?.id ?? '';
@@ -113,20 +120,9 @@
   <div in:fade={{ duration: 400, delay: 50 }} class="body">
     <div class="flex w-full justify-end p-6">
       {#if $user?.capabilities.applicationModel === 'exercise-centric'}
-        <ResumeWorkout />
+        <ResumeWorkout onloaded={activeWorkoutLoaded} />
       {:else if existingSession}
-        <button
-          in:slide|global={{ duration: 600 }}
-          class="base-btn alt flex w-full items-center justify-between"
-          onclick={() => goto(resolve(`/tracker/${existingID}`))}
-        >
-          <div class="flex min-w-0 flex-1 flex-col text-left">
-            <g class="font-bold">Resume session</g>
-            <i class="truncate">{existingName}</i>
-          </div>
-
-          <Icon icon="material-symbols:resume-rounded" width={40} />
-        </button>
+        <ResumeSessionButton href={resolve(`/tracker/${existingID}`)} name={existingName} />
       {/if}
     </div>
 
@@ -436,29 +432,6 @@
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.05),
       0 4px 14px rgb(0 0 0 / 0.1);
-  }
-
-  .base-btn.alt {
-    color: rgb(255 255 255 / 0.7);
-    border: 1px solid rgb(255 255 255 / 0.1);
-    background: rgb(255 255 255 / 0.05);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-
-    width: 50%;
-    font-size: 12px;
-    border-radius: 16px;
-    min-height: 4rem;
-    opacity: 90%;
-  }
-
-  .base-btn.alt:hover {
-    background: rgb(255 255 255 / 0.04);
-    border-color: rgb(255 255 255 / 0.09);
-  }
-
-  .base-btn.alt:active {
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.03);
   }
 
   .tip-box {

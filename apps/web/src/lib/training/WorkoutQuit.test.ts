@@ -112,7 +112,9 @@ const response = (workout: Workout) =>
     })
   );
 const button = (text: string) =>
-  [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === text)!;
+  [...document.querySelectorAll('button')].find(
+    (b) => b.textContent?.trim() === (text === 'Finish' ? 'Confirm' : text)
+  )!;
 async function open(fetchMock: ReturnType<typeof vi.fn>) {
   user.set(account);
   vi.stubGlobal('fetch', fetchMock);
@@ -160,7 +162,7 @@ test('Quit requires explicit confirmation and retains completed work while remov
   expect(button('Quit workout')).toBeUndefined();
 });
 
-test('lost quit response keeps exact intent and prevents discarding or leaving until retry confirms the ended workout', async () => {
+test('lost quit response keeps exact intent and prevents leaving until retry confirms the ended workout', async () => {
   const endedWorkout = structuredClone(fixture);
   endedWorkout.status = 'ended';
   endedWorkout.revision = '9007199254740994';
@@ -176,7 +178,6 @@ test('lost quit response keeps exact intent and prevents discarding or leaving u
   await vi.waitFor(() => expect(button('Confirm quit')).toBeDefined());
   button('Confirm quit').click();
   await vi.waitFor(() => expect(document.body.textContent).toContain('Quit is unconfirmed'));
-  expect(button('Discard local input')).toBeUndefined();
   expect(button('Quit workout').disabled).toBe(true);
   expect(button('Finish').disabled).toBe(true);
   expect(button('Edit exercise').disabled).toBe(true);
@@ -227,7 +228,7 @@ test('quit cannot overtake an uncertain completion or unresolved recording save'
         })
     );
   await open(recording);
-  button('Save reps correction').click();
+  document.querySelector<HTMLButtonElement>('.stepper-count')!.click();
   await vi.waitFor(() => expect(document.body.textContent).toContain('Saving…'));
   expect(button('Quit workout').disabled).toBe(true);
   button('Quit workout').click();
@@ -291,14 +292,17 @@ test('closing the screen sends no quit and server active state remains resumable
   expect(fetchMock.mock.calls.every(([, options]) => options.method === 'GET')).toBe(true);
 });
 
-test('unsent input and an open shared editor block quit until resolved', async () => {
-  const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(response(fixture)));
+test('an unresolved stepper correction and an open shared editor block quit until resolved', async () => {
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce(response(fixture))
+    .mockRejectedValueOnce(new Error('Correction response lost'))
+    .mockResolvedValue(response(fixture));
   await open(fetchMock);
-  const input = document.querySelector('input')!;
-  input.value = '0';
-  input.dispatchEvent(new Event('input', { bubbles: true }));
+  document.querySelector<HTMLButtonElement>('.stepper')!.click();
+  await vi.waitFor(() => expect(document.body.textContent).toContain('Correction response lost'));
   await vi.waitFor(() => expect(button('Quit workout').disabled).toBe(true));
-  button('Discard local input').click();
+  button('Retry').click();
   await vi.waitFor(() => expect(button('Quit workout').disabled).toBe(false));
   button('Edit exercise').click();
   await vi.waitFor(() => expect(document.body.textContent).toContain('Editing exercise'));

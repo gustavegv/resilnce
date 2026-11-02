@@ -30,13 +30,21 @@ func TestGeneratedReviewUsesAuthoritativeMuscleCatalog(t *testing.T) {
 	}
 	w := request(t, h, "GET", "/api/training/catalog", "", "", nil)
 	var catalog struct {
-		MuscleGroups []struct {
+		ExerciseNames []string `json:"exerciseNames"`
+		MuscleGroups  []struct {
 			Code, Label string
 			SortOrder   int `json:"sort_order"`
 		}
 	}
 	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &catalog) != nil || len(catalog.MuscleGroups) != 26 || catalog.MuscleGroups[0].Code != "chest" || catalog.MuscleGroups[0].Label != "Chest" || catalog.MuscleGroups[0].SortOrder != 1 || catalog.MuscleGroups[25].Code != "neck" || catalog.MuscleGroups[25].SortOrder != 4 {
 		t.Fatalf("catalog: %d %s", w.Code, w.Body.String())
+	}
+	if len(catalog.ExerciseNames) != 10 || catalog.ExerciseNames[0] != "Bench press" {
+		t.Fatalf("exercise-name suggestions: %s", w.Body.String())
+	}
+	var exercises int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM public.exercise`).Scan(&exercises); err != nil || exercises != 0 {
+		t.Fatalf("reading name suggestions must not create personal exercises: count=%d, err=%v", exercises, err)
 	}
 	w = request(t, h, "POST", "/api/training/catalog", "{}", "https://app.example", nil)
 	if w.Code != 405 {

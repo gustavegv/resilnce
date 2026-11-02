@@ -3,8 +3,8 @@
 </script>
 
 {#if $user?.developmentMode}
-  <div class="development-account" role="status" aria-label="Development account">
-    Development account · {$user.email}
+  <div class="development-account" role="status" aria-label="Development account" title={$user.email}>
+    Development account<span class="sr-only"> · {$user.email}</span>
   </div>
 {/if}
 
@@ -30,6 +30,13 @@
     color: var(--foreground, white);
     font-size: 0.7rem;
     overflow-wrap: anywhere;
+  }
+  .development-account {
+    top: 0.4rem;
+    left: 3rem;
+    right: auto;
+    max-width: calc(50vw - 5rem);
+    font-size: 0.6rem;
   }
   .application-status {
     top: 5.5rem;

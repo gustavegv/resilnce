@@ -23,6 +23,8 @@ scenarios depending on a proposed default or unresolved question are marked acco
 | L5  | Rename an exercise or variant after completing workouts  | Historical screens show its current name; recorded performance is unchanged                                      |
 | L6  | Choose no muscle groups or several backend-defined codes | Store an empty code array or the selected valid codes on the exercise; reject duplicate, unknown, and null codes |
 | L7  | Change a catalog display label/order in backend code     | Existing exercise code arrays remain valid; selection UI uses the backend catalog's updated labels/order         |
+| L8  | Choose a suggested common exercise name                 | Configure a new personal exercise with Standard; no exercise or variant exists until the session is saved       |
+| L9  | A personal exercise matches a suggested name             | Show the name once, prefer the personal exercise, and select its variants without replacing shared targets       |
 
 ## Progression and recorded performance
 

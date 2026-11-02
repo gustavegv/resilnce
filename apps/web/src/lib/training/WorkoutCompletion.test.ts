@@ -112,7 +112,9 @@ const response = (workout: Workout) =>
     })
   );
 const button = (text: string) =>
-  [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === text)!;
+  [...document.querySelectorAll('button')].find(
+    (b) => b.textContent?.trim() === (text === 'Finish' ? 'Confirm' : text)
+  )!;
 async function open(fetchMock: ReturnType<typeof vi.fn>) {
   user.set(account);
   vi.stubGlobal('fetch', fetchMock);
@@ -154,6 +156,9 @@ test('Finish sends reviewed identity only and renders frozen actuals separately 
   });
   expect(document.body.textContent).toContain('Performed: 12 reps · 40.00 kg');
   expect(document.body.textContent).toContain('Performed: 10 reps · 50.00 kg');
+  expect(document.querySelector('.blob-cont')).not.toBeNull();
+  expect(document.querySelector('[aria-label="Rep threshold met"]')).not.toBeNull();
+  expect(document.querySelectorAll('.set-box')).toHaveLength(2);
   expect(document.body.textContent).toContain('Current next targets');
   expect(document.body.textContent).toContain('6 reps · 42.50 kg');
   expect(document.body.textContent).toContain('6 reps · 52.50 kg');
@@ -203,15 +208,18 @@ test('Finish waits for explicit pending resolution and successful preceding save
   );
 });
 
-test('unsent correction and open shared editor each block Finish', async () => {
-  const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(response(fixture)));
+test('an unresolved stepper correction and open shared editor each block Finish', async () => {
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce(response(fixture))
+    .mockRejectedValueOnce(new Error('Correction response lost'))
+    .mockResolvedValue(response(fixture));
   await open(fetchMock);
-  const input = document.querySelector('input')!;
-  input.value = '0';
-  input.dispatchEvent(new Event('input', { bubbles: true }));
+  document.querySelector<HTMLButtonElement>('.stepper')!.click();
+  await vi.waitFor(() => expect(document.body.textContent).toContain('Correction response lost'));
   await vi.waitFor(() => expect(button('Finish').disabled).toBe(true));
-  expect(fetchMock).toHaveBeenCalledTimes(1);
-  button('Discard local input').click();
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+  button('Retry').click();
   await vi.waitFor(() => expect(button('Finish').disabled).toBe(false));
   button('Edit exercise').click();
   await vi.waitFor(() => expect(document.body.textContent).toContain('Editing exercise'));
@@ -220,7 +228,7 @@ test('unsent correction and open shared editor each block Finish', async () => {
   await vi.waitFor(() => expect(button('Finish').disabled).toBe(false));
 });
 
-test('lost completion response retains exact intent and blocks discard, navigation and account overtaking until retry resolves', async () => {
+test('lost completion response retains exact intent and blocks navigation and account overtaking until retry resolves', async () => {
   const fetchMock = vi
     .fn()
     .mockResolvedValueOnce(response(fixture))
@@ -229,7 +237,6 @@ test('lost completion response retains exact intent and blocks discard, navigati
   await open(fetchMock);
   button('Finish').click();
   await vi.waitFor(() => expect(document.body.textContent).toContain('Completion is unconfirmed'));
-  expect(button('Discard local input')).toBeUndefined();
   expect(button('Finish').disabled).toBe(true);
   expect(button('Edit exercise').disabled).toBe(true);
   expect(document.body.textContent).toContain('Performed: 12 reps · 40.00 kg');
@@ -249,7 +256,6 @@ test('lost completion response retains exact intent and blocks discard, navigati
   button('Retry').click();
   await vi.waitFor(() => expect(document.body.textContent).toContain('Workout ended · Saved'));
   expect(fetchMock.mock.calls[2][1].body).toBe(fetchMock.mock.calls[1][1].body);
-  expect(button('Discard local input')).toBeUndefined();
   const resolvedCancel = vi.fn();
   navigate({ cancel: resolvedCancel } as unknown as Parameters<typeof navigate>[0]);
   expect(resolvedCancel).not.toHaveBeenCalled();
@@ -302,7 +308,7 @@ test('another-device finality can be accepted without a second completion or reo
     expect(document.body.textContent).toContain('Current server revision 9007199254740994')
   );
   expect(button('Reapply local input to reviewed revision').disabled).toBe(true);
-  button('Accept server state and discard local input').click();
+  button('Accept server state').click();
   await vi.waitFor(() => expect(document.body.textContent).toContain('Workout ended · Saved'));
   expect(fetchMock).toHaveBeenCalledTimes(3);
   expect(document.querySelectorAll('input')).toHaveLength(0);
@@ -322,15 +328,40 @@ test('actionable bounds rejection permits reviewing configuration before a new c
         { status: 422 }
       )
     )
-    .mockResolvedValueOnce(response(fixture));
+    .mockResolvedValueOnce(response(ended()));
   await open(fetchMock);
   button('Finish').click();
   await vi.waitFor(() =>
     expect(document.body.textContent).toContain('Adjust the weight or increment')
   );
-  expect(button('Discard local input')).toBeDefined();
-  button('Discard local input').click();
   await vi.waitFor(() => expect(button('Edit exercise').disabled).toBe(false));
+  expect(button('Retry')).toBeUndefined();
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+  expect(button('Finish').disabled).toBe(false);
   button('Edit exercise').click();
   await vi.waitFor(() => expect(document.body.textContent).toContain('Editing exercise'));
+  button('Cancel').click();
+  await vi.waitFor(() => expect(button('Finish').disabled).toBe(false));
+  button('Finish').click();
+  await vi.waitFor(() => expect(document.body.textContent).toContain('Workout ended · Saved'));
+  const rejected = JSON.parse(fetchMock.mock.calls[1][1].body);
+  const accepted = JSON.parse(fetchMock.mock.calls[2][1].body);
+  expect(accepted.operationId).not.toBe(rejected.operationId);
+});
+
+test('summary preserves explicit zero and skipped sets without a threshold award', async () => {
+  const completed = ended();
+  Object.assign(completed.exercises[0].sets[0], { recordedReps: 0 });
+  Object.assign(completed.exercises[0].sets[1], {
+    state: 'skipped',
+    recordedReps: null,
+    recordedWeight: null,
+  });
+  await open(vi.fn().mockResolvedValue(response(completed)));
+  expect(document.querySelector('[aria-label="Rep threshold met"]')).toBeNull();
+  expect([...document.querySelectorAll('.set-box-value')].map((set) => set.textContent)).toEqual([
+    '0',
+    'Skipped',
+  ]);
+  expect(document.body.textContent).toContain('Performed: 0 reps · 40.00 kg');
 });

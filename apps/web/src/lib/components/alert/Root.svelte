@@ -5,9 +5,10 @@
   type Props = {
     open?: boolean;
     children?: Snippet;
+    dismissible?: boolean;
   };
 
-  let { open = $bindable(true), children }: Props = $props();
+  let { open = $bindable(true), children, dismissible = true }: Props = $props();
 
   const dialog = {
     get open() {
@@ -30,6 +31,7 @@
       type="button"
       class="alert-backdrop"
       aria-label="Close dialog"
+      disabled={!dismissible}
       onclick={() => dialog.close()}
     ></button>
 
@@ -68,6 +70,10 @@
     width: 100%;
     display: grid;
     place-items: center;
+    align-items: start;
+    max-height: calc(100dvh - 3rem);
     overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 </style>

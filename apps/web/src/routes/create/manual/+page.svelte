@@ -28,8 +28,7 @@
   let canEdit = $state(false);
   const quickloadKey = 'workoutPayload';
   let generated = $state(false);
-  let rawDraft = $state('');
-  let draftNeedsCorrection = $state(false);
+  let invalidDraft = $state(false);
   let suggestions = $state.raw<{ id: string; suggestion: ExerciseSuggestion }[]>([]);
   let reviewIndex = $state(0);
   let currentSuggestion = $derived(suggestions[reviewIndex]);
@@ -43,11 +42,10 @@
     }
     if (page.url.searchParams.get('quickload') === '1') {
       generated = true;
-      rawDraft = sessionStorage.getItem(quickloadKey) ?? '';
-      await reviewSuggestions();
+      await reviewSuggestions(sessionStorage.getItem(quickloadKey) ?? '');
     }
   });
-  async function reviewSuggestions() {
+  async function reviewSuggestions(rawDraft: string) {
     loadingDraft = true;
     try {
       let draft = readGeneratedDraft(rawDraft);
@@ -61,14 +59,11 @@
       suggestions = draft.map((suggestion) => ({ id: crypto.randomUUID(), suggestion }));
       reviewIndex = 0;
       sessionExercisesList.fillFromArray([]);
-      draftNeedsCorrection = false;
+      invalidDraft = false;
       error = '';
-    } catch (failure) {
-      draftNeedsCorrection = true;
-      error =
-        failure instanceof SyntaxError
-          ? 'The generated draft is not valid JSON. Correct it below or cancel.'
-          : (failure as Error).message;
+    } catch {
+      invalidDraft = true;
+      error = '';
     } finally {
       loadingDraft = false;
     }
@@ -83,10 +78,21 @@
     sessionStorage.removeItem(quickloadKey);
     await goto(resolve('/create'));
   }
-  function editSuggestions() {
-    draftNeedsCorrection = true;
-    error =
-      'Applying a corrected draft restarts its review. Your current choices remain until you apply it.';
+  async function startManually() {
+    if (pending) return;
+    sessionStorage.removeItem(quickloadKey);
+    generated = false;
+    invalidDraft = false;
+    suggestions = [];
+    reviewIndex = 0;
+    error = '';
+    sessionExercisesList.fillFromArray([]);
+    await goto(resolve('/create/manual'));
+  }
+  function removeSuggestion() {
+    if (pending || !currentSuggestion) return;
+    reviewIndex++;
+    error = '';
   }
   beforeNavigate(({ cancel }) => {
     if (pending) {
@@ -151,7 +157,7 @@
   async function saveSession() {
     if (saveState === 'saving' || reviewing || loadingDraft) return;
     if (!pending) {
-      if (draftNeedsCorrection || currentSuggestion) {
+      if (invalidDraft || currentSuggestion) {
         error =
           'Review every suggestion before saving. Each needs an explicit reuse or creation choice.';
         return;
@@ -208,36 +214,51 @@
       class="title"
     />
     <div class="add-box shadow">
+      {#if generated}
+        <div class="review-header">
+          <h3>
+            {invalidDraft
+              ? 'Unable to load session'
+              : currentSuggestion
+                ? `Review suggestion ${reviewIndex + 1} of ${suggestions.length}`
+                : loadingDraft
+                  ? 'Generated session'
+                  : 'Add an exercise'}
+          </h3>
+          <button
+            type="button"
+            class="cancel-generated"
+            aria-label="Cancel generated session"
+            onclick={cancelGenerated}>Cancel</button
+          >
+        </div>
+      {/if}
       {#if loadingDraft}
-        <p role="status">Checking the suggested draft…</p>
-      {:else if draftNeedsCorrection}
-        <h3 class="w-full pb-2 text-xl font-semibold">Correct the suggested draft</h3>
-        <label
-          >Suggested draft JSON<textarea aria-label="Suggested draft JSON" bind:value={rawDraft}
-          ></textarea></label
-        >
-        <button class="buttonClass" onclick={reviewSuggestions}>Review corrected draft</button>
+        <p role="status">Checking the suggested session…</p>
+      {:else if invalidDraft}
+        <div class="invalid-generated">
+          <p role="alert">This generated session could not be loaded.</p>
+          <p>Return to creation to try again, or start a session manually.</p>
+          <button type="button" class="buttonClass" onclick={cancelGenerated}>Back to create</button
+          >
+          <button type="button" class="start-manually" onclick={startManually}
+            >Start manually</button
+          >
+        </div>
       {:else if currentSuggestion}
-        <h3 class="w-full pb-2 text-xl font-semibold">
-          Review suggestion {reviewIndex + 1} of {suggestions.length}
-        </h3>
-        <p>Choose shared current settings or explicitly create separate settings.</p>
+        <p class="review-copy">
+          Choose shared current settings or explicitly create separate settings.
+        </p>
         {#each [currentSuggestion] as row (row.id)}
           <DraftItemResolver
             suggestion={row.suggestion}
             onresolve={resolveSuggestion}
+            onremove={removeSuggestion}
             disabled={pending !== null || reviewing}
           />
         {/each}
-        <button
-          class="buttonClass minimal"
-          onclick={() => {
-            reviewIndex++;
-            error = '';
-          }}>Remove this suggestion</button
-        >
       {:else}
-        <h3 class="w-full pb-2 text-xl font-semibold">Add an exercise</h3>
+        {#if !generated}<h3 class="w-full pb-2 text-xl font-semibold">Add an exercise</h3>{/if}
         <DraftItemResolver
           bind:this={resolver}
           onresolve={appendDraft}
@@ -245,26 +266,22 @@
         />
       {/if}
     </div>
-    <SortableList
-      bind:this={sessionExercisesList}
-      editData={editDraft}
-      disabled={pending !== null || reviewing}
-    />
+    <div class={['session-exercises', { 'invalid-list': invalidDraft }]}>
+      <SortableList
+        bind:this={sessionExercisesList}
+        editData={editDraft}
+        disabled={pending !== null || reviewing}
+      />
+    </div>
   </fieldset>
   {#if saveState !== 'idle'}<p role="status">
       {saveState === 'saving' ? 'Saving' : saveState === 'saved' ? 'Saved' : 'Not saved'}
     </p>{/if}
   {#if error}<p role="alert">{error}</p>{/if}
-  {#if generated && !pending}
-    {#if !draftNeedsCorrection}<button class="buttonClass minimal" onclick={editSuggestions}
-        >Edit suggested draft</button
-      >{/if}
-    <button class="buttonClass minimal" onclick={cancelGenerated}>Cancel generated session</button>
-  {/if}
   {#if saveState === 'failed'}
     <button onclick={saveSession} class="buttonClass">Retry</button>
     {#if canEdit}<button onclick={resumeEditing} class="buttonClass">Edit draft</button>{/if}
-  {:else}
+  {:else if !invalidDraft}
     <button onclick={saveSession} disabled={saveState === 'saving'} class="finish buttonClass"
       >Finish and save session</button
     >
@@ -279,13 +296,68 @@
     width: 80%;
     color: #ffb3b3;
   }
-  textarea {
-    background: var(--surface-middle);
-    border-radius: var(--border-middle);
-    padding: var(--spacing-md);
+  .review-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
     width: 100%;
-    min-height: 12rem;
-    box-sizing: border-box;
+    margin-bottom: 0.5rem;
+  }
+  .review-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.4;
+    text-wrap: balance;
+  }
+  .cancel-generated,
+  .start-manually {
+    margin: 0;
+    padding: 0.35rem 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 400;
+  }
+  .cancel-generated:hover,
+  .start-manually:hover {
+    color: var(--text);
+  }
+  .review-copy {
+    margin: 0 0 0.75rem;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .invalid-generated {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+  }
+  .invalid-generated p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .invalid-generated [role='alert'] {
+    width: 100%;
+    color: var(--text);
+    font-weight: 500;
+  }
+  .invalid-generated .buttonClass {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+  .invalid-list {
+    display: none;
+  }
+  .session-exercises {
+    width: 100%;
   }
 
   .container {
@@ -311,6 +383,8 @@
   }
 
   .add-box {
+    position: relative;
+    z-index: 2;
     display: flex;
     flex-direction: column;
     padding: var(--spacing-md);

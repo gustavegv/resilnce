@@ -1,16 +1,41 @@
 <script lang="ts">
   import Icon from '@iconify/svelte';
   import type { ExerciseInfo } from '../routes/tracker/dbFetches';
+  import type { WorkoutExercise } from '$lib/training/types';
   import { CheckRepThresholdMet } from '../routes/tracker/saving';
 
   import { fade, scale } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
 
   let {
-    exercises,
+    exercises = [],
+    attempts = [],
   }: {
-    exercises: ExerciseInfo[];
+    exercises?: ExerciseInfo[];
+    attempts?: WorkoutExercise[];
   } = $props();
+
+  let entries = $derived(
+    attempts.length
+      ? attempts.map((attempt) => ({
+          name: attempt.exercise.name,
+          variantName: attempt.currentVariant.name,
+          currentProgress: {
+            repsPerSet: attempt.sets.map((set) =>
+              set.state === 'performed' ? (set.recordedReps ?? 0) : 'Skipped'
+            ),
+            weightPerSet: [
+              ...new Set(
+                attempt.sets
+                  .filter((set) => set.state === 'performed')
+                  .map((set) => set.recordedWeight)
+              ),
+            ],
+          },
+          attempt,
+        }))
+      : exercises.map((exercise) => ({ ...exercise, variantName: '', attempt: undefined }))
+  );
 
   function thumpIn(node: Element, { delay = 0, duration = 420 } = {}) {
     return {
@@ -29,10 +54,23 @@
     };
   }
 
-  function checkPR(repsPerSet: number[], index: number): boolean {
+  function checkPR(repsPerSet: (number | string)[], index: number): boolean {
+    if (attempts.length) {
+      const attempt = attempts[index];
+      const prescribed = attempt.sets.filter((set) => set.kind === 'prescribed');
+      return (
+        attempt.state === 'completed' &&
+        prescribed.length > 0 &&
+        prescribed.every((set) => set.state === 'performed') &&
+        CheckRepThresholdMet(
+          prescribed.map((set) => set.recordedReps ?? 0),
+          attempt.repThreshold
+        )
+      );
+    }
     const repThreshold = exercises[index].rep_threshold ?? 12;
 
-    return CheckRepThresholdMet(repsPerSet, repThreshold);
+    return CheckRepThresholdMet(repsPerSet as number[], repThreshold);
   }
 
   function toTwoDigit(num: number): string {
@@ -43,11 +81,11 @@
   }
 </script>
 
-{#each exercises as blob, index}
+{#each entries as blob, index (blob.attempt?.id ?? index)}
   <div class="blob-cont relative" in:thumpIn|global={{ delay: 150 + index * 150 }}>
     {#if checkPR(blob.currentProgress.repsPerSet, index)}
-      <div class="absolute right-1">
-        <Icon icon="ri:medal-line" width="35" color={'444444'} />
+      <div class="absolute right-1" role="img" aria-label="Rep threshold met">
+        <Icon icon="ri:medal-line" width="35" color="#444444" />
       </div>
     {/if}
 
@@ -57,27 +95,58 @@
         <p class="exercise-name capitalize">
           {blob.name}
           <span class="inline-arrow" class:pr={checkPR(blob.currentProgress.repsPerSet, index)}>
-            <Icon icon="streamline:graph-arrow-increase-solid" color={'#71d772'} />
+            <Icon icon="streamline:graph-arrow-increase-solid" color="#71d772" />
           </span>
         </p>
+        {#if blob.variantName}<p class="variant-label">{blob.variantName} · Completed</p>{/if}
       </div>
       <p class="exercise-weight">
-        {blob.currentProgress.weightPerSet[0]} <span class="exercise-unit">kg</span>
+        {blob.currentProgress.weightPerSet.length > 1
+          ? 'Mixed'
+          : (blob.currentProgress.weightPerSet[0] ?? '—')} <span class="exercise-unit">kg</span>
       </p>
     </div>
 
     <div class="set-info">
-      {#each blob.currentProgress.repsPerSet as rep, index}
+      {#each blob.currentProgress.repsPerSet as rep, index (blob.attempt?.sets[index]?.id ?? index)}
         <div class="set-box">
           <p class="set-box-label">Set {index + 1}</p>
           <p class="set-box-value">{rep}</p>
         </div>
       {/each}
     </div>
+    {#if blob.attempt}
+      <details class="performance-details">
+        <summary>Recorded performance and next targets</summary>
+        {#each blob.attempt.sets as set (set.id)}
+          <p>
+            Set {set.position} · {set.state === 'performed'
+              ? `Performed: ${set.recordedReps} reps · ${set.recordedWeight} kg`
+              : 'Skipped · no performance recorded'}
+          </p>
+        {/each}
+        <div aria-label="Current next targets">
+          <h4>Current next targets</h4>
+          {#each blob.attempt.currentVariant.targetSets as target (target.id)}
+            <p>Set {target.position}: {target.targetReps} reps · {target.targetWeight} kg</p>
+          {/each}
+        </div>
+      </details>
+    {/if}
   </div>
 {/each}
 
 <style>
+  .variant-label,
+  .performance-details {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+  }
+  .performance-details {
+    margin-top: 1rem;
+    width: 100%;
+    text-align: left;
+  }
   .blob-cont {
     display: flex;
     flex-direction: column;

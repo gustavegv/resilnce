@@ -1,11 +1,13 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import SessionSlug from '../../components/SessionSlug.svelte';
-  import WorkoutStart from './WorkoutStart.svelte';
+  import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import { listSessions, readSession } from './client';
   import type { Session } from './types';
   import { categories, matchesCategory } from './sessionCategories';
   import SessionPlanEditor from './SessionPlanEditor.svelte';
+  import Icon from '@iconify/svelte';
   let sessions = $state.raw<Session[]>([]);
   let selected = $state.raw<Session | null>(null);
   let loading = $state(true);
@@ -15,6 +17,7 @@
   let editing = $state(false);
   let maintenanceBusy = $state(false);
   let starting = $state(false);
+  let deleting = $state(false);
   const recentBoundary = Date.now() - 14 * 24 * 60 * 60 * 1000;
   let filtered = $derived(
     sessions.filter((session) => matchesCategory(session.name, activeCategory))
@@ -45,9 +48,19 @@
   onMount(() => {
     void load();
   });
-  async function showPlan(id: string) {
-    if (maintenanceBusy || starting) return;
-    editing = false;
+  async function showPlan(id: string, edit = false, remove = false) {
+    if (maintenanceBusy || starting || reading) return;
+    if (!edit) {
+      starting = true;
+      try {
+        await goto(resolve('/workout/start/[sessionId]', { sessionId: id }));
+      } finally {
+        starting = false;
+      }
+      return;
+    }
+    editing = edit;
+    deleting = remove;
     reading = true;
     error = '';
     selected = null;
@@ -62,19 +75,21 @@
 </script>
 
 <div class="main">
-  <span>Sessions</span>
+  <eyebrow>Sessions</eyebrow>
   <h2>Start a new session</h2>
-  <p>Select a session to view its plan.</p>
+  <subtitle>Select the session you want to run.</subtitle>
   <hr />
   {#if error}<p role="alert">{error}</p>
     <button onclick={load}>Retry</button>{/if}
-  {#if loading}<p role="status">Loading sessions…</p>
+  {#if loading}<div role="status" aria-label="Loading sessions">
+      <Icon icon="svg-spinners:3-dots-bounce" width="30" />
+    </div>
   {:else if !sessions.length}<p>Nothing here yet. Add a session to get started.</p>
   {:else}
     <div class="category-carousel">
       {#each categories as category (category)}
         <button
-          disabled={maintenanceBusy || starting}
+          disabled={maintenanceBusy || starting || reading}
           class={[
             'category-pill',
             category.toLowerCase().replace(' ', '-'),
@@ -91,6 +106,7 @@
       {#if recent.length}<h3>Recent</h3>{/if}
       {#each recent as session (session.id)}
         <SessionSlug
+          disabled={maintenanceBusy || starting || reading}
           slug={{
             name: session.name,
             date: session.lastPerformedAt ? new Date(session.lastPerformedAt) : undefined,
@@ -98,11 +114,14 @@
               session.lastPerformedStatus === 'unknown' ? 'Last run unavailable' : 'Never run',
           }}
           onPress={() => showPlan(session.id)}
+          onEdit={() => showPlan(session.id, true)}
+          onDel={() => showPlan(session.id, true, true)}
         />
       {/each}
       {#if older.length}<h3>Older</h3>{/if}
       {#each older as session (session.id)}
         <SessionSlug
+          disabled={maintenanceBusy || starting || reading}
           slug={{
             name: session.name,
             date: session.lastPerformedAt ? new Date(session.lastPerformedAt) : undefined,
@@ -110,68 +129,39 @@
               session.lastPerformedStatus === 'unknown' ? 'Last run unavailable' : 'Never run',
           }}
           onPress={() => showPlan(session.id)}
+          onEdit={() => showPlan(session.id, true)}
+          onDel={() => showPlan(session.id, true, true)}
         />
       {/each}
     </div>
   {/if}
   {#if reading}<p role="status">Loading plan…</p>{/if}
   {#if selected}
-    <section class="plan" aria-label={`${selected.name} plan`}>
-      <h3>{selected.name}</h3>
-      {#if editing}
-        {#key selected.id}
-          <SessionPlanEditor
-            session={selected}
-            onbusy={(value) => {
-              maintenanceBusy = value;
-            }}
-            onsaved={(session) => {
-              selected = session;
-              sessions = sessions.map((item) => (item.id === session.id ? session : item));
-              editing = false;
-            }}
-            ondeleted={(id) => {
-              sessions = sessions.filter((item) => item.id !== id);
-              selected = null;
-              editing = false;
-            }}
-            oncancel={() => {
-              editing = false;
-            }}
-          />
-        {/key}
-      {:else}<button
-          disabled={starting}
-          onclick={() => {
-            editing = true;
-          }}>Edit session</button
-        >{/if}
-      {#if !selected.placements.length}<p>Add a variant before starting this session.</p>{/if}
-      {#each selected.placements as placement (placement.id)}
-        <div class="exercise">
-          <h4>{placement.position}. {placement.exercise.name} · {placement.variant.name}</h4>
-          {#if placement.exercise.archived || placement.variant.archived}<p>
-              Unavailable — remove this placement before starting.
-            </p>{/if}
-          <p>
-            {placement.variant.prescribedSets} sets · threshold {placement.variant.repThreshold} · {placement
-              .variant.autoIncrement} kg increase
-          </p>
-          {#each placement.variant.targetSets as target (target.id)}<p>
-              Set {target.position}: {target.targetReps} reps · {target.targetWeight} kg target
-            </p>{/each}
-        </div>
-      {/each}
-      {#key `${selected.id}:${selected.revision}`}
-        <WorkoutStart
-          disabled={editing || maintenanceBusy}
+    {#if editing}
+      {#key selected.id}
+        <SessionPlanEditor
           session={selected}
-          onpending={(value) => {
-            starting = value;
+          confirmDeletion={deleting}
+          onbusy={(value) => {
+            maintenanceBusy = value;
+          }}
+          onsaved={(session) => {
+            selected = null;
+            sessions = sessions.map((item) => (item.id === session.id ? session : item));
+            editing = false;
+          }}
+          ondeleted={(id) => {
+            sessions = sessions.filter((item) => item.id !== id);
+            selected = null;
+            editing = false;
+          }}
+          oncancel={() => {
+            selected = null;
+            editing = false;
           }}
         />
       {/key}
-    </section>
+    {/if}
   {/if}
 </div>
 
@@ -204,12 +194,26 @@
     gap: 0.5rem;
     width: 100%;
     overflow-x: auto;
-    padding: 0.25rem 0 0.75rem;
+    padding: 0.25rem 1rem 0.75rem 1rem;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
   }
   .category-pill {
     flex: 0 0 auto;
     padding: 0.4rem 0.5rem;
+    min-width: 5rem;
+    border: 0;
     border-radius: var(--border-middle);
+    font: inherit;
+    font-weight: 500;
+    color: #fff;
+    white-space: nowrap;
+    cursor: pointer;
+    scroll-snap-align: start;
+    transition:
+      transform 0.2s ease,
+      opacity 0.2s ease,
+      box-shadow 0.2s ease;
     background: var(--surface-middle);
     font-size: 12px;
     opacity: 0.65;
@@ -231,16 +235,10 @@
   }
   .category-pill.active {
     opacity: 1;
-    box-shadow: var(--shadow-dark);
-  }
-  .plan {
-    width: 100%;
-    margin-top: 1rem;
-  }
-  .exercise {
-    background: var(--surface-low);
-    border-radius: 15px;
-    padding: 1rem;
-    margin: 0.5rem 0;
+    box-shadow:
+      0 10px 24px rgba(0, 0, 0, 0.18),
+      0 0px 2px rgba(255, 255, 255, 0.539);
+    transform: translateY(-2px);
+    font-weight: 600;
   }
 </style>

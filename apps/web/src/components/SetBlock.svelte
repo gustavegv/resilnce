@@ -2,96 +2,144 @@
   import { onMount } from 'svelte';
   import '../app.css';
   import Icon from '@iconify/svelte';
+  import type { WorkoutSet } from '$lib/training/types';
 
   let {
     id,
     reps,
     finished,
     onCountChange,
+    workoutSet,
+    candidate,
+    disabled = false,
+    onCandidate,
+    onRecord,
+    onSkip,
+    onReset,
   }: {
     id: number;
     reps: number;
     finished?: boolean;
     onCountChange?: (detail: { id: number; count: number }) => void;
+    workoutSet?: WorkoutSet;
+    candidate?: string;
+    disabled?: boolean;
+    onCandidate?: (value: string) => void;
+    onRecord?: (count: number) => void;
+    onSkip?: () => void;
+    onReset?: () => void;
   } = $props();
 
-  let curCount = $state(reps);
-  const ogCount = reps;
-
-  onMount(() => {
-    onCountChange?.({ id, count: curCount });
-  });
-
-  function decrement() {
-    popScaleWeight();
-    curCount = Math.max(0, curCount - 1);
-    checksRep();
-    onCountChange?.({ id, count: curCount });
-  }
-
-  function increment() {
-    popScaleWeight();
-    curCount += 1;
-    checksRep();
-    onCountChange?.({ id, count: curCount });
-  }
-
-  function checksRep() {
-    console.log('Checked rep');
-    if (!checked) {
-      checked = true;
-    }
-  }
-
-  let checked: boolean = $state(false);
-
-  function getActive(check: boolean): string {
-    if (check) {
-      return 'active';
-    }
-    return 'inactive';
-  }
-
+  let curCount = $state(0);
+  let checked = $state(false);
   let weightPopped = $state(false);
-  function popScaleWeight() {
+  let shownCount = $derived(
+    workoutSet
+      ? candidate !== undefined && /^\d+$/.test(candidate)
+        ? Number(candidate)
+        : (workoutSet.recordedReps ?? reps)
+      : curCount
+  );
+  let completed = $derived(workoutSet ? workoutSet.state === 'performed' : checked);
+  onMount(() => {
+    if (!workoutSet) {
+      curCount = reps;
+      onCountChange?.({ id, count: reps });
+    }
+  });
+  function record(count = shownCount) {
+    if (disabled || finished) return;
     weightPopped = true;
     setTimeout(() => {
       weightPopped = false;
     }, 150);
-  }
-
-  function statusText(): string {
-    if (checked) {
-      return 'Completed';
+    if (workoutSet) {
+      onCandidate?.(String(count));
+      onRecord?.(count);
+    } else {
+      curCount = count;
+      checked = true;
+      onCountChange?.({ id, count });
     }
-    return 'Set goal';
   }
 </script>
 
-<div class="counter-container set--{getActive(checked)} finished-{finished}">
-  <div class="check {checked}"><Icon icon="gg:check-o" /></div>
-  <div class="set-card-left" class:complete={checked}>
+<div class="counter-container set--{completed ? 'active' : 'inactive'} finished-{finished}">
+  <div class="check {completed}"><Icon icon="gg:check-o" /></div>
+  <div class="set-card-left" class:complete={completed}>
     <div class="set-count">{id}</div>
     <div class="set-description">
-      <p class="set-status">{statusText()}</p>
-      <p class="set-goal">{ogCount} <span> reps</span></p>
+      <p class="set-status">
+        {completed ? 'Completed' : workoutSet?.state === 'skipped' ? 'Skipped' : 'Set goal'}
+      </p>
+      <p class="set-goal">{reps} <span> reps</span></p>
+      {#if workoutSet}<p class="set-weight">{workoutSet.targetWeight} kg target</p>{/if}
     </div>
   </div>
-
   <div class="controls">
-    <button class="stepper" onclick={decrement}>
-      <Icon icon="ic:sharp-minus"></Icon>
-    </button>
-    <button class="stepper-count" class:stepper-scale={weightPopped} onclick={checksRep}
-      >{curCount}</button
+    <button
+      class="stepper"
+      aria-label={`Decrease reps for set ${id}`}
+      disabled={disabled || finished}
+      onclick={() => record(Math.max(0, shownCount - 1))}><Icon icon="ic:sharp-minus" /></button
     >
-    <button class="stepper" onclick={increment}>
-      <Icon icon="ic:sharp-plus"></Icon>
-    </button>
+    <button
+      class="stepper-count"
+      class:stepper-scale={weightPopped}
+      aria-label={`Record set ${id}: ${shownCount} reps`}
+      disabled={disabled || finished}
+      onclick={() => record()}>{shownCount}</button
+    >
+    <button
+      class="stepper"
+      aria-label={`Increase reps for set ${id}`}
+      disabled={disabled || finished}
+      onclick={() => record(shownCount + 1)}><Icon icon="ic:sharp-plus" /></button
+    >
   </div>
 </div>
+{#if workoutSet}
+  <details class="set-options">
+    <summary
+      >Set {id} · {workoutSet.state === 'performed'
+        ? `${workoutSet.recordedReps} reps recorded`
+        : workoutSet.state === 'skipped'
+          ? 'Skipped'
+          : 'Pending'} · options</summary
+    >
+    {#if workoutSet.state === 'performed'}<p>
+        Performed: {workoutSet.recordedReps} reps · {workoutSet.recordedWeight} kg
+      </p>
+    {:else if workoutSet.state === 'skipped'}<p>Skipped · no performance recorded</p>
+    {:else}<p>Pending · no performance recorded</p>{/if}
+    {#if !finished}
+      <button onclick={onSkip} {disabled}>Skip set</button>
+      <button onclick={onReset} disabled={disabled || workoutSet.state === 'pending'}
+        >Reset to pending</button
+      >
+    {/if}
+  </details>
+{/if}
 
 <style>
+  .set-weight,
+  .set-options {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+  .set-weight {
+    margin: 0.25rem 0 0;
+  }
+  .set-options {
+    width: 100%;
+    text-align: left;
+    margin: 0.35rem 0 0.75rem;
+  }
+  .set-options button {
+    margin: 0.35rem;
+    border-radius: 8px;
+    background: var(--surface-middle);
+  }
   .check {
     position: absolute;
     right: 2.5rem;
@@ -113,9 +161,6 @@
     width: 100%;
     border-radius: 10px;
     box-shadow: var(--shadow-dark);
-  }
-
-  .counter-container.set--active {
   }
 
   .finished-true {

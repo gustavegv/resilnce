@@ -1,5 +1,8 @@
 <script lang="ts">
   import { beforeNavigate } from '$app/navigation';
+  import EditScreen from '../../routes/tracker/EditScreen.svelte';
+  import Icon from '@iconify/svelte';
+  import * as Alert from '$lib/components/alert/index.js';
   import { get } from 'svelte/store';
   import { user } from '$lib/stores/appState';
   import DraftItemResolver from './DraftItemResolver.svelte';
@@ -18,12 +21,14 @@
     ondeleted,
     oncancel,
     onbusy = () => {},
+    confirmDeletion = false,
   }: {
     session: Session;
     onsaved: (session: Session) => void;
     ondeleted: (id: string) => void;
     oncancel: () => void;
     onbusy?: (busy: boolean) => void;
+    confirmDeletion?: boolean;
   } = $props();
   type Entry = { id: string; placement?: Placement; draft?: DraftSessionItem };
   // A keyed editor owns one deliberate draft until Save, Cancel or Discard/reload.
@@ -35,7 +40,7 @@
   let entries = $state.raw<Entry[]>(
     session.placements.map((placement) => ({ id: placement.id, placement }))
   );
-  let resolver: DraftItemResolver;
+  let resolver = $state<DraftItemResolver>();
   let pending = $state.raw<
     | { kind: 'update'; command: UpdateSessionCommand }
     | { kind: 'delete'; command: DeleteSessionCommand }
@@ -44,8 +49,13 @@
   let saveState = $state<'idle' | 'saving' | 'failed' | 'saved'>('idle');
   let error = $state('');
   let canEdit = $state(false);
-  let confirming = $state(false);
+  // svelte-ignore state_referenced_locally
+  let confirming = $state(confirmDeletion);
+  let open = $state(true);
+  let adding = $state(false);
+  let titleInput = $state<HTMLInputElement>();
   let commandAccount = '';
+  let deleting = $derived(confirming || pending?.kind === 'delete');
   const label = (entry: Entry) =>
     entry.placement?.exercise.name ??
     entry.draft?.exercise?.name ??
@@ -53,6 +63,25 @@
   const variantID = (entry: Entry) =>
     entry.placement?.variantId ??
     (entry.draft?.intent.kind === 'reuseVariant' ? entry.draft.intent.variantId : undefined);
+
+  function configurationSummary(entry: Entry): string {
+    const variant = entry.placement?.variant ?? entry.draft?.reviewedVariant;
+    if (variant) {
+      const weights = variant.targetSets.map((target) => Number(target.targetWeight));
+      const minimum = Math.min(...weights);
+      const maximum = Math.max(...weights);
+      const weight = !weights.length
+        ? ''
+        : minimum === maximum
+          ? `${minimum} kg`
+          : `${minimum}–${maximum} kg`;
+      return `${variant.prescribedSets} sets${weight ? ` · ${weight}` : ''}`;
+    }
+    const intent = entry.draft?.intent;
+    return intent && intent.kind !== 'reuseVariant'
+      ? `${intent.configuration.prescribedSets} sets · ${intent.configuration.initialWeight} kg`
+      : '';
+  }
 
   beforeNavigate(({ cancel }) => {
     if (pending) {
@@ -101,7 +130,7 @@
   async function save() {
     if (saveState === 'saving') return;
     if (!pending) {
-      if (resolver.hasInput() && !resolver.add()) return;
+      if (resolver?.hasInput() && !resolver.add()) return;
       if (!name.trim() || [...name.trim()].length > 100) {
         error = 'Use a session name of 1–100 characters.';
         return;
@@ -134,7 +163,6 @@
     };
     commandAccount = get(user)?.id ?? '';
     onbusy(true);
-    confirming = false;
     await send();
   }
   async function send() {
@@ -182,61 +210,171 @@
 </script>
 
 <svelte:window onbeforeunload={beforeUnload} />
-<section aria-label="Edit saved session">
-  <h3>Edit session</h3>
-  <fieldset disabled={pending !== null}>
-    <label>Session name <input aria-label="Session name" maxlength="100" bind:value={name} /></label
-    >
-    <p>
-      Plan changes apply to the next workout. Removing a placement keeps its exercise, targets and
-      history.
-    </p>
-    {#if !entries.length}<p>This plan is empty. Add a variant before starting a workout.</p>{/if}
-    {#each entries as entry, index (entry.id)}
-      <article>
-        <h4>
-          {index + 1}. {label(entry)} · {entry.placement?.variant.name ??
-            entry.draft?.reviewedVariant?.name ??
-            (entry.draft?.intent.kind === 'createVariant' ? entry.draft.intent.name : 'Standard')}
-        </h4>
-        <button
-          aria-label={`Move ${label(entry)} up`}
-          disabled={index === 0}
-          onclick={() => move(index, -1)}>Move up</button
+<EditScreen
+  bind:open={
+    () => open,
+    (value) => {
+      open = value;
+      if (!value) oncancel();
+    }
+  }
+  dismissible={pending === null}
+  title={deleting ? 'Are you absolutely sure?' : 'Edit session'}
+>
+  <section aria-label="Edit saved session">
+    {#if deleting}
+      <Alert.Description
+        >Delete <strong>{session.name}</strong>? This removes the saved session. Your reusable
+        exercises, variants and completed history will stay.</Alert.Description
+      >
+      <div class="edit-actions">
+        <Alert.Cancel disabled={pending !== null}>No, take me back</Alert.Cancel>
+        <Alert.Action
+          class="bg-destructive text-white"
+          disabled={pending !== null}
+          onclick={(event) => {
+            event.preventDefault();
+            void confirmDelete();
+          }}>Confirm delete</Alert.Action
         >
-        <button
-          aria-label={`Move ${label(entry)} down`}
-          disabled={index === entries.length - 1}
-          onclick={() => move(index, 1)}>Move down</button
+      </div>
+    {:else}
+      <Alert.Description>
+        No changes are made until you press confirm. What do you want to change with <strong
+          >{session.name}</strong
+        >?
+      </Alert.Description>
+      <fieldset disabled={pending !== null}>
+        <div class="title-row">
+          <input
+            bind:this={titleInput}
+            class={['clean-input', { unedited: name.trim() === session.name }]}
+            aria-label="Session name"
+            maxlength="100"
+            bind:value={name}
+          />
+          <button
+            type="button"
+            class="title-input-icon"
+            aria-label={name.trim() === session.name ? 'Edit session title' : 'Undo title edit'}
+            onclick={() => {
+              if (name.trim() === session.name) titleInput?.focus();
+              else name = session.name;
+            }}
+          >
+            <Icon
+              icon={name.trim() === session.name
+                ? 'material-symbols:edit-outline-rounded'
+                : 'material-symbols:undo-rounded'}
+              width={24}
+            />
+          </button>
+        </div>
+        <section class="exercise-overview">
+          <p class="exercise-overview-title">Exercises in this session</p>
+          <p class="exercise-overview-copy">
+            Plan changes apply to the next workout. Removing a placement keeps its exercise, targets
+            and history.
+          </p>
+          {#if !entries.length}<p class="exercise-overview-copy">
+              This plan is empty. Add a variant before starting a workout.
+            </p>{/if}
+          <div class="exercise-list">
+            {#each entries as entry, index (entry.id)}
+              <div class={['exercise-row', { 'new-exercise': entry.draft }]}>
+                <div>
+                  <p class="exercise-order">Exercise {index + 1}</p>
+                  <p class="exercise-name">
+                    {label(entry)} · {entry.placement?.variant.name ??
+                      entry.draft?.reviewedVariant?.name ??
+                      (entry.draft?.intent.kind === 'createVariant'
+                        ? entry.draft.intent.name
+                        : 'Standard')}
+                  </p>
+                  <p class="exercise-meta">{configurationSummary(entry)}</p>
+                </div>
+                <div class="placement-actions">
+                  <button
+                    class="title-input-icon"
+                    aria-label={`Move ${label(entry)} up`}
+                    disabled={index === 0}
+                    onclick={() => move(index, -1)}
+                    ><Icon icon="material-symbols:arrow-upward-rounded" width={18} /></button
+                  >
+                  <button
+                    class="title-input-icon"
+                    aria-label={`Move ${label(entry)} down`}
+                    disabled={index === entries.length - 1}
+                    onclick={() => move(index, 1)}
+                    ><Icon icon="material-symbols:arrow-downward-rounded" width={18} /></button
+                  >
+                </div>
+              </div>
+              <button
+                class="title-input-icon"
+                aria-label={`Remove ${label(entry)}`}
+                onclick={() => (entries = entries.filter((item) => item.id !== entry.id))}
+                ><Icon
+                  icon="material-symbols:delete-outline-rounded"
+                  width={30}
+                  color="gray"
+                /></button
+              >
+            {/each}
+          </div>
+          {#if !adding}
+            <button
+              class="title-input-icon add-placement"
+              aria-label="Add an exercise"
+              onclick={() => (adding = true)}
+              ><Icon
+                icon="material-symbols:add-circle-outline-rounded"
+                width={30}
+                color="grey"
+              /></button
+            >
+          {:else}
+            <div class="add-exercise">
+              <p class="exercise-overview-title">Add an exercise</p>
+              <DraftItemResolver
+                bind:this={resolver}
+                onresolve={append}
+                disabled={pending !== null}
+              />
+            </div>
+          {/if}
+        </section>
+      </fieldset>
+    {/if}
+    {#if saveState !== 'idle'}<p role="status">
+        {saveState === 'saving' ? 'Saving' : saveState === 'saved' ? 'Saved' : 'Not saved'}
+      </p>{/if}
+    {#if error}<p role="alert">{error}</p>{/if}
+    {#if saveState === 'failed'}
+      <button class="buttonClass" onclick={send}>Retry</button>
+      {#if canEdit}<button class="buttonClass minimal" onclick={release}>Edit draft</button><button
+          class="buttonClass minimal"
+          onclick={reload}>Discard draft and reload current plan</button
+        >{/if}
+    {/if}
+    {#if !deleting}
+      <div class="edit-actions">
+        <Alert.Cancel disabled={pending !== null}>Cancel</Alert.Cancel>
+        <Alert.Action
+          class="bg-accent"
+          disabled={pending !== null}
+          onclick={(event) => {
+            event.preventDefault();
+            void save();
+          }}>{saveState === 'saving' ? 'Saving...' : 'Confirm edits'}</Alert.Action
         >
-        <button
-          aria-label={`Remove ${label(entry)}`}
-          onclick={() => (entries = entries.filter((item) => item.id !== entry.id))}>Remove</button
-        >
-      </article>
-    {/each}
-    <h4>Add a placement</h4>
-    <DraftItemResolver bind:this={resolver} onresolve={append} disabled={pending !== null} />
-  </fieldset>
-  {#if saveState !== 'idle'}<p role="status">
-      {saveState === 'saving' ? 'Saving' : saveState === 'saved' ? 'Saved' : 'Not saved'}
-    </p>{/if}
-  {#if error}<p role="alert">{error}</p>{/if}
-  {#if saveState === 'failed'}
-    <button onclick={send}>Retry</button>
-    {#if canEdit}<button onclick={release}>Edit draft</button><button onclick={reload}
-        >Discard draft and reload current plan</button
-      >{/if}
-  {:else}<button disabled={pending !== null} onclick={save}>Save session</button>{/if}
-  <button disabled={pending !== null} onclick={oncancel}>Cancel</button>
-  {#if confirming}
-    <p>Delete this session plan? Your exercises and completed history will stay.</p>
-    <button disabled={pending !== null} onclick={confirmDelete}>Confirm delete</button>
-    <button disabled={pending !== null} onclick={() => (confirming = false)}>Keep session</button>
-  {:else}<button disabled={pending !== null} onclick={() => (confirming = true)}
-      >Delete session</button
-    >{/if}
-</section>
+      </div>
+      <button class="delete-session" disabled={pending !== null} onclick={() => (confirming = true)}
+        >Delete session</button
+      >
+    {/if}
+  </section>
+</EditScreen>
 
 <style>
   section {
@@ -247,18 +385,125 @@
     padding: 0;
     min-width: 0;
   }
-  input {
-    display: block;
-    width: 100%;
-    box-sizing: border-box;
+  .title-row {
+    display: flex;
+    gap: 1rem;
   }
-  article {
+  .clean-input {
+    font-size: 1.5rem;
+    font-weight: bold;
+    border: none;
+    outline: none;
+    background: transparent;
+    width: 80%;
+    font-family: inherit;
+    margin: 1rem 0;
+    border-radius: 10px;
+    transition:
+      color 0.18s ease,
+      opacity 0.18s ease;
+  }
+  .clean-input.unedited {
+    color: gray;
+  }
+  .title-input-icon {
+    background-color: transparent;
+    padding: 0;
+    box-shadow: none;
+    transition:
+      opacity 0.18s ease,
+      transform 0.18s ease;
+  }
+  .title-input-icon:disabled {
+    opacity: 0.3;
+  }
+  .exercise-overview {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
     padding: 1rem;
-    margin: 0.5rem 0;
-    border-radius: 15px;
-    background: var(--surface-low);
+    border-radius: 0.75rem;
+    background: var(--card);
   }
-  button {
-    margin: 0.25rem;
+  .exercise-overview-title {
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .exercise-overview-copy {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+  .exercise-list {
+    display: grid;
+    grid-template-columns: 6fr 1fr;
+    align-items: center;
+    gap: 0.5rem;
+    max-height: 14rem;
+    overflow-y: auto;
+  }
+  .exercise-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: 0.75rem;
+    background: var(--surface-middle);
+    border: 1px solid var(--border);
+  }
+  .exercise-row.new-exercise {
+    border-color: rgba(96, 255, 96, 0.243);
+    background-color: color-mix(in srgb, var(--surface-middle), rgb(96, 255, 96) 5%);
+  }
+  .exercise-order {
+    margin: 0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .exercise-name {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .exercise-meta {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+  .placement-actions {
+    display: flex;
+    gap: 0.4rem;
+  }
+  .add-placement {
+    display: flex;
+    justify-content: center;
+  }
+  .add-exercise {
+    display: grid;
+    gap: 0.75rem;
+  }
+  .edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+  .delete-session {
+    display: block;
+    margin: 1rem auto 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    box-shadow: none;
   }
 </style>

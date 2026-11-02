@@ -14,5 +14,10 @@ export default defineConfig({
       '$app/state': path.resolve('./src/test/page-state.ts'),
     },
   },
-  test: { environment: 'jsdom', include: ['src/**/*.test.ts'], restoreMocks: true },
+  test: {
+    environment: 'jsdom',
+    include: ['src/**/*.test.ts'],
+    setupFiles: ['./src/test/transitions.ts'],
+    restoreMocks: true,
+  },
 });

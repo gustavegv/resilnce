@@ -8,13 +8,21 @@ review.
 
 The supplied 26 muscle groups are defined in
 [`predefined/muscle_groups.go`](../../apps/server/predefined/muscle_groups.go). The `predefined`
-package can also hold the planned exercise-name catalog later. `MuscleGroups()` returns a copy of
+package also holds the exercise-name suggestions in `exercises.go`. `MuscleGroups()` returns a copy of
 the list, preserving the supplied codes, labels, and `sort_order` values. Shared sort-order values
 are intentional; ties retain the list's declared order.
 
 Exercises select zero or more codes from this catalog and store them in an array. There is no
 primary/secondary distinction, database seed data, or muscle-group table. The read-only metadata
-endpoint and exercise validation remain part of the upcoming implementation.
+endpoint and exercise validation are implemented.
+
+## Exercise-name suggestions: implemented
+
+`predefined.ExerciseNames()` returns ten common gym exercise names for autocomplete. The
+read-only `/api/training/catalog` response exposes them as `exerciseNames`, alongside
+`muscleGroups`. This metadata creates no database records. Users select a suggestion to
+configure a private exercise and Standard variant, or select a matching personal exercise to
+review and reuse its variants. Personal names take precedence over duplicate suggestions.
 
 ## Proposed implementation defaults
 

@@ -17,7 +17,9 @@ afterEach(async () => {
   vi.clearAllMocks();
 });
 function button(text: string) {
-  return [...document.querySelectorAll('button')].find((el) => el.textContent?.trim() === text)!;
+  return [...document.querySelectorAll('button')].find(
+    (el) => el.getAttribute('aria-label') === text || el.textContent?.trim() === text
+  )!;
 }
 function input(label: string, value: string) {
   const el = document.querySelector<HTMLInputElement>(`[aria-label="${label}"]`)!;
@@ -67,6 +69,7 @@ const variant = {
 test('generated suggestions require explicit current-config review and retry one exact atomic save', async () => {
   let posts = 0;
   const http = vi.fn(async (url: string, options?: RequestInit) => {
+    if (url.endsWith('/catalog')) return new Response(JSON.stringify({ exerciseNames: [] }));
     if (url.includes('/exercises'))
       return new Response(JSON.stringify({ exercises: [{ exercise, variants: [variant] }] }));
     if (++posts === 1) throw new TypeError('response lost');
@@ -102,7 +105,11 @@ test('generated suggestions require explicit current-config review and retry one
 
 test.each([
   ['broken JSON', '[{'],
+  ['non-array draft', '{}'],
+  ['null draft', 'null'],
+  ['null suggestion', '[null]'],
   ['empty draft', '[]'],
+  ['too many sets', JSON.stringify([{ ...suggestion, sets: 21 }])],
   ['invalid sets', JSON.stringify([{ ...suggestion, sets: 2.5 }])],
   ['invalid precision', JSON.stringify([{ ...suggestion, weight: 40.001 }])],
   ['invalid name', JSON.stringify([{ ...suggestion, name: '   ' }])],
@@ -110,7 +117,7 @@ test.each([
   ['unknown muscle code', JSON.stringify([{ ...suggestion, muscleGroupCodes: ['pecs'] }])],
   ['unknown field', JSON.stringify([{ ...suggestion, weightPerSet: [10, 20] }])],
 ])(
-  'invalid generated %s stays correctable and cancellation performs no domain writes',
+  'invalid generated %s stays private and cancellation performs no domain writes',
   async (_case, raw) => {
     const http = vi.fn(
       async (_url: string) => new Response(JSON.stringify({ muscleGroups: [{ code: 'chest' }] }))
@@ -118,13 +125,15 @@ test.each([
     vi.stubGlobal('fetch', http);
     loadDraft(raw);
     await vi.waitFor(() =>
-      expect(document.querySelector('[aria-label="Suggested draft JSON"]')).not.toBeNull()
+      expect(document.body.textContent).toContain('This generated session could not be loaded.')
     );
-    expect(
-      (document.querySelector('[aria-label="Suggested draft JSON"]') as HTMLTextAreaElement).value
-    ).toBe(raw);
-    button('Finish and save session').click();
-    await tick();
+    expect(document.querySelector('textarea')).toBeNull();
+    expect(document.querySelector('[aria-label="Suggested draft JSON"]')).toBeNull();
+    expect(button('Edit suggested draft')).toBeUndefined();
+    expect(button('Review corrected draft')).toBeUndefined();
+    expect(button('Finish and save session')).toBeUndefined();
+    expect(document.body.textContent).not.toContain('JSON');
+    expect(document.body.textContent).not.toContain('Correct the draft');
     expect(http.mock.calls.some(([url]) => url.includes('/sessions/create'))).toBe(false);
     button('Cancel generated session').click();
     await vi.waitFor(() => expect(goto).toHaveBeenCalledWith('/create'));
@@ -163,7 +172,7 @@ test('repeated suggested names are reviewed independently and duplicate placemen
   await vi.waitFor(() => expect(goto).toHaveBeenCalledWith('/create'));
 });
 
-test('a corrected generated draft can explicitly create a named variant with its suggested settings', async () => {
+test('a generated draft can explicitly create a named variant with its suggested settings', async () => {
   const http = vi.fn(async (url: string, options?: RequestInit) => {
     if (url.endsWith('/catalog'))
       return new Response(JSON.stringify({ muscleGroups: [{ code: 'chest' }] }));
@@ -172,15 +181,11 @@ test('a corrected generated draft can explicitly create a named variant with its
     return new Response(JSON.stringify({ session: { id: 'saved' } }));
   });
   vi.stubGlobal('fetch', http);
-  loadDraft('[{');
-  await vi.waitFor(() => expect(button('Review corrected draft')).toBeDefined());
-  input('Suggested draft JSON', JSON.stringify([{ ...suggestion, muscleGroupCodes: ['chest'] }]));
-  await tick();
-  button('Review corrected draft').click();
+  loadDraft(JSON.stringify([{ ...suggestion, muscleGroupCodes: ['chest'] }]));
   await vi.waitFor(() => expect(button('Bench press')).toBeDefined());
   button('Bench press').click();
   await tick();
-  button('Create named variant').click();
+  button('Create new variant').click();
   await tick();
   input('Variant name', 'Suggested');
   await tick();
@@ -218,6 +223,7 @@ test('a stale generated review preserves its choices and requires explicit re-re
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, options?: RequestInit) => {
+      if (url.endsWith('/catalog')) return new Response(JSON.stringify({ exerciseNames: [] }));
       if (url.includes('/exercises/'))
         return new Response(JSON.stringify({ exercise, variants: [current] }));
       if (url.includes('/exercises?'))
@@ -291,7 +297,9 @@ test('repeated new-exercise suggestions cannot silently merge and valid groups f
   expect(document.body.textContent).toContain('creation name is already');
   expect(document.querySelectorAll('li.sortable-item')).toHaveLength(1);
   input('Exercise name', 'Incline bench press');
-  await tick();
+  await vi.waitFor(() =>
+    expect(button('Create new exercise “Incline bench press” with Standard')).toBeDefined()
+  );
   button('Create new exercise “Incline bench press” with Standard').click();
   await tick();
   button('Add to session').click();
@@ -310,4 +318,74 @@ test('repeated new-exercise suggestions cannot silently merge and valid groups f
     ['Bench press', ['chest']],
     ['Incline bench press', []],
   ]);
+});
+
+test('removing suggestions advances review while preserving accepted choices and performs no writes', async () => {
+  const http = vi.fn(async (url: string) => {
+    if (url.endsWith('/catalog')) return new Response(JSON.stringify({ exerciseNames: [] }));
+    return new Response(
+      JSON.stringify({
+        exercises: url.includes('q=Bench') ? [{ exercise, variants: [variant] }] : [],
+      })
+    );
+  });
+  vi.stubGlobal('fetch', http);
+  loadDraft(
+    JSON.stringify([
+      suggestion,
+      { ...suggestion, name: 'Row' },
+      { ...suggestion, name: 'Deadlift' },
+    ])
+  );
+  await vi.waitFor(() => expect(button('Bench press')).toBeDefined());
+  button('Bench press').click();
+  await tick();
+  button('Reuse Heavy unchanged').click();
+  await vi.waitFor(() => expect(document.body.textContent).toContain('Review suggestion 2 of 3'));
+  expect(document.querySelector<HTMLInputElement>('[aria-label="Exercise name"]')!.value).toBe(
+    'Row'
+  );
+  button('Remove this suggestion').click();
+  await vi.waitFor(() => expect(document.body.textContent).toContain('Review suggestion 3 of 3'));
+  expect(document.querySelector<HTMLInputElement>('[aria-label="Exercise name"]')!.value).toBe(
+    'Deadlift'
+  );
+  await vi.waitFor(() =>
+    expect(button('Create new exercise “Deadlift” with Standard')).toBeDefined()
+  );
+  button('Create new exercise “Deadlift” with Standard').click();
+  await tick();
+  const add = button('Add to session');
+  const remove = button('Remove this suggestion');
+  expect(add.parentElement).toBe(remove.parentElement);
+  expect(remove.title).toBe('Remove this suggestion');
+  remove.click();
+  await tick();
+  expect(document.body.textContent).not.toContain('Review suggestion');
+  expect([...document.querySelectorAll('li.sortable-item h3')].map((el) => el.textContent)).toEqual(
+    ['Bench press']
+  );
+  expect(document.querySelector('textarea')).toBeNull();
+  expect(button('Edit suggested draft')).toBeUndefined();
+  expect(http.mock.calls.some(([url]) => url.includes('/sessions/create'))).toBe(false);
+});
+
+test('an invalid generated session can become a clean manual session without remounting', async () => {
+  const http = vi.fn(
+    async (_url: string) => new Response(JSON.stringify({ exerciseNames: [], exercises: [] }))
+  );
+  vi.stubGlobal('fetch', http);
+  loadDraft('[{');
+  await vi.waitFor(() => expect(button('Start manually')).toBeDefined());
+  button('Start manually').click();
+  await vi.waitFor(() => expect(goto).toHaveBeenCalledWith('/create/manual'));
+  expect(sessionStorage.getItem('workoutPayload')).toBeNull();
+  expect(document.querySelector('[aria-label="Exercise name"]')).not.toBeNull();
+  expect(document.body.textContent).toContain('Add an exercise');
+  expect(button('Finish and save session')).toBeDefined();
+  expect(button('Cancel generated session')).toBeUndefined();
+  expect(document.querySelector('[role="alert"]')).toBeNull();
+  expect(document.querySelector('textarea')).toBeNull();
+  expect(document.querySelectorAll('li.sortable-item')).toHaveLength(0);
+  expect(http.mock.calls.some(([url]) => url.includes('/sessions/create'))).toBe(false);
 });

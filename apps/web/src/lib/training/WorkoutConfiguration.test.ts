@@ -118,7 +118,8 @@ const field = (name: string) => {
   const label = [...document.querySelectorAll('label')].find(
     (l) => l.textContent?.trim() === name
   )!;
-  return document.getElementById(label.htmlFor) as HTMLInputElement;
+  return (document.getElementById(label.htmlFor) ??
+    label.querySelector('input')) as HTMLInputElement;
 };
 const enter = (name: string, value: string) => {
   const input = field(name);
@@ -245,7 +246,7 @@ test('unresolved configuration retains fields, pauses recording and retries exac
   );
   expect(field('Variant name').value).toBe('New heavy');
   expect(document.body.textContent).toContain('Not saved');
-  expect(button('Record set').disabled).toBe(true);
+  expect(document.querySelector<HTMLButtonElement>('.stepper-count')!.disabled).toBe(true);
   expect(button('Edit exercise').disabled).toBe(true);
   const cancel = vi.fn();
   const navigate = vi.mocked(beforeNavigate).mock.calls.at(-1)![0];
@@ -260,20 +261,16 @@ test('unresolved configuration retains fields, pauses recording and retries exac
   expect(field('Variant name').matches(':disabled')).toBe(true);
   acknowledge(response(fixture));
   await vi.waitFor(() => expect(document.body.textContent).toContain('Active workout · Saved'));
-  expect(button('Record set').disabled).toBe(false);
+  expect(document.querySelector<HTMLButtonElement>('.stepper-count')!.disabled).toBe(false);
 });
 
-test('configuration cannot overtake unacknowledged recording or unsent rep input', async () => {
+test('configuration cannot overtake an unresolved main-control recording', async () => {
   const fetchMock = vi
     .fn()
     .mockResolvedValueOnce(response(fixture))
     .mockRejectedValueOnce(new Error('Recording response lost'));
   await open(fetchMock);
-  const reps = document.querySelector('input')!;
-  reps.value = '8';
-  reps.dispatchEvent(new Event('input', { bubbles: true }));
-  await vi.waitFor(() => expect(button('Edit exercise').disabled).toBe(true));
-  button('Record set').click();
+  document.querySelector<HTMLButtonElement>('.stepper-count')!.click();
   await vi.waitFor(() => expect(document.body.textContent).toContain('Recording response lost'));
   expect(button('Edit exercise').disabled).toBe(true);
   button('Edit exercise').click();
@@ -312,7 +309,7 @@ test.each(['accept', 'reapply'])(
     expect(document.body.textContent).toContain('threshold 8');
     expect(fetchMock).toHaveBeenCalledTimes(3);
     if (choice === 'accept') {
-      button('Accept server state and discard local input').click();
+      button('Accept server state').click();
       await vi.waitFor(() => expect(document.body.textContent).not.toContain('Editing exercise'));
       expect(fetchMock).toHaveBeenCalledTimes(3);
     } else {
@@ -384,7 +381,7 @@ test('finalized configuration conflict retains the form and disables reapply unt
   await vi.waitFor(() => expect(document.body.textContent).toContain('Current server revision 2'));
   expect(field('Variant name').value).toBe('My input');
   expect(button('Reapply local input to reviewed revision').disabled).toBe(true);
-  button('Accept server state and discard local input').click();
+  button('Accept server state').click();
   await vi.waitFor(() => expect(document.body.textContent).toContain('Workout ended'));
   expect(fetchMock).toHaveBeenCalledTimes(3);
   expect(document.querySelectorAll('input')).toHaveLength(0);

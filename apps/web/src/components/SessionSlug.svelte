@@ -6,11 +6,13 @@
     onPress,
     onDel,
     slug,
+    disabled = false,
   }: {
     onEdit?: () => void;
     onPress: () => void;
     onDel?: () => void;
     slug: { name: string; date?: Date; undatedLabel?: string };
+    disabled?: boolean;
   } = $props();
 
   function prs() {
@@ -64,7 +66,7 @@
 
 <div class="inner-cont alt">
   <div class="base-btn alt" style="width:{sty}">
-    <button class="start-side" onclick={prs}>
+    <button class="start-side" {disabled} onclick={prs}>
       <p>{slug.name}</p>
       <p class="date">{slug.date ? timeAgo(slug.date) : (slug.undatedLabel ?? 'Never run')}</p>
     </button>
@@ -72,6 +74,7 @@
     {#if onEdit || onDel}<button
         class="dots-cont"
         aria-label={`Options for ${slug.name}`}
+        {disabled}
         onclick={sideway}
       >
         <Icon icon="uiw:more" fill="#fff" width={16}></Icon>
@@ -79,10 +82,20 @@
   </div>
 
   {#if onEdit || onDel}<div class="under-cont">
-      {#if onEdit}<button aria-label={`Edit ${slug.name}`} class="icon-under edit" onclick={edt}>
+      {#if onEdit}<button
+          {disabled}
+          aria-label={`Edit ${slug.name}`}
+          class="icon-under edit"
+          onclick={edt}
+        >
           <Icon icon="material-symbols:edit-outline" width={24} fill="#FFC107" />
         </button>{/if}
-      {#if onDel}<button aria-label={`Delete ${slug.name}`} class="icon-under del" onclick={del}>
+      {#if onDel}<button
+          {disabled}
+          aria-label={`Delete ${slug.name}`}
+          class="icon-under del"
+          onclick={del}
+        >
           <Icon icon="material-symbols:delete-outline-rounded" width={24} fill="#dc3545" />
         </button>{/if}
     </div>{/if}

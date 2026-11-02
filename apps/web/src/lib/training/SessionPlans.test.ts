@@ -1,6 +1,7 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { mount, unmount, tick } from 'svelte';
 import SessionPlans from './SessionPlans.svelte';
+import { goto } from '$app/navigation';
 
 let component: ReturnType<typeof mount> | undefined;
 afterEach(async () => {
@@ -8,6 +9,46 @@ afterEach(async () => {
   component = undefined;
   document.body.innerHTML = '';
   vi.unstubAllGlobals();
+});
+
+test('opens the original session edit dialog from the sliding three-dot menu', async () => {
+  const session = {
+    id: 'plan',
+    name: 'Push',
+    revision: '1',
+    createdAt: '2026-11-01T00:00:00Z',
+    lastPerformedAt: null,
+    lastPerformedStatus: 'never',
+    placements: [],
+  };
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(
+      async (url: string) =>
+        new Response(
+          JSON.stringify(url.endsWith('/sessions') ? { sessions: [session] } : { session })
+        )
+    )
+  );
+  component = mount(SessionPlans, { target: document.body });
+  await vi.waitFor(() => expect(document.body.textContent).toContain('Never run'));
+  const options = document.querySelector<HTMLButtonElement>('[aria-label="Options for Push"]');
+  expect(options).not.toBeNull();
+  options!.click();
+  document.querySelector<HTMLButtonElement>('[aria-label="Edit Push"]')!.click();
+  await vi.waitFor(() => expect(document.querySelector('[role="alertdialog"]')).not.toBeNull());
+  expect(document.querySelector('[aria-label="Session name"]')).not.toBeNull();
+  expect(document.querySelector('[aria-label="Delete Push"]')).not.toBeNull();
+  document.querySelector<HTMLButtonElement>('[aria-label="Close dialog"]')!.click();
+  await tick();
+  expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+  document.querySelector<HTMLButtonElement>('[aria-label="Delete Push"]')!.click();
+  await vi.waitFor(() =>
+    expect(document.querySelector('[role="alertdialog"]')?.textContent).toContain(
+      'Are you absolutely sure?'
+    )
+  );
+  expect(document.querySelector('[aria-label="Session name"]')).toBeNull();
 });
 
 test('keeps the inclusive fourteen-day boundary, unknown imported dates and categories distinct', async () => {
@@ -47,7 +88,7 @@ test('keeps the inclusive fourteen-day boundary, unknown imported dates and cate
   expect(document.body.textContent).toContain('Push boundary');
   expect(document.body.textContent).not.toContain('Unknown plan');
 });
-test('lists never-run plans honestly and reads current ordered variant targets by UUID', async () => {
+test('starts a never-run plan directly using its UUID and current revision', async () => {
   const session = {
     id: '20000000-0000-4000-8000-000000000001',
     name: 'Upper body',
@@ -97,7 +138,18 @@ test('lists never-run plans honestly and reads current ordered variant targets b
   const fetchMock = vi
     .fn()
     .mockResolvedValueOnce(new Response(JSON.stringify({ sessions: [session] })))
-    .mockResolvedValueOnce(new Response(JSON.stringify({ session })));
+    .mockResolvedValueOnce(new Response(JSON.stringify({ session })))
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          workout: {
+            id: 'workout',
+            status: 'active',
+            sourceSession: { id: session.id, name: session.name },
+          },
+        })
+      )
+    );
   vi.stubGlobal('fetch', fetchMock);
   component = mount(SessionPlans, { target: document.body });
   await vi.waitFor(() => expect(document.body.textContent).toContain('Never run'));
@@ -105,17 +157,11 @@ test('lists never-run plans honestly and reads current ordered variant targets b
   [...document.querySelectorAll('button')]
     .find((el) => el.textContent?.includes('Upper body') && el.textContent?.includes('Never run'))!
     .click();
-  await vi.waitFor(() => expect(document.body.textContent).toContain('40.25'));
-  expect(document.body.textContent).toContain('Standard');
-  expect(document.body.textContent).toContain('50.00');
-  expect(fetchMock.mock.calls[1][0]).toBe(
-    'https://backend.example/api/training/sessions/' + session.id
-  );
-  [...document.querySelectorAll('button')]
-    .find((el) => el.textContent?.trim() === 'Lower body')!
-    .click();
-  await tick();
-  expect(document.body.textContent).not.toContain('Upper bodyNever run');
+  expect(goto).toHaveBeenCalledWith('/workout/start/' + session.id);
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  expect(document.body.textContent).not.toContain('Loading plan');
+  expect(document.body.textContent).not.toContain('Start workout');
+  expect(document.body.textContent).not.toContain('Continue workout');
 });
 
 test('an unresolved maintenance save disables workout start and session switching', async () => {
@@ -171,15 +217,14 @@ test('an unresolved maintenance save disables workout start and session switchin
   const button = (text: string) =>
     [...document.querySelectorAll('button')].find((el) => el.textContent?.trim() === text)!;
   await vi.waitFor(() => expect(document.body.textContent).toContain('Never run'));
-  [...document.querySelectorAll('button')]
-    .find((el) => el.textContent?.includes('Never run'))!
-    .click();
-  await vi.waitFor(() => expect(button('Edit session')).toBeDefined());
-  button('Edit session').click();
-  await tick();
-  button('Save session').click();
+  document.querySelector<HTMLButtonElement>('[aria-label="Edit Push"]')!.click();
+  await vi.waitFor(() => expect(button('Confirm edits')).toBeDefined());
+  button('Confirm edits').click();
   await vi.waitFor(() => expect(document.body.textContent).toContain('Not saved'));
-  expect(button('Start workout').disabled).toBe(true);
+  expect(document.querySelector<HTMLButtonElement>('.start-side')!.disabled).toBe(true);
+  expect(document.querySelector<HTMLButtonElement>('[aria-label="Close dialog"]')!.disabled).toBe(
+    true
+  );
   expect(button('Lower body').disabled).toBe(true);
   expect(fetchMock.mock.calls.filter((call) => call[0].includes('/workouts/start'))).toHaveLength(
     0

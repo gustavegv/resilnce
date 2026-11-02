@@ -63,7 +63,7 @@ Route spelling is implementation detail; these are the required boundaries.
 | Area           | Operations and important behavior                                                                                                    |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | Library        | Search/browse exercises, create exercise with Standard variant, create/configure variants, assign backend-defined muscle-group codes |
-| Metadata       | Return the code-defined muscle-group catalog with display labels and ordering for frontend selection                                 |
+| Metadata       | Return code-defined muscle groups and name-only exercise suggestions; reading metadata creates no library records                                 |
 | Session plans  | Create/edit ordered variant references, attach existing variants, remove placements, delete plan                                     |
 | Active workout | Start from plan or free mode, fetch/resume current workout, add/remove workout-only work                                             |
 | Set recording  | Persist actual values and set states, add bonus sets, skip prescribed sets                                                           |

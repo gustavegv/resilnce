@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { beforeNavigate } from '$app/navigation';
+  import { beforeNavigate, goto } from '$app/navigation';
+  import { onMount } from 'svelte';
   import { resolve } from '$app/paths';
   import { get } from 'svelte/store';
   import { user } from '$lib/stores/appState';
@@ -9,8 +10,14 @@
   let {
     session,
     disabled = false,
+    autostart = false,
     onpending = (_pending: boolean) => {},
-  }: { session: Session; disabled?: boolean; onpending?: (pending: boolean) => void } = $props();
+  }: {
+    session: Session;
+    disabled?: boolean;
+    autostart?: boolean;
+    onpending?: (pending: boolean) => void;
+  } = $props();
   let reviewed = $state.raw<Session | null>(null);
   let plan = $derived(reviewed ?? session);
   let pending = $state.raw<StartWorkoutCommand | null>(null);
@@ -50,6 +57,8 @@
       pending = null;
       onpending(false);
       saveState = 'saved';
+      if (autostart)
+        void goto(resolve('/workout/[id]', { id: workout.id }), { replaceState: true });
     } catch (failure) {
       saveState = 'failed';
       error = failure instanceof Error ? failure.message : 'Unable to start the workout.';
@@ -67,6 +76,9 @@
     onpending(true);
     void save();
   }
+  onMount(() => {
+    if (autostart) start();
+  });
   async function review() {
     if (!canReview) return;
     try {
@@ -76,6 +88,7 @@
       saveState = 'idle';
       canReview = false;
       error = '';
+      if (autostart) start();
     } catch (failure) {
       error = failure instanceof Error ? failure.message : 'Unable to review the plan.';
     }
@@ -83,7 +96,16 @@
 </script>
 
 <svelte:window onbeforeunload={beforeUnload} />
-{#if workout}
+{#if autostart && unavailable}
+  <p role="alert">
+    {!plan.placements.length
+      ? 'Add an exercise to this session before starting a workout.'
+      : 'This session contains an unavailable exercise or variant. Edit the session before starting.'}
+  </p>
+  <a class="buttonClass" href={resolve('/tracker')}>Return to tracker</a>
+{:else if autostart && saveState !== 'failed'}
+  <p role="status">Loading workout…</p>
+{:else if workout}
   <p role="status">Saved</p>
   {#if workout.sourceSession?.id !== plan.id}<p>
       A workout is already active: {workout.sourceSession?.name ?? 'Workout'}. Continue it before
@@ -94,23 +116,28 @@
         ? 'Workout ready'
         : 'Workout ended'}
     </p>{/if}
-  <a href={resolve('/workout/[id]', { id: workout.id })}>Continue workout</a>
-{:else}
-  <button class="start" onclick={start} disabled={unavailable || pending !== null}
-    >Start workout</button
+  <a class="buttonClass continue" href={resolve('/workout/[id]', { id: workout.id })}
+    >Continue workout</a
   >
+{:else}
+  {#if !autostart}
+    <button class="buttonClass start" onclick={start} disabled={unavailable || pending !== null}
+      >Start workout</button
+    >
+  {/if}
   {#if saveState === 'saving'}<p role="status">Saving…</p>{/if}
   {#if saveState === 'failed'}<p role="status">Not saved</p>
-    <button onclick={save}>Retry</button>{/if}
+    <button class="buttonClass" onclick={save}>Retry</button>{/if}
   {#if error}<p role="alert">{error}</p>{/if}
-  {#if canReview}<button onclick={review}>Review current plan</button>{/if}
+  {#if canReview}<button class="buttonClass minimal" onclick={review}>Review current plan</button
+    >{/if}
 {/if}
 
 <style>
-  .start {
-    background: var(--color-secondary);
-    padding: 0.75rem 1rem;
-    border-radius: 12px;
+  .start,
+  .continue {
+    width: 100%;
+    margin-top: 1rem;
   }
   button:disabled {
     opacity: 0.5;

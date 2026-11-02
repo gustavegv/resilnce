@@ -4,9 +4,13 @@
   let {
     onConfirm,
     finished,
+    disabled = false,
+    label = 'Confirm',
   }: {
     onConfirm?: () => void;
     finished?: boolean;
+    disabled?: boolean;
+    label?: string;
   } = $props();
 
   function handleClick() {
@@ -15,7 +19,7 @@
 </script>
 
 {#if !finished}
-  <button class="confirm-button buttonClass" onclick={handleClick}> Confirm </button>
+  <button class="confirm-button buttonClass" onclick={handleClick} {disabled}> {label} </button>
 {:else}
   <button class="confirm-button diabled buttonClass" onclick={handleClick}> Set saved! ✓</button>
 {/if}

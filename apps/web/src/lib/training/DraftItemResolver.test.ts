@@ -33,7 +33,9 @@ const variant = {
   ],
 };
 function button(text: string) {
-  return [...document.querySelectorAll('button')].find((el) => el.textContent?.includes(text))!;
+  return [...document.querySelectorAll('button')].find(
+    (el) => el.getAttribute('aria-label') === text || el.textContent?.includes(text)
+  )!;
 }
 function input(label: string, value: string) {
   const el = document.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;
@@ -43,13 +45,12 @@ function input(label: string, value: string) {
 
 test('personal autocomplete resolves a reviewed variant identity without applying suggested targets', async () => {
   const resolved: DraftSessionItem[] = [];
-  const http = vi
-    .fn()
-    .mockResolvedValue(
+  const http = vi.fn().mockImplementation(
+    async () =>
       new Response(JSON.stringify({ exercises: [{ exercise, variants: [variant] }] }), {
         status: 200,
       })
-    );
+  );
   vi.stubGlobal('fetch', http);
   component = mount(DraftItemResolver, {
     target: document.body,
@@ -81,7 +82,9 @@ test('personal autocomplete resolves a reviewed variant identity without applyin
     variantId: 'variant-1',
     expectedVariantRevision: '9007199254740993',
   });
-  expect(http.mock.calls[0][0]).toContain('/api/training/exercises?q=Bench%20press');
+  expect(
+    http.mock.calls.some(([url]) => url.includes('/api/training/exercises?q=Bench%20press'))
+  ).toBe(true);
 });
 
 test('creating a named variant preserves the reviewed suggestion even when another variant has identical settings', async () => {
@@ -119,10 +122,26 @@ test('creating a named variant preserves the reviewed suggestion even when anoth
   await tick();
   expect(document.body.textContent).toContain('5.00 kg increase');
   expect(document.body.textContent).toContain('90s rest');
-  button('Create named variant').click();
+  const createVariant = button('Create new variant');
+  expect(document.querySelector('.variant-picker')).not.toBeNull();
+  createVariant.click();
   await tick();
+  expect(document.querySelector('.variant-picker')).toBeNull();
+  expect(button('Reuse Heavy unchanged')).toBeUndefined();
+  expect(document.querySelector('[aria-label="Variant name"]')).not.toBeNull();
   input('Variant name', ' Heavy again ');
   await tick();
+  button('Back to variants').click();
+  await tick();
+  expect(document.querySelector('.variant-picker')).not.toBeNull();
+  expect(document.querySelector('[aria-label="Variant name"]')).toBeNull();
+  expect(resolved).toHaveLength(0);
+  button('Create new variant').click();
+  await tick();
+  expect(document.querySelector<HTMLInputElement>('[aria-label="Variant name"]')!.value).toBe(
+    ' Heavy again '
+  );
+  expect(document.querySelector('.variant-picker')).toBeNull();
   button('Add to session').click();
   await tick();
   expect(resolved[0].intent).toEqual({

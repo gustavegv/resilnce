@@ -25,8 +25,9 @@ func (h HTTP) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/api/training/workouts/sets/record", h.Boundary.Handler("POST", application.ExerciseCentric, true, h.recordSet))
 	mux.HandleFunc("/api/training/catalog", h.Boundary.Handler("GET", application.ExerciseCentric, false, func(w http.ResponseWriter, r *http.Request) {
 		respond(w, struct {
-			MuscleGroups []predefined.MuscleGroup `json:"muscleGroups"`
-		}{predefined.MuscleGroups()}, nil)
+			MuscleGroups  []predefined.MuscleGroup `json:"muscleGroups"`
+			ExerciseNames []string                 `json:"exerciseNames"`
+		}{predefined.MuscleGroups(), predefined.ExerciseNames()}, nil)
 	}))
 	mux.HandleFunc("/api/training/workouts/start", h.Boundary.Handler("POST", application.ExerciseCentric, true, h.startWorkout))
 	mux.HandleFunc("/api/training/workouts/active", h.Boundary.Handler("GET", application.ExerciseCentric, false, h.activeWorkout))
@@ -39,6 +40,7 @@ func (h HTTP) Register(mux *http.ServeMux) {
 }
 func respond(w http.ResponseWriter, value any, err error) {
 	if err != nil {
+		println(err.Error())
 		var domain *Error
 		if errors.As(err, &domain) {
 			application.WriteError(w, domain.Status, domain.Code, domain.Message, domain.Details)

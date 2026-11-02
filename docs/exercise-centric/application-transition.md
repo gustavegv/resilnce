@@ -47,6 +47,23 @@ available within session creation/editing.
 Preserve the existing styles. Stage 1 should make only the interface changes required by the
 new model; later stages introduce their corresponding controls and flows. Detailed navigation,
 styling adjustments follow the existing app rather than introducing a visual redesign.
+Reuse the existing tracking, finish, resume-card, session-menu and edit components,
+adapting their data and adding the necessary controls within their existing layouts.
+Retain the tracker's slide-open edit/delete menu and existing edit dialogs. Keep dialogs
+usable on narrow screens and account status clear of workout controls.
+
+The [Stage 1 problem audit](../spec-errors.md#stage-1-frontend-audit) records
+withdrawn wording and implementation regressions. It is a historical record; its quoted
+passages are not requirements for later stages.
+
+### Workout entry and navigation
+
+Selecting a tracker session opens the workout route immediately; account/plan loading and
+starting happen there with one loading state. Successful start enters the workout without
+a plan preview, a second Start action or a Saved/ready/Continue step. If a workout is already
+active, open it and identify its actual source. Keep safe retries and navigation guards for
+unresolved starts. Back from a workout returns to the tracker. The home Continue workout
+card retains its existing appearance and resumes the actual workout ID.
 
 ### Stage 1 session creation and editing
 
@@ -55,6 +72,13 @@ an existing exercise offers its existing variants or creation of a new variant. 
 exercise also creates its Standard variant. Adding the same variant to multiple sessions reuses
 its shared configuration and progression.
 
+Autocomplete uses a matching-results dropdown and a muted inline suffix for the best prefix
+match. Include the ten backend-defined common exercise-name suggestions alongside private
+library matches, with a matching personal exercise taking precedence. Suggestions are names,
+not shared library records. Existing variants appear as cards, with a ghost outline plus card
+for Create new variant. That choice replaces the cards with the creation form; Back to variants
+returns to the picker without losing entered configuration.
+
 Keep these capabilities within session creation/editing for stage 1. A separate library-management
 screen is a later-stage capability.
 
@@ -62,7 +86,9 @@ AI Quick fill and Program creation remain available in stage 1. Their drafts pas
 review screen that resolves exercise/variant reuse before saving. When suggested settings differ
 from an existing variant, the user chooses between reusing that variant's current configuration
 and creating a new variant from the suggestion. Generated plans never silently overwrite shared
-targets.
+targets. Review uses ordinary exercise/variant fields. Malformed generated output offers
+regeneration or manual creation, without exposing the payload or a raw JSON editor. Cancel is
+a quiet secondary action; Add to session and the smaller trash action share one row.
 
 ### Shared configuration editing
 
@@ -77,7 +103,8 @@ Use tap-to-complete for sets and persist the performed state. Loading or display
 never records them as actual reps. Pending, performed (including explicit zero reps), and skipped
 sets remain distinct. Completing an exercise must resolve pending sets explicitly rather than
 submitting their target values as performance; skipped prescribed sets prevent automatic weight
-progression.
+progression. Keep recording and rep correction on the main set controls. Set options adds
+Skip, Reset and recorded details without duplicating those main-screen inputs or actions.
 
 Stage 1 keeps common-weight editing but displays and preserves each set's individual target
 weight, including unequal imported targets. Only an explicit "Apply weight to all sets" action

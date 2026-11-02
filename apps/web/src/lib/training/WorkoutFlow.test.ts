@@ -64,7 +64,8 @@ test('resume reads workout UUID and shows captured targets separately from actua
   });
   await vi.waitFor(() => expect(document.body.textContent).toContain('Bench press'));
   expect(document.body.textContent).toContain('Heavy');
-  expect(document.body.textContent).toContain('12 reps · 40.25 kg target');
+  expect(document.querySelector('.set-goal')?.textContent).toContain('12');
+  expect(document.querySelector('.set-weight')?.textContent).toBe('40.25 kg target');
   expect(document.body.textContent).toContain('Pending · no performance recorded');
   expect(document.body.textContent).toContain('Performed: 0 reps · 50.00 kg');
   expect(document.body.textContent).not.toContain('99.00');

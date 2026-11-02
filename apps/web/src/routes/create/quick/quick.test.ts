@@ -18,7 +18,9 @@ afterEach(async () => {
   vi.clearAllMocks();
 });
 function button(text: string) {
-  return [...document.querySelectorAll('button')].find((el) => el.textContent?.includes(text))!;
+  return [...document.querySelectorAll('button')].find(
+    (el) => el.getAttribute('aria-label') === text || el.textContent?.includes(text)
+  )!;
 }
 async function generate() {
   component = mount(Quick, { target: document.body });

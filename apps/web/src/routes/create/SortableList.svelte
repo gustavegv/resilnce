@@ -95,6 +95,7 @@
 
 <style>
   .component {
+    isolation: isolate;
     width: 100%;
     display: flex;
     flex-direction: column;

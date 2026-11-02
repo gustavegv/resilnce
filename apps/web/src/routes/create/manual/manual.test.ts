@@ -20,7 +20,9 @@ function input(selector: string, value: string) {
   el.dispatchEvent(new Event('input', { bubbles: true }));
 }
 function button(text: string) {
-  return [...document.querySelectorAll('button')].find((el) => el.textContent?.includes(text))!;
+  return [...document.querySelectorAll('button')].find(
+    (el) => el.getAttribute('aria-label') === text || el.textContent?.includes(text)
+  )!;
 }
 
 test('finishing includes the unadded exercise once and retries the identical atomic command after a lost response', async () => {
@@ -37,6 +39,7 @@ test('finishing includes the unadded exercise once and retries the identical ato
   });
   let posts = 0;
   const fetchMock = vi.fn(async (url: string, _options?: RequestInit) => {
+    if (url.endsWith('/catalog')) return new Response(JSON.stringify({ exerciseNames: [] }));
     if (url.includes('/exercises'))
       return new Response(JSON.stringify({ exercises: [] }), { status: 200 });
     if (++posts === 1) throw new TypeError('response lost');
@@ -126,6 +129,7 @@ test('manual creation keeps variant IDs distinct and preserves an ordered review
   const heavy = { ...standard, id: 'v2', name: 'Heavy', revision: '7' };
   const commands: CreateSessionCommand[] = [];
   const http = vi.fn(async (url: string, options?: RequestInit) => {
+    if (url.endsWith('/catalog')) return new Response(JSON.stringify({ exerciseNames: [] }));
     if (url.includes('/exercises'))
       return new Response(
         JSON.stringify({ exercises: [{ exercise, variants: [standard, heavy] }] }),
@@ -147,7 +151,11 @@ test('manual creation keeps variant IDs distinct and preserves an ordered review
   input('input[type="text"]', 'Bench');
   await tick();
   await vi.waitFor(() => expect(button('Bench press')).toBeDefined());
-  expect(http.mock.calls[0][0]).toBe('https://backend.example/api/training/exercises?q=Bench');
+  expect(
+    http.mock.calls.some(
+      ([url]) => url === 'https://backend.example/api/training/exercises?q=Bench'
+    )
+  ).toBe(true);
   button('Bench press').click();
   await tick();
   button('Reuse Standard unchanged').click();
@@ -217,6 +225,7 @@ test('a stale reuse stays editable and requires an explicit review of current ta
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, options?: RequestInit) => {
+      if (url.endsWith('/catalog')) return new Response(JSON.stringify({ exerciseNames: [] }));
       if (url.includes('/exercises/'))
         return new Response(JSON.stringify({ exercise, variants: [current] }), { status: 200 });
       if (url.includes('/exercises?'))

@@ -176,6 +176,18 @@ PUBLIC_BACKEND_BASE_URL=https://backend.example npm run build --workspace web
 
 ## Personal library selection and mixed drafts
 
+`GET /api/training/catalog` returns `{muscleGroups: [...], exerciseNames: [...]}`. The ten
+exercise-name suggestions live in `predefined/exercises.go`; they have no shared exercise IDs,
+configuration, variants, or history. Reading the catalog never seeds a user's library. Choosing
+a name opens local new-exercise configuration; only an explicit session save creates the private
+exercise and Standard variant. Existing personal matches are shown once and take precedence over
+the same suggested name, retaining the ordinary variant-review flow.
+
+The name input uses a dropdown for matching personal exercises and suggested names. Prefix
+matches offer a muted inline suffix without changing the typed value or creating a draft. Users
+can choose with pointer or arrow keys and Enter, accept a suffix with Tab or Right at the end of
+the input, dismiss with Escape, or explicitly create a custom name.
+
 `GET /api/training/exercises?q=Bench` returns `{exercises: [...]}` with
 `{exercise, variants}` entries. Search trims input and matches literal,
 case-insensitive substrings within this owner's exercise names; empty input
@@ -225,6 +237,11 @@ suggestion. Reuse emits only reviewed IDs/revision. Explicit creation emits the
 reviewed configuration. The callback returns false to preserve a choice rejected
 by composition validation (for example a duplicate variant).
 
+Existing variants are selectable cards with compact configuration summaries. A ghost
+outline card with a plus offers Create new variant. Selecting it replaces the picker
+with the named-variant form; Back to variants returns to the cards and preserves entered
+values for reopening the form. The picker and creation form are never shown together.
+
 The manual form also uses `hasInput()`, `add()` and async `edit(item)` to capture
 unadded explicit creation on Finish and re-review an existing item. Editing reuse
 fetches current settings but requires another explicit Reuse unchanged choice;
@@ -247,11 +264,14 @@ objects, trimmed nonempty names up to 100 Unicode characters, whole set counts
 1–99, and numeric increments 0.25–99 with at most two decimal places. Omitted
 threshold and increment retain 12/2.50 defaults; null and unsupported fields are
 errors. The producer shape remains `{name,sets,weight,repThreshold?,autoIncrease?,
-muscleGroupCodes?}`. Malformed/invalid output remains visible in an editable JSON
-field with a correction action; no domain mutation is issued. Applying a
-corrected draft explicitly restarts review. A suggestion can also be removed.
+muscleGroupCodes?}`. Malformed or invalid output shows a recovery message without exposing
+the payload or offering raw JSON editing; no domain mutation is issued. The user can
+return to session creation to generate another suggestion or start manually. Valid
+suggestions remain editable through the ordinary exercise and variant fields, and each
+suggestion can be removed with its trash action. Add to session and Remove share a compact
+action row when configuring an exercise or variant; canceling review remains a secondary action.
 
-`GET /api/training/catalog` returns `{muscleGroups:[{code,label,sort_order}]}`
+`GET /api/training/catalog` returns `{muscleGroups:[{code,label,sort_order}],exerciseNames:[...]}`
 from the backend's predefined catalog in declared order, under the shared
 authenticated/model/method policy. Generated nonempty muscle code arrays are
 checked against this catalog before review. Null, duplicate, unknown or nonstring
@@ -341,11 +361,15 @@ that existing workout. Changed intent with the same operation ID is 409
 shared identity/model/origin/maintenance policy applies to every route.
 
 The shared browser client adds `startWorkout`, `activeWorkout`, and `readWorkout`.
-`ResumeWorkout.svelte` supplies the home Continue link using the returned workout
-UUID. `WorkoutStart.svelte` captures exact start intent and opaque revision,
-guards unresolved navigation, freezes plan selection and retries identically.
-After a definitive rejection it can explicitly re-read/review the plan before a
-new intent. A different already-active source is identified before Continue.
+`ResumeWorkout.svelte` uses the existing styled resume card and returned workout UUID.
+Selecting a session in the tracker immediately navigates to `/workout/start/[sessionId]`.
+`WorkoutStartScreen.svelte` loads the account and plan and starts the workout there,
+using one loading state before replacing the route with `/workout/[id]`. Successful
+start needs no plan preview, second Start action, Saved/ready frame or Continue action.
+An already-active workout is opened with its actual source identified. Exact start
+intent and revision remain frozen for uncertain retries, with navigation guarded;
+a definitive rejection permits an explicit reload before a new intent.
+The workout Back control returns to `/tracker`, including from the start route.
 `/workout/[id]` checks account model availability and renders `WorkoutScreen.svelte`
 with stable attempt/set keys and distinct target/pending/actual displays. It sends
 no completion or quit request on mount/unmount and shows no default durable rating.
@@ -391,21 +415,23 @@ recording nor a receipt, so the exact command remains retryable.
 
 The browser client adds `recordSet(RecordSetCommand)`. `WorkoutScreen.svelte`
 keeps target/input candidates separate from confirmed actuals and sends no
-recording on mount, reload, exercise-anchor navigation or display. Explicit
-Record set, Save reps correction, Skip set and Reset to pending use stable IDs.
+recording on mount, reload, exercise-anchor navigation or display. The main set counter and steppers perform recording and rep correction using stable IDs.
+Set options contains Skip set, Reset to pending and recorded details; it does not
+repeat the main screen's reps input or Record/Save correction controls.
 Saving persists until acknowledgment; failures retain local input, show Not
 saved and retry identical JSON/operation ID. Further recording waits for that
 command. Dirty input and unresolved commands guard SvelteKit navigation and
-browser unload. Stay/retry or explicit local discard resolves the guard; discard
-after an uncertain response refetches authoritative state before recording can
-resume. Local input has no offline/reload durability guarantee.
+browser unload. Stay and resolve the input through the existing save, retry,
+cancel or reviewed-conflict flow before leaving. Local input has no
+offline/reload durability guarantee.
 
 Stale/finalized responses retain local values and fetch a separate server-state
 review showing its revision and each set's actuals/targets. Accept server state
-explicitly discards input. Reapply is available only while the reviewed exact
-attempt/set remains editable and creates a new operation against that reviewed
-revision. No silent rebase occurs. The route snapshots initial account access so
-account expiry/model changes cannot unmount an unresolved editor; the screen
+uses the reviewed state and clears the conflicting input. Reapply is available
+only while the reviewed exact attempt/set remains editable and creates a new
+operation against that reviewed revision. No silent rebase occurs. The route
+snapshots initial account access so account expiry/model changes cannot unmount
+an unresolved editor; the screen
 retains input and blocks old-account requests and late-response acceptance until
 the original authoritative account returns. Completion uses the same editor guard described below; quit remains a separate
 later operation.
@@ -468,7 +494,7 @@ removal of excess draft recording while keeping completed history.
 
 Configuration and recording share one immutable pending-command slot and the
 same Saving/Saved/Not saved, original-account/workout, navigation/unload,
-retry/discard and reviewed-conflict guards. Open configuration editing pauses
+retry and reviewed-conflict guards. Open configuration editing pauses
 recording; unsent rep candidates or unresolved recording prevent opening it.
 Lost-response retry sends identical operation ID/JSON. A stale edit retains the
 form, displays current configuration and workout state, and requires Accept
@@ -537,12 +563,13 @@ for every explicit prescribed resolution, prior successful save, unsent rep
 correction and open configuration editor. Completion occupies the same frozen
 pending-command slot as recording/configuration. Saving and failed completion
 preserve actual display and block further edits. An uncertain completion offers
-exact Retry and cannot be discarded or overtaken through navigation/account
+exact Retry and cannot be overtaken through navigation/account
 changes; resolving the same intent returns authoritative completion/ending.
-Definitive validation rejection permits discarding that rejected intent and
-reviewing configuration. Stale responses preserve intent, fetch separate current
-state, and require explicit Accept or valid reapply with current workout/variant
-revisions and a new operation ID. Finalized reviewed state cannot be reapplied.
+Definitive validation rejection clears the rejected intent while retaining its
+error so configuration can be reviewed before trying again. Stale responses
+preserve intent, fetch separate current state, and require explicit Accept or
+valid reapply with current workout/variant revisions and a new operation ID.
+Finalized reviewed state cannot be reapplied.
 Completed cards display frozen performed/skipped work and a separate Current next
 targets group. Automatic ending requires no separate normal End workout control.
 
@@ -632,7 +659,7 @@ attempts/sets are discarded. Keep training cancels that confirmation. Quit uses
 the same pending-command union as recording, configuration and completion.
 Unsent reps, an open edit, a saving/failed command, and an uncertain completion
 block quit. An uncertain quit retains its exact identity/revision/operation ID,
-blocks edits/discard/navigation/unload, and offers identical Retry under the
+blocks edits/navigation/unload, and offers identical Retry under the
 original account/workout. Conflict review displays completed and draft state
 before explicit acceptance or reapply with a new ID and reviewed revision.
 Closing/unmounting a saved workout sends no lifecycle command; it remains

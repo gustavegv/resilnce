@@ -2,13 +2,22 @@ import type { ExerciseSuggestion } from './types';
 
 // Both producers hand off untrusted suggestions, never ready-to-save intent.
 export function readGeneratedDraft(text: string, catalog?: Set<string>): ExerciseSuggestion[] {
-  const value: unknown = JSON.parse(text);
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    throw new Error(
+      'The generated session could not be read. Generate a new session or start manually.'
+    );
+  }
   if (!Array.isArray(value) || value.length < 1 || value.length > 100)
-    throw new Error('Use a draft with 1–100 exercises. Correct the draft below.');
+    throw new Error(
+      'The generated session needs 1–100 exercises. Generate a new session or start manually.'
+    );
   return value.map((item, index) => {
     const fail = () =>
       new Error(
-        `Suggestion ${index + 1}: use a name, 1–20 sets, a weight from 0–9999, a threshold from 1–99 and an increment from 0.25–99. Correct the draft below.`
+        `Suggestion ${index + 1}: the suggested exercise has incomplete or invalid training settings. Generate a new session or start manually.`
       );
     if (!item || typeof item !== 'object' || Array.isArray(item)) throw fail();
     if (
@@ -19,7 +28,9 @@ export function readGeneratedDraft(text: string, catalog?: Set<string>): Exercis
           )
       )
     )
-      throw new Error(`Suggestion ${index + 1}: unsupported fields. Correct the draft below.`);
+      throw new Error(
+        `Suggestion ${index + 1}: the suggested exercise contains unsupported information. Generate a new session or start manually.`
+      );
     const { name, sets, weight, repThreshold = 12, autoIncrease = 2.5 } = item;
     if (
       typeof name !== 'string' ||
@@ -51,7 +62,7 @@ export function readGeneratedDraft(text: string, catalog?: Set<string>): Exercis
       new Set(codes).size !== codes.length
     )
       throw new Error(
-        `Suggestion ${index + 1}: use known, unrepeated muscle-group codes or an empty array. Correct the draft below.`
+        `Suggestion ${index + 1}: the suggested muscle groups could not be used. Generate a new session or start manually.`
       );
     return {
       name: name.trim(),

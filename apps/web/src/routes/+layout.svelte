@@ -46,6 +46,10 @@
         goto(resolve('/account'));
         break;
       default:
+        if (page.route.id?.startsWith('/workout/')) {
+          goto(resolve('/tracker'));
+          break;
+        }
         const currentPath = page.url.pathname;
         const parentPath = currentPath.substring(0, currentPath.lastIndexOf('/'));
         // The current URL already includes the configured app base.

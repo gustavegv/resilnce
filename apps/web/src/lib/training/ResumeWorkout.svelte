@@ -3,6 +3,9 @@
   import { resolve } from '$app/paths';
   import { activeWorkout } from './client';
   import type { Workout } from './types';
+  import ResumeSessionButton from '../../components/ResumeSessionButton.svelte';
+
+  let { onloaded }: { onloaded?: (workout: Workout | null) => void } = $props();
 
   let workout = $state.raw<Workout | null>(null);
   let error = $state('');
@@ -12,6 +15,7 @@
     error = '';
     try {
       workout = (await activeWorkout()).workout;
+      onloaded?.(workout);
     } catch (failure) {
       error = failure instanceof Error ? failure.message : 'Unable to load your active workout.';
     } finally {
@@ -23,20 +27,22 @@
   });
 </script>
 
-{#if loading}<p role="status">Checking your active workout…</p>
-{:else if error}<p role="alert">{error}</p>
-  <button onclick={load}>Retry active workout</button>
+{#if loading}<p class="resume-status" role="status">Checking your active workout…</p>
+{:else if error}<div class="resume-status">
+    <p role="alert">{error}</p>
+    <button class="buttonClass minimal" onclick={load}>Retry active workout</button>
+  </div>
 {:else if workout}
-  <a class="resume" href={resolve('/workout/[id]', { id: workout.id })}>
-    Continue workout · {workout.sourceSession?.name ?? 'Workout'}
-  </a>
+  <ResumeSessionButton
+    href={resolve('/workout/[id]', { id: workout.id })}
+    name={workout.sourceSession?.name ?? 'Workout'}
+  />
 {/if}
 
 <style>
-  .resume {
-    display: block;
-    padding: 1rem;
-    border-radius: 16px;
-    background: var(--surface-middle);
+  .resume-status {
+    width: 50%;
+    font-size: 12px;
+    color: var(--text-muted);
   }
 </style>
